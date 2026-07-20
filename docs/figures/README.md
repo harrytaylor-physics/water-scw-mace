@@ -1,0 +1,8 @@
+Copy targets (from ARC) — filenames must match the deck:
+pool_overview.png      <- pool_overview.py output
+parity.png             <- arc_parity.sh output
+isotherm.png           <- plot_isotherm.py output
+finite_size.png        <- plot_finite_size.py output
+spectrum_example.png   <- scw_prod/<point>/spectrum.png
+opacity_surface.png    <- make_all_figures.py surface panel
+emissivity_dense.png   <- scw_prod/emissivity/T3000_rho2228.71/emissivity_T3000_rho2228.71.png
