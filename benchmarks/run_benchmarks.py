@@ -31,7 +31,7 @@ def parity(calc, labels_path):
 
 def eos_point(calc, T=673.0, rho=1000.0, n_mol=64, steps=4000):
     from ase import units, Atoms
-    from ase.md.langevin import Langevin
+    from ase.md.bussi import Bussi
     from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
     M, NA = 18.01528, 6.02214076e23
     L = (n_mol * M / NA / 1000.0 / rho) ** (1 / 3) * 1e10
@@ -59,7 +59,7 @@ def eos_point(calc, T=673.0, rho=1000.0, n_mol=64, steps=4000):
     atoms = Atoms(sym, positions=pos, cell=[L, L, L], pbc=True)
     atoms.calc = calc
     MaxwellBoltzmannDistribution(atoms, temperature_K=T)
-    dyn = Langevin(atoms, timestep=0.5 * units.fs, temperature_K=T, friction=0.02)
+    dyn = Bussi(atoms, timestep=0.5 * units.fs, temperature_K=T, taut=100 * units.fs)
     ps = []
     def grab():
         s = atoms.get_stress(voigt=True)
