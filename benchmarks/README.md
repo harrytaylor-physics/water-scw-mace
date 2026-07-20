@@ -14,7 +14,7 @@ python run_benchmarks.py --model ../models/water_scw_v4.model \
 | Force parity (RCB regime) | 58 meV/A RMSE | +/- 15% |
 | Force parity (hot, pooled) | 119 meV/A RMSE | +/- 15% |
 | EOS point 673 K, 1000 kg/m^3 | IAPWS-95 pressure | +/- 10% |
-| Timing (192 atoms, GPU fp32) | recorded, informational | — |
+| Timing (192 atoms, GPU fp32) | recorded | — |
 
 `reference/holdout_v4.xyz` is a held-out labelled split from train_v4 —
 copy from ARC (or regenerate with the campaign's eval_split.sh). Until it

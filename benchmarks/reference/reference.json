@@ -1,5 +1,22 @@
 {
-  "parity_meV_A": {"bulk": 41, "rcb": 58, "hot": 119},
-  "eos_673K_1000kg_GPa": 0.87,
-  "_note": "parity refs are the v4 campaign per-regime RMSEs; eos ref is IAPWS-95 at 673 K, 1000 kg/m3 — VERIFY against iapws before first group release (pip install iapws; IAPWS95(T=673, rho=1000).P MPa -> GPa)"
+  "parity_meV_A": {
+    "bulk": 41,
+    "rcb": 58,
+    "hot": 119
+  },
+  "eos_673K_1000kg_GPa": 0.7383,
+  "reference_timings": {
+    "lda_label_single_point_s": {
+      "value": 43,
+      "context": "192 atoms, 600 Ry, 48-core htc-c node, median of 1080"
+    },
+    "proposal_md_25k_steps_min": {
+      "value": 45,
+      "context": "192 atoms, MACE fp64, 1 GPU; ~15-20 min in fp32"
+    },
+    "parity_eval_1080_frames_min": {
+      "value": 15,
+      "context": "1 GPU, fp64"
+    }
+  }
 }
