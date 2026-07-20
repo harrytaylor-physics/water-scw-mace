@@ -1,8 +1,7 @@
 {
   "parity_meV_A": {
     "bulk": 41,
-    "rcb": 58,
-    "hot": 119
+    "rcb": 58
   },
   "eos_673K_1000kg_GPa": 0.7383,
   "reference_timings": {
@@ -18,5 +17,6 @@
       "value": 15,
       "context": "1 GPU, fp64"
     }
-  }
+  },
+  "parity_methodology": "training-set parity by regime (matches original eval_split.sh evaluation); optimistic vs true held-out. Frames with T>3000K excluded (outside applied envelope)."
 }

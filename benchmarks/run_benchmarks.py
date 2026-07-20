@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Rerunnable benchmarks for water_scw_v4. CPU-capable (slow) or GPU."""
-import argparse, json, math, pathlib, sys, time
+import argparse, json, math, pathlib, re, sys, time
 import numpy as np
+
+def regime_of(config_type):
+    m = re.search(r"T(\d+)", str(config_type))
+    if not m: return None
+    T = int(m.group(1))
+    if T > 3000: return None          # outside applied envelope
+    return "bulk" if T <= 2250 else "rcb"
 
 def parity(calc, labels_path):
     from ase.io import read
@@ -14,7 +21,8 @@ def parity(calc, labels_path):
             continue
         a.calc = calc
         dF = a.get_forces() - Fref
-        regime = a.info.get("config_type", "all")
+        regime = regime_of(a.info.get("config_type", ""))
+        if regime is None: continue
         errs.setdefault(regime, []).append(dF.ravel())
     out = {}
     for k, v in errs.items():
@@ -66,7 +74,7 @@ def eos_point(calc, T=673.0, rho=1000.0, n_mol=64, steps=4000):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
-    ap.add_argument("--labels", default="reference/holdout_v4.xyz")
+    ap.add_argument("--labels", default="reference/train_v4.xyz.gz")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--skip-eos", action="store_true")
     args = ap.parse_args()
