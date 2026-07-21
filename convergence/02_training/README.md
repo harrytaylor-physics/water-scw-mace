@@ -1,9 +1,11 @@
 # 02 — training-data convergence (learning curve)
 
-**What:** is the dataset big enough? Train on nested subsets, plot
+**What:** is the dataset big enough? Plot
 validation force RMSE vs dataset size.
+
 **Criterion:** plateau — RMSE at 100% within noise of 75%. Still falling
 steeply at 100% => data-limited: label more.
+
 **Also:** seed variance (>=2 seeds at one size) separates data-limited
 from noise-limited.
 
