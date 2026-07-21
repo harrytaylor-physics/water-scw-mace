@@ -1,13 +1,12 @@
 # convergence/
 
-Runnable convergence protocols for every stage of the pipeline — and the
+Runnable convergence tests for every stage of the pipeline — and the
 project's convergence diary. Each subfolder has: a README stating what to
-converge, the criterion, and the values this project established
-(reference results); and core scripts that run the check on YOUR system.
+converge, the criterion, and the reference results; and core scripts that run the check on different systems.
 
 Scripts are cluster-agnostic: they generate inputs / analyse outputs /
 run analysis locally, and never submit jobs. How you run the generated
-inputs (SLURM, PBS, laptop) is your business. Dependencies: numpy, ase,
+inputs (SLURM, PBS, laptop) can be customised. Dependencies: numpy, ase,
 matplotlib; CP2K for 01; mace-torch + a GPU helps for 02/03.
 
 | Stage | Converge | Criterion | Project reference |
