@@ -18,6 +18,4 @@ matplotlib; CP2K for 01; mace-torch + a GPU helps for 02/03.
 | 05 post-processing | Rosseland window/floor, KK cutoff | means stable <2%; KK drift <5% | 100-5000 cm^-1, 1e-6 floor |
 
 Diary entries (what the project actually did) live in each README under
-"Reference results" — including the honest ones, e.g. the LDA campaign
-inherited 600/60 from the hybrid benchmarks rather than re-converging
-(logged decision), and 01 is the tool to verify that inheritance.
+"Reference results".
