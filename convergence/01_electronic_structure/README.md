@@ -1,8 +1,10 @@
 # 01 — electronic-structure convergence (CP2K)
 
 **What:** plane-wave CUTOFF (then REL_CUTOFF, then basis) for your system.
+
 **Criterion:** |dE| <= 1 meV/atom and max |dF| <= 10 meV/A vs the highest
 cutoff in the scan.
+
 **Protocol:** one representative geometry (your densest/hardest cell is
 the binding constraint), single-point ENERGY_FORCE at each cutoff,
 identical everything else.
