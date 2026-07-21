@@ -1,18 +1,78 @@
 # models/
 
-Trained model files. Use git-lfs (`git lfs track "*.model"`) — files are
-tens to hundreds of MB.
+Trained model files (git-lfs). See `architecture.svg` for how a MACE
+potential works and where the repo's validations attach to it.
 
-| File | What | Labels | Notes |
-|---|---|---|---|
-| water_scw_v4.model | production potential | revPBE0-D3, 1193 cfgs | apply <= 3000 K |
-| water_scw_v4_compiled.model | TorchScript export | — | for LAMMPS/inference |
-| water_dipole_v2.model | dipole model | MLWF revPBE0-D3 | feeds spectra.py |
-| mace-mpa-0-medium.model | foundation model | MPA-0 | fine-tune parent |
-| water_lda_v1.model | LDA potential | LDA/PADE | in training (campaign) |
+![MACE architecture](architecture.svg)
 
-Copy from ARC: `scp shug7909@htc-login:~/scw/{water_scw_v4,water_dipole_v2,mace-mpa-0-medium}.model models/`
+## Inventory & provenance
 
-Provenance rule: every model added here gets a row with its label level,
-training-set file, and the commit of the training script that produced it.
+| File | What | Labels (functional) | Training set | Status |
+|---|---|---|---|---|
+| water_scw_v4.model | production potential | revPBE0-D3 (CP2K) | train_v4.xyz, 1193 cfgs | validated; apply <= 3000 K |
+| water_scw_v4_compiled.model | TorchScript export of v4 | — | — | for LAMMPS / no-Python inference |
+| water_dipole_v2.model | dipole model | MLWF revPBE0-D3 | dipole label set | production; behind opacity surface |
+| mace-mpa-0-medium.model | foundation model (upstream) | MPA-0 | — | fine-tune parent; never used raw for production |
+| water_lda_v1.model | LDA potential | LDA/PADE | train_lda_v1.xyz, 1080 cfgs | in training (functional-sensitivity campaign) |
+
+Provenance rule: every model added here gets a row with its label level and
+training set, and the training command lives in the campaign scripts.
 Never mix label levels within one training set.
+
+## Quickstart (ASE)
+
+All group workflows use the models through ASE. Three common patterns:
+
+**1. Load and evaluate a structure**
+```python
+from mace.calculators import MACECalculator
+from ase.io import read
+calc = MACECalculator(model_paths="water_scw_v4.model", device="cuda")  # or "cpu"
+atoms = read("my_config.xyz")          # needs cell + pbc set
+atoms.calc = calc
+print(atoms.get_potential_energy())    # eV
+print(atoms.get_forces())              # eV/A
+```
+
+**2. Run MD (protocol used throughout the project)**
+```python
+from ase import units
+from ase.md.bussi import Bussi          # CSVR thermostat (ASE >= 3.23)
+from ase.md.verlet import VelocityVerlet
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+
+MaxwellBoltzmannDistribution(atoms, temperature_K=1500)
+equil = Bussi(atoms, timestep=0.5*units.fs, temperature_K=1500, taut=100*units.fs)
+equil.run(10000)                        # 5 ps CSVR equilibration
+prod = VelocityVerlet(atoms, timestep=0.5*units.fs)
+prod.run(120000)                        # 60 ps NVE production
+```
+Use `default_dtype="float32"` in the calculator for ~2x faster MD; float64
+for parity/benchmark evaluation. Pressure must include the ideal-gas
+kinetic term: P = -tr(stress)/3 + N k_B T / V.
+
+**3. An EOS point** — see `benchmarks/run_benchmarks.py` (the `eos_point`
+function is a complete worked example).
+
+You can also run the compiled model through LAMMPS (pair_style mace) if
+you want — not documented here; ask if you need it.
+
+## Why ASE and not LAMMPS?
+
+Deliberate choice, three reasons. (1) The whole pipeline is Python — 
+selection, dipole evaluation, spectra, analysis all share one process and
+one numpy world; ASE keeps MD in the same stack with no export step.
+(2) The native torch model is always exactly what training produced;
+the compiled/LAMMPS route adds a conversion that can silently lag the
+canonical weights. (3) At our system sizes (64-2048 molecules) the GPU
+model evaluation dominates the cost and ASE's Python MD loop overhead is
+negligible - LAMMPS's strengths (domain decomposition, multi-GPU scaling,
+huge N) only pay off far above our sizes. If you need million-atom or
+multi-node MD, use the compiled model in LAMMPS; for everything this
+project does, ASE is simpler and just as fast.
+
+## Conditions of use
+
+T <= 3000 K and densities within the trained envelope (~100-2230 kg/m^3).
+No ices, no reactive >3000 K regime (descoped: hybrid labels did not
+converge there). Full guidance: ../TESTING.md.

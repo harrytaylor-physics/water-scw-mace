@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" font-family="Arial,Helvetica,sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#000"/>
+    </marker>
+  </defs>
+  <text x="480" y="30" text-anchor="middle" font-size="19" font-weight="bold">How the MACE potential works (water_scw_v4 / water_lda_v1)</text>
+
+  <!-- 1 local environments -->
+  <rect x="40" y="60" width="270" height="88" fill="none" stroke="#000"/>
+  <text x="175" y="82" text-anchor="middle" font-size="14" font-weight="bold">1. Local environments</text>
+  <text x="175" y="102" text-anchor="middle" font-size="12">each atom sees neighbours within</text>
+  <text x="175" y="118" text-anchor="middle" font-size="12">r_max = 6 &#8491;  (~40&#8211;80 neighbours here)</text>
+  <text x="175" y="134" text-anchor="middle" font-size="12">positions &#8594; edge vectors r_ij</text>
+
+  <!-- 2 embedding -->
+  <rect x="345" y="60" width="270" height="88" fill="none" stroke="#000"/>
+  <text x="480" y="82" text-anchor="middle" font-size="14" font-weight="bold">2. Equivariant embedding</text>
+  <text x="480" y="102" text-anchor="middle" font-size="12">radial basis &#215; spherical harmonics</text>
+  <text x="480" y="118" text-anchor="middle" font-size="12">rotation/translation symmetry exact</text>
+  <text x="480" y="134" text-anchor="middle" font-size="12">by construction, not learned</text>
+
+  <!-- 3 message passing -->
+  <rect x="650" y="60" width="270" height="88" fill="none" stroke="#000"/>
+  <text x="785" y="82" text-anchor="middle" font-size="14" font-weight="bold">3. Message passing (2 layers)</text>
+  <text x="785" y="102" text-anchor="middle" font-size="12">atom features updated from neighbours</text>
+  <text x="785" y="118" text-anchor="middle" font-size="12">via equivariant tensor products;</text>
+  <text x="785" y="134" text-anchor="middle" font-size="12">effective reach ~2 &#215; r_max &#8776; 12 &#8491;</text>
+
+  <!-- 4 higher order -->
+  <rect x="650" y="200" width="270" height="88" fill="none" stroke="#000"/>
+  <text x="785" y="222" text-anchor="middle" font-size="14" font-weight="bold">4. Higher-order messages</text>
+  <text x="785" y="242" text-anchor="middle" font-size="12">ACE-style body-order expansion:</text>
+  <text x="785" y="258" text-anchor="middle" font-size="12">3-/4-body terms inside a single layer</text>
+  <text x="785" y="274" text-anchor="middle" font-size="12">&#8594; accurate AND shallow (= fast)</text>
+
+  <!-- 5 readout -->
+  <rect x="345" y="200" width="270" height="88" fill="none" stroke="#000"/>
+  <text x="480" y="222" text-anchor="middle" font-size="14" font-weight="bold">5. Readout</text>
+  <text x="480" y="242" text-anchor="middle" font-size="12">per-atom energies &#949;_i &#8594; E = &#931;&#949;_i + &#931;E0</text>
+  <text x="480" y="258" text-anchor="middle" font-size="12">forces F = &#8722;&#8706;E/&#8706;r, exact autograd</text>
+  <text x="480" y="274" text-anchor="middle" font-size="12">(energy&#8211;force consistency is testable)</text>
+
+  <!-- output -->
+  <rect x="40" y="200" width="270" height="88" fill="none" stroke="#000" stroke-width="2"/>
+  <text x="175" y="228" text-anchor="middle" font-size="14" font-weight="bold">E, F for MD</text>
+  <text x="175" y="250" text-anchor="middle" font-size="12">hybrid-DFT (or LDA) physics at</text>
+  <text x="175" y="266" text-anchor="middle" font-size="12">classical-potential cost</text>
+
+  <!-- arrows top row -->
+  <line x1="310" y1="104" x2="343" y2="104" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="615" y1="104" x2="648" y2="104" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="785" y1="148" x2="785" y2="198" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="648" y1="244" x2="617" y2="244" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="343" y1="244" x2="312" y2="244" stroke="#000" marker-end="url(#ar)"/>
+
+  <!-- fine-tuning side branch -->
+  <rect x="40" y="340" width="420" height="96" fill="none" stroke="#000" stroke-dasharray="5,4"/>
+  <text x="250" y="362" text-anchor="middle" font-size="14" font-weight="bold">Fine-tuning (how these models were made)</text>
+  <text x="250" y="382" text-anchor="middle" font-size="12">start: mace-mpa-0-medium weights (foundation model)</text>
+  <text x="250" y="398" text-anchor="middle" font-size="12">nudge with ~1100 labelled configs at YOUR functional</text>
+  <text x="250" y="414" text-anchor="middle" font-size="12">= learning a correction, not learning water from scratch</text>
+  <text x="250" y="430" text-anchor="middle" font-size="12">(why hundreds of labels suffice, not tens of thousands)</text>
+  <line x1="460" y1="388" x2="560" y2="300" stroke="#000" stroke-dasharray="5,4" marker-end="url(#ar)"/>
+
+  <!-- validation attachments -->
+  <rect x="520" y="340" width="400" height="96" fill="none" stroke="#000" stroke-dasharray="5,4"/>
+  <text x="720" y="362" text-anchor="middle" font-size="14" font-weight="bold">Where the repo validations attach</text>
+  <text x="720" y="382" text-anchor="middle" font-size="12">tests/: invariances &#8594; block 2;  E&#8211;F consistency &#8594; block 5</text>
+  <text x="720" y="398" text-anchor="middle" font-size="12">benchmarks/: force parity &#8594; block 5;  EOS &#8594; end-to-end MD</text>
+  <text x="720" y="414" text-anchor="middle" font-size="12">convergence/: finite size &#8594; blocks 1+3;  learning curve &#8594; fine-tune</text>
+
+  <!-- spec strip -->
+  <line x1="40" y1="480" x2="920" y2="480" stroke="#000" stroke-width="0.7"/>
+  <text x="40" y="505" font-size="12" font-weight="bold">Model spec:</text>
+  <text x="40" y="525" font-size="12">mace-mpa-0 "medium" architecture &#183; r_max 6.0 &#8491; &#183; 2 interaction layers &#183; equivariant features to L=1&#8211;2 &#183; float64 weights</text>
+  <text x="40" y="545" font-size="12">water_scw_v4: fine-tuned on 1193 revPBE0-D3 configs (650&#8211;3000 K envelope) &#183; apply at T &#8804; 3000 K only</text>
+  <text x="40" y="565" font-size="12">water_lda_v1: fine-tuned on 1080 LDA/PADE configs (27-point production grid) &#183; functional-sensitivity campaign</text>
+  <text x="40" y="585" font-size="12">water_dipole_v2: same architecture family, dipole readout &#183; trained on MLWF/Berry-phase dipole labels &#183; feeds spectra.py</text>
+</svg>
