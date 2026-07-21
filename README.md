@@ -18,16 +18,16 @@ opacities and emissivities from first-principles quality MD and MLWFs.
 - Planck/ Rosseland means over the 27-point T-P grid
 - Normal spectral emissivity via a self-consistent dielectric function construction
 
-## Status
+## Quick start
 
-| Component | Status |
-|---|---|
-| water_scw_v4 (revPBE0-D3 potential) | validated; production; apply <= 3000 K |
-| water_dipole_v2 (dipole model) | production; behind the published opacity surface |
-| Opacity surface, 27 points | complete (absolute-scale note below) |
-| Emissivity, 27 points | complete (interim n_inf baseline) |
-| LDA sensitivity campaign | labels complete (1080/1080); water_lda_v1 training |
-| Results deck | being rebuilt around the LDA results |
+    git lfs install                  # required once; models are LFS objects
+    git clone git@github.com:harrytaylor-physics/water-scw-mace.git
+    pip install -r requirements.txt  # needs ase>=3.23 for the CSVR/Bussi protocol
+
+Then see [models/README.md](models/README.md) for the three worked usage
+patterns (evaluate / MD / EOS point). Apply the potentials only at
+T <= 3000 K within the trained density envelope - full guidance in
+[TESTING.md](TESTING.md).
 
 ## Map
 
@@ -43,16 +43,16 @@ opacities and emissivities from first-principles quality MD and MLWFs.
 | [ROADMAP.md](ROADMAP.md) | understanding-oriented questions |
 | [TESTING.md](TESTING.md) | outstanding tests + conditions of use |
 
-## Quick start
+## Status
 
-    git lfs install                  # required once; models are LFS objects
-    git clone git@github.com:harrytaylor-physics/water-scw-mace.git
-    pip install -r requirements.txt  # needs ase>=3.23 for the CSVR/Bussi protocol
-
-Then see [models/README.md](models/README.md) for the three worked usage
-patterns (evaluate / MD / EOS point). Apply the potentials only at
-T <= 3000 K within the trained density envelope - full guidance in
-[TESTING.md](TESTING.md).
+| Component | Status |
+|---|---|
+| water_scw_v4 (revPBE0-D3 potential) | validated; production; apply <= 3000 K |
+| water_dipole_v2 (dipole model) | production; behind the published opacity surface |
+| Opacity surface, 27 points | complete (absolute-scale note below) |
+| Emissivity, 27 points | complete (interim n_inf baseline) |
+| LDA sensitivity campaign | labels complete (1080/1080); water_lda_v1 training |
+| Results deck | being rebuilt around the LDA results |
 
 ## Methods in one paragraph
 
