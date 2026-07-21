@@ -34,7 +34,7 @@ print(atoms.get_potential_energy())    # eV
 print(atoms.get_forces())              # eV/A
 ```
 
-**2. Run MD (protocol used throughout the project)**
+**2. Run MD**
 ```python
 from ase import units
 from ase.md.bussi import Bussi          # CSVR thermostat (ASE >= 3.23)
@@ -55,11 +55,11 @@ kinetic term: P = -tr(stress)/3 + N k_B T / V.
 function is a complete worked example).
 
 You can also run the compiled model through LAMMPS (pair_style mace) if
-you want — not documented here; ask if you need it.
+you want — not documented here.
 
 ## Why ASE and not LAMMPS?
 
-Deliberate choice, three reasons. (1) The whole pipeline is Python — 
+(1) The whole pipeline is Python — 
 selection, dipole evaluation, spectra, analysis all share one process and
 one numpy world; ASE keeps MD in the same stack with no export step.
 (2) The native torch model is always exactly what training produced;
@@ -68,11 +68,9 @@ canonical weights. (3) At our system sizes (64-2048 molecules) the GPU
 model evaluation dominates the cost and ASE's Python MD loop overhead is
 negligible - LAMMPS's strengths (domain decomposition, multi-GPU scaling,
 huge N) only pay off far above our sizes. If you need million-atom or
-multi-node MD, use the compiled model in LAMMPS; for everything this
-project does, ASE is simpler and just as fast.
+multi-node MD, use the compiled model in LAMMPS.
 
 ## Conditions of use
 
 T <= 3000 K and densities within the trained envelope (~100-2230 kg/m^3).
-No ices, no reactive >3000 K regime (descoped: hybrid labels did not
-converge there). Full guidance: ../TESTING.md.
+No ices, no reactive >3000 K regime (at a certain planetary depth the envelope is sufficiently optical thick and the opacity falls out of the Schwarzschild's radiative transfer equation) . Full guidance: ../TESTING.md.
