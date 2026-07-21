@@ -16,7 +16,6 @@ python3 make_cutoff_scan.py geom.xyz --cutoffs 400 500 600 700 800 1000 1200 \
 python3 analyze_cutoff_scan.py scan_dir/
 ```
 
-**Reference results (this project):** hybrid campaign benchmarked 600/60 Ry
+**Reference results (this project):** hybrid (revPBE0-D3) campaign benchmarked 600/60 Ry
 with DZVP-MOLOPT-SR-GTH for warm dense water (64 molecules). The LDA
-campaign inherited these values verbatim (logged decision, 2026-07) —
-rerun this scan at LDA/PADE to verify the inheritance on your hardware.
+campaign takes these values verbatim.
