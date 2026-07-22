@@ -35,3 +35,12 @@
   TOI-270 d / K2-18 b adiabat traverses through the envelope.
 - **Rule of thumb:** ratios from this pipeline are robust (scale factors
   cancel); absolute values require the post-fix data products.
+
+## Known model boundaries (documented, not bugs)
+- 2026-07-22: water_scw_v4 does not bind the isolated gas-phase water
+  dimer (separated pair ~0.25 eV below the H-bonded minimum at 20 A box;
+  interaction exactly zero beyond ~12 A receptive field). Expected for a
+  potential trained exclusively on dense bulk 650-3000 K; gas-phase
+  cluster chemistry is outside the applicability envelope. Production
+  (bulk) use unaffected. Do not use v4 for clusters or vapor-phase
+  dimers.

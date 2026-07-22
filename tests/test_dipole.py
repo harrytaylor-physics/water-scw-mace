@@ -2,13 +2,12 @@ import numpy as np
 from test_invariances import _rotation
 
 def _mu(calc, atoms):
-    atoms = atoms.copy(); atoms.calc = calc
-    atoms.get_potential_energy() if hasattr(calc, "get_potential_energy") else None
-    try:
-        return np.asarray(atoms.get_dipole_moment())
-    except Exception:
-        calc.calculate(atoms)
-        return np.asarray(calc.results["dipole"])
+    atoms = atoms.copy()
+    calc.calculate(atoms)            # DipoleMACE has no energy head
+    for key in ("dipole", "dipole_moment"):
+        if key in calc.results:
+            return np.asarray(calc.results[key]).reshape(3)
+    raise KeyError(f"no dipole in results: {list(calc.results)}")
 
 def test_dipole_shape_and_finite(dipole_calc, water_dimer):
     mu = _mu(dipole_calc, water_dimer)
