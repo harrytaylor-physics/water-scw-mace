@@ -89,3 +89,28 @@ in post-processing module. Full details: [docs/METHODS.md](docs/METHODS.md).
 
 ---
 Maintainer: Harry Taylor (Oxford).
+
+## LDA campaign additions (Jul 2026)
+
+    lda_campaign/          LDA functional-sensitivity campaign:
+      stepE_anchor/          on-trajectory validation, boundary measurement, dense-branch harvest
+      stepG_dipoles/         LDA MLWF dipole chain, opacity + comparison figures
+      eos_compare/           EOS evaluation (both functionals) + paper figure
+      dispersion/            D3 on/off decomposition, dimer scans, MACE check
+      emissivity_figures/    e_P surface + spectral waterfall plotters
+      linelist/              self-healing ExoMol/BT2 runner
+    docs/LDA_CAMPAIGN.md   campaign narrative: design, full gate record, results
+    docs/AMENDMENTS_APPEND.md  ledger entries pending merge into AMENDMENTS.md
+
+## Status (27 Jul 2026)
+
+Hybrid (revPBE0-D3): 27-point opacity and emissivity surfaces complete; EOS
+evaluated at all 27 points (IAPWS-anchored).
+LDA: v1 potential trained and gated; validated envelope = bulk regime +
+hot-dilute (boundary measured, density-driven: fails by ~730 kg/m3 at
+3000 K, by 1256 kg/m3 at 2250 K); 21-point production archive; three-point
+full-band opacity/emissivity comparison vs hybrid delivered (T1000/rho130,
+T2000/rho500, T~2807/rho109).
+Headline results: EOS dP mean -47% (to -90% cold-dilute); LDA stretch
+red-shift 150-200 cm-1; dispersion 1.7% of bulk forces, ~4:1
+intermolecular. Presented at the AWE meeting, 28 Jul 2026.

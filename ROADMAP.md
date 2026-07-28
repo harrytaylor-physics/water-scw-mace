@@ -19,3 +19,16 @@ Not a task list; a list of questions.
 6. **Line-list vs MD crossover.** At what density do HITEMP/MT-CKD line
    lists stop being adequate and the MD-based continuum take over? A
    quantitative crossover map would serve the whole community.
+
+## Functional-sensitivity programme (post-AWE, Jul 2026)
+
+Direction gated on AWE's answer to the closing ask. Prepared branches:
+(a) custom-XC campaign on the water grid — template complete, marginal
+    cost ~ labels + one fine-tune per functional;
+(b) dense-branch completion — v2 potential from the banked harvest, then
+    dense LDA spectra/emissivity (hybrid e_P reaches 0.911 there);
+(c) new system on the same machinery (organics / metals) —
+    foundation fine-tuning makes the chemistry a swappable input.
+Paper-era items: AQUA overlay on the EOS figure (third approximation
+tier — PBE-family ab initio in this regime); three-tier EOS comparison;
+MACE-vs-D3 dispersion learnability on the corrected dimer scan.

@@ -26,3 +26,21 @@ Priority order.
 12. **n_inf upgrade**: CP2K polarizability single points per state point
     (and per functional) to replace the Lorentz-Lorenz literature alpha_e
     in the emissivity module.
+
+## Post-LDA-campaign (27 Jul 2026)
+
+Done this campaign: LDA label/train/gate chain; 21-point LDA production;
+LDA MLWF dipole model; 3-point spectral comparison; LDA emissivity at
+compared points; EOS functional comparison + paper figure; dispersion
+decomposition; AWE deck.
+
+- [ ] Dense-branch LDA potential (harvest labelled and banked;
+      build_v2_dataset.py ready) -> dense spectra + emissivity comparison
+- [ ] Larger MLWF dipole campaign to lower the ACF noise floor
+      (data lever at ~640 configs documented as spent)
+- [ ] H-bonded dimer geometry fix (current scan misses the canonical
+      well; D3 difference curve quoted instead)
+- [ ] ExoMol/BT2 cross-check: resolve RADIS<->server chunk-naming
+      mismatch (first chunk 404s; exomol_selfheal.py has the scaffold)
+- [ ] Merge docs/AMENDMENTS_APPEND.md into AMENDMENTS.md
+- [ ] EOS figure panel-(a) marker/legend consistency (cosmetic)
