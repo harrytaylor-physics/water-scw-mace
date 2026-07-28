@@ -15,7 +15,7 @@ opacities and emissivities from first-principles quality MD and MLWFs.
 - MD of warm dense water at hybrid-DFT accuracy, with classical-potential cost
 - EOS points (pressure includes the ideal-gas kinetic term)
 - IR absorption spectra and absolute opacities kappa(nu; T, rho)
-- Planck/ Rosseland means over the 27-point T-P grid
+- Planck/ Rosseland mean opacities over the T-P grid
 - Normal spectral emissivity via a self-consistent dielectric function construction
 
 ## Quick start
@@ -56,10 +56,10 @@ T <= 3000 K within the trained density envelope - full guidance in
 
 ## Methods in one paragraph
 
-Initial CP2K AIMD to generate appropriate configurations; CP2K labels on selected snapshots (revPBE0-D3 or LDA; 600/60 Ry, DZVP-MOLOPT-SR-GTH),
+Initial CP2K AIMD to generate appropriate configurations; CP2K labels on selected snapshots (revPBE0-D3 or any other functional; 600/60 Ry, DZVP-MOLOPT-SR-GTH),
 MACE fine-tuned from mace-mpa-0-medium using CP2K labels, CSVR-equilibrated NVE production
-MD (0.5 fs, 60 ps, 64 molecules), additional MLWF-trained dipole model, dipole-ACF
-spectra with quantum correction factor, opacity means and Fresnel emissivity
+MD, additional MLWF-trained dipole model, dipole-ACF
+spectra with quantum correction factor, opacity means and normal emissivity
 in post-processing module. Full details: [docs/METHODS.md](docs/METHODS.md).
 
 ## References
@@ -108,9 +108,9 @@ Hybrid (revPBE0-D3): 27-point opacity and emissivity surfaces complete; EOS
 evaluated at all 27 points (IAPWS-anchored).
 LDA: v1 potential trained and gated; validated envelope = bulk regime +
 hot-dilute (boundary measured, density-driven: fails by ~730 kg/m3 at
-3000 K, by 1256 kg/m3 at 2250 K); 21-point production archive; three-point
+3000 K, and by 1256 kg/m3 at 2250 K); 21-point production archive; three-point
 full-band opacity/emissivity comparison vs hybrid delivered (T1000/rho130,
 T2000/rho500, T~2807/rho109).
 Headline results: EOS dP mean -47% (to -90% cold-dilute); LDA stretch
 red-shift 150-200 cm-1; dispersion 1.7% of bulk forces, ~4:1
-intermolecular. Presented at the AWE meeting, 28 Jul 2026.
+intermolecular. 28 Jul 2026.
