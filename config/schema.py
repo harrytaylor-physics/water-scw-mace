@@ -24,8 +24,9 @@ class Paths:
 
     data_root: str = "~/subneptune_data"
     # Relative entries are resolved against ``data_root`` (absolute kept as-is).
+    # Opacity source subdirectories are governed by ``opacity.registry`` (adding
+    # a source is a registry entry, SPEC §3), not by config.
     aqua_table: str = "AQUA/Tables/aqua_eos_rhot_v1_0.dat"
-    fp_opacity_dir: str = "fp_opacity"
     output_dir: str = "outputs"
 
 
@@ -120,7 +121,8 @@ class Config:
 
     @property
     def fp_opacity_path(self) -> Path:
-        return _resolve_under(self.data_root_path, self.paths.fp_opacity_dir)
+        """Where FP spectra + grid.json + crossover_hitemp.json live."""
+        return self.data_root_path / "fp_opacity"
 
     @property
     def output_path(self) -> Path:

@@ -9,7 +9,6 @@ name: fiducial
 paths:
   data_root: "~/subneptune_data"
   aqua_table: "AQUA/Tables/aqua_eos_rhot_v1_0.dat"
-  fp_opacity_dir: "fp_opacity"
   output_dir: "outputs"
 
 core:
