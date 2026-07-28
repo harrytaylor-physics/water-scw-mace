@@ -23,7 +23,7 @@ def repo_root() -> Path:
     return _REPO_ROOT
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def cfg() -> Config:
-    """Fiducial run config (SPEC §8)."""
+    """Fiducial run config (SPEC §8). Frozen, so safe to share across tests."""
     return load_config(_REPO_ROOT / "config" / "fiducial.yaml")

@@ -6,6 +6,32 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-07-28
 
+- **A8 — ρ(P,T) inversion through the vapor–liquid dome.** At fixed T below the
+  critical point, the AQUA table has exact P(ρ) plateaus (constant saturation
+  pressure across the coexistence density range; up to ~457 flat steps per
+  column near 300 K, phase id 1), and small plateaus at high density (ice
+  VII/X, superionic; ids −7, −10). P(ρ,T) is thus non-strictly-monotonic, so
+  ρ(P,T) is multivalued on the dome. For the inversion the per-column log P
+  array is made *strictly* increasing by `maximum.accumulate` plus a cumulative
+  ~1e-12 dex nudge applied **only to flat/decreasing entries** — single-phase
+  nodes are left unchanged (≤1e-9 relative P shift, far under the G2 0.5%
+  tolerance), so single-phase round-trips stay exact. Effect: for P below a
+  plateau the vapor branch is returned, for P above it the liquid branch — the
+  physical inward-integration path; exactly on P_sat (measure zero) a dome value
+  is returned. A `two_phase` diagnostic (phase id) is exposed so structure runs
+  report any dome traversal. G2 spot points are taken in single-phase regions.
+  The `phase` diagnostic is a nearest-node lookup and is approximate within ~1
+  grid cell of a transition; ρ, s, grad_ad remain accurate there. See
+  `docs/eos_inversion.md`.
+
+- **A9 — Core mass fraction default 0.325 (Earth-like).** SPEC §4 cites the
+  Zeng (2016) "Earth-like rock" M–R relation. Zeng's Earth-like composition is
+  CMF = 0.325 (32.5% Fe + 67.5% MgSiO₃), used as the default in the power law
+  R/R⊕ = (1.07 − 0.21·CMF)(M/M⊕)^0.27. CMF is a parameter, so pure-rock
+  (CMF = 0) or iron-rich cores need no code change. The analytic power law is
+  used rather than the tabulated Zeng (2019) grid; valid to a few percent for
+  M ≲ 8 M⊕ (fiducial M_c = 5 M⊕ is inside).
+
 - **A1 — Config parsing dependency.** SPEC §1 says "numpy, scipy, matplotlib
   only" but also specifies YAML run configs. PyYAML is added as a *config-only*
   dependency (not a compute dependency); no physics depends on it. Alternative
