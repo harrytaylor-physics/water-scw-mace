@@ -1,0 +1,27 @@
+# Data is never committed (SPEC §1). Point config paths at ~/subneptune_data,
+# or create a convenience symlink `data -> ~/subneptune_data`.
+/data
+/data/
+
+# Run outputs (structure profiles, figures rendered to disk, cached tables)
+/outputs/
+*.npz
+*.png
+*.pdf
+!docs/**/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# OS
+.DS_Store
