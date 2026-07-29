@@ -75,6 +75,12 @@ class Opacity:
     # threshold is flagged unreliable in its output metadata.
     clamp_fraction_threshold: float = 0.20
 
+    # Composite source (A11/A12): line-list (dilute) blended with FP (dense)
+    # across a density window (kg/m³). Seam location/width are scan parameters.
+    composite_dilute_source: str = "hitemp"
+    composite_dense_source: str = "fp"
+    composite_blend_rho: tuple[float, float] = (30.0, 100.0)
+
 
 @dataclass(frozen=True)
 class Boundary:

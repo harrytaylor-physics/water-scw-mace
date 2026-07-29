@@ -9,6 +9,7 @@ Public API::
 """
 
 from opacity.build_tables import (
+    build_composite,
     build_source,
     clear_cache,
     compute_point_means,
@@ -16,6 +17,7 @@ from opacity.build_tables import (
     get_source,
     resolve_band,
 )
+from opacity.composite import CompositeOpacitySource
 from opacity.registry import REGISTRY, SourceSpec, get_spec
 from opacity.source import ConstantOpacitySource, GridOpacitySource, OpacitySource
 from opacity.table import CM2_PER_G_TO_SI, ClampCounter, OpacityTable
@@ -27,6 +29,8 @@ __all__ = [
     "OpacitySource",
     "GridOpacitySource",
     "ConstantOpacitySource",
+    "CompositeOpacitySource",
+    "build_composite",
     "OpacityTable",
     "ClampCounter",
     "CM2_PER_G_TO_SI",

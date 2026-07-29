@@ -11,10 +11,11 @@ from __future__ import annotations
 import numpy as np
 
 from config import Config
+from opacity.composite import CompositeOpacitySource
 from opacity.loaders import find_spectra, load_spectrum
 from opacity.means import planck_mean, rosseland_mean
 from opacity.registry import REGISTRY, SourceSpec, get_spec
-from opacity.source import GridOpacitySource
+from opacity.source import GridOpacitySource, OpacitySource
 from opacity.table import CM2_PER_G_TO_SI, OpacityTable
 
 # SPEC §2: band-integrated kappa_P must land in ~1e1-1e4 cm²/g. Hard-fail bounds
@@ -23,7 +24,7 @@ from opacity.table import CM2_PER_G_TO_SI, OpacityTable
 _PLAUSIBLE_LO_CM2_G = 1.0e0
 _PLAUSIBLE_HI_CM2_G = 1.0e5
 
-_cache: dict[tuple[str, tuple[float, float], str], GridOpacitySource] = {}
+_cache: dict[tuple[str, tuple[float, float], str], OpacitySource] = {}
 _band_cache: dict[str, tuple[float, float]] = {}
 
 
@@ -99,8 +100,20 @@ def _assert_plausible(name: str, spec: SourceSpec, kappa_p_cm2_g: np.ndarray) ->
         )
 
 
-def build_source(name: str, cfg: Config) -> GridOpacitySource:
-    """Build a fresh gridded opacity source for ``name`` (no caching)."""
+def build_composite(cfg: Config) -> CompositeOpacitySource:
+    """Build the composite source: line-list (dilute) blended with FP (dense)."""
+    op = cfg.opacity
+    dilute = build_source(op.composite_dilute_source, cfg)
+    dense = build_source(op.composite_dense_source, cfg)
+    return CompositeOpacitySource(
+        dilute=dilute, dense=dense, blend_rho_si=tuple(op.composite_blend_rho)
+    )
+
+
+def build_source(name: str, cfg: Config) -> OpacitySource:
+    """Build a fresh opacity source for ``name`` (no caching)."""
+    if name == "composite":
+        return build_composite(cfg)
     band_cm = resolve_band(cfg)
     temps, rhos, kappa_r, kappa_p = compute_point_means(name, cfg, band_cm)
     _assert_plausible(name, get_spec(name), kappa_p)
@@ -115,7 +128,7 @@ def build_source(name: str, cfg: Config) -> GridOpacitySource:
     return GridOpacitySource(name, table)
 
 
-def get_source(name: str, cfg: Config) -> GridOpacitySource:
+def get_source(name: str, cfg: Config) -> OpacitySource:
     """Build or return a cached opacity source for ``name``.
 
     Cached sources share a clamp counter; reset it before a structure

@@ -18,7 +18,7 @@ import numpy as np
 from config import Config
 from constants import G, R_EARTH, SIGMA_SB
 from eos import AquaEOS, core_mass_si, core_radius_si
-from opacity import get_source
+from opacity import CompositeOpacitySource, get_source
 from structure.integrator import integrate_interior, integrate_outer, luminosity_int
 from structure.shooting import shoot_radius
 
@@ -56,6 +56,7 @@ class StructureResult:
     hydrostatic_residual: float
     shoot_iterations: int
     shoot_residual_m: float
+    composite_seam_ratio: dict | None = None  # FP/line-list κ ratio at seam (A12)
 
     # profile arrays (top -> core), excluded from the json summary
     profile: dict = field(default_factory=dict, repr=False)
@@ -175,6 +176,14 @@ def build_structure(
     hydro = _hydrostatic_residual(interior["m"], interior["r"], interior["P"])
     threshold = cfg.opacity.clamp_fraction_threshold
 
+    # Composite: log the FP/line-list κ ratio at the seam over the radiative
+    # zone (the quantified systematic, A12).
+    seam_ratio = None
+    if isinstance(opacity, CompositeOpacitySource):
+        rad_t = t[~is_conv] if np.any(~is_conv) else t
+        temps = np.linspace(float(rad_t.min()), float(rad_t.max()), 5)
+        seam_ratio = opacity.seam_ratio(temps)
+
     result = StructureResult(
         name=cfg.name,
         source=source_name,
@@ -202,6 +211,7 @@ def build_structure(
         hydrostatic_residual=hydro,
         shoot_iterations=shot.n_iter,
         shoot_residual_m=shot.residual_m,
+        composite_seam_ratio=seam_ratio,
         profile={
             "mass_kg": m, "radius_m": r, "pressure_pa": p, "temperature_k": t,
             "rho_si": rho, "grad": grad, "grad_ad": grad_ad, "grad_rad": grad_rad,

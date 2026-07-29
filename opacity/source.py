@@ -43,6 +43,11 @@ class OpacitySource(ABC):
     def reset_clamp_counter(self) -> None:
         """Reset the clamp counter (call before a structure integration)."""
 
+    def clamped_mask(self, temperature_k, rho_si) -> np.ndarray:
+        """Per-point mask of extrapolated queries. Default: none (no grid)."""
+        shape = np.broadcast(np.asarray(temperature_k), np.asarray(rho_si)).shape
+        return np.zeros(shape or (1,), dtype=bool)
+
 
 class GridOpacitySource(OpacitySource):
     """Opacity source backed by a gridded :class:`OpacityTable`."""
@@ -67,6 +72,9 @@ class GridOpacitySource(OpacitySource):
 
     def kappa_both(self, temperature_k, rho_si):
         return self.table.kappa_both(temperature_k, rho_si)
+
+    def clamped_mask(self, temperature_k, rho_si):
+        return self.table.clamped_mask(temperature_k, rho_si)
 
     @property
     def clamp_fraction(self) -> float:

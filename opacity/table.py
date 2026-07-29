@@ -125,3 +125,15 @@ class OpacityTable:
         if np.isscalar(temperature_k) and np.isscalar(rho_si):
             return float(out[0, 0]), float(out[0, 1])
         return out[:, 0], out[:, 1]
+
+    def clamped_mask(self, temperature_k, rho_si) -> np.ndarray:
+        """Boolean mask (per point) of queries outside the grid hull.
+
+        Does not mutate the clamp counter (used by the composite source to
+        attribute reliability to the actually-used sub-source).
+        """
+        t = np.atleast_1d(np.asarray(temperature_k, dtype=float))
+        r = np.atleast_1d(np.asarray(rho_si, dtype=float))
+        t, r = np.broadcast_arrays(t, r)
+        pts = np.column_stack([t.ravel(), np.log10(r.ravel())])
+        return np.isnan(self._lin(pts)[:, 0])
