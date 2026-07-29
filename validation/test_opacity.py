@@ -18,11 +18,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from opacity import build_source, compute_point_means, get_spec
-from opacity.build_tables import _assert_plausible
+from opacity import build_source, compute_point_means, get_spec, resolve_band
+from opacity.build_tables import _assert_plausible, detect_common_band
 from opacity.loaders import find_spectra, load_spectrum
 from opacity.means import planck_mean, rosseland_mean
 from opacity.table import CM2_PER_G_TO_SI
+
+# Fixed reference band for pinned numeric assertions (independent of auto-detect).
+_REF_BAND = (50.0, 4500.0)
 
 
 # --------------------------------------------------------------------------
@@ -45,7 +48,7 @@ def test_g4_identical_tables_identical_opacity(cfg):
 # Factor-1000 plausibility (SPEC §2)
 # --------------------------------------------------------------------------
 def test_scaled_fp_planck_means_are_plausible(cfg):
-    _, _, _, kappa_p = compute_point_means("fp", cfg, tuple(cfg.opacity.band_cm))
+    _, _, _, kappa_p = compute_point_means("fp", cfg, resolve_band(cfg))
     assert kappa_p.min() >= 1e1 * 0.5  # comfortably inside the ~1e1-1e4 window
     assert kappa_p.max() <= 1e4 * 1.5
     # build_source runs the same assertion internally; must not raise.
@@ -53,7 +56,7 @@ def test_scaled_fp_planck_means_are_plausible(cfg):
 
 
 def test_raw_unscaled_means_trip_the_assertion(cfg):
-    _, _, _, kappa_p = compute_point_means("fp", cfg, tuple(cfg.opacity.band_cm))
+    _, _, _, kappa_p = compute_point_means("fp", cfg, resolve_band(cfg))
     # Undoing the ×1e-3 scale recreates the legacy factor-1000 error.
     raw = kappa_p / get_spec("fp").scale
     with pytest.raises(AssertionError, match="factor-1000"):
@@ -64,7 +67,7 @@ def test_raw_unscaled_means_trip_the_assertion(cfg):
 # Band-limited means
 # --------------------------------------------------------------------------
 def test_known_grid_point_means(cfg):
-    band = tuple(cfg.opacity.band_cm)
+    band = _REF_BAND  # pinned band for the reference values below
     spec = get_spec("fp")
     path = next(p for p in find_spectra(cfg.data_root_path / spec.subdir, spec)
                 if p.name.startswith("T1500_rho300"))
@@ -78,7 +81,7 @@ def test_known_grid_point_means(cfg):
 
 
 def test_means_positive_and_finite(cfg):
-    _, _, kr, kp = compute_point_means("fp", cfg, tuple(cfg.opacity.band_cm))
+    _, _, kr, kp = compute_point_means("fp", cfg, resolve_band(cfg))
     assert np.all(np.isfinite(kr)) and np.all(kr > 0)
     assert np.all(np.isfinite(kp)) and np.all(kp > 0)
 
@@ -147,3 +150,22 @@ def test_band_must_be_covered(cfg):
 
 def test_si_conversion_factor():
     assert CM2_PER_G_TO_SI == 0.1  # 1 cm^2/g = 0.1 m^2/kg
+
+
+# --------------------------------------------------------------------------
+# Common-band auto-detection (A14)
+# --------------------------------------------------------------------------
+def test_detect_common_band(cfg):
+    lo, hi = detect_common_band(cfg)
+    # FP spectra span ~[1.11, 6000.34]; the intersection uses max-min / min-max.
+    assert lo == pytest.approx(1.336, abs=0.05)
+    assert hi == pytest.approx(6000.11, abs=1.0)
+    assert lo < hi
+
+
+def test_resolve_band_prefers_explicit(cfg):
+    from dataclasses import replace
+
+    pinned = replace(cfg.opacity, band_cm=(50.0, 4500.0))
+    assert resolve_band(replace(cfg, opacity=pinned)) == (50.0, 4500.0)
+    assert resolve_band(cfg) == detect_common_band(cfg)  # auto when None

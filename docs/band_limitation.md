@@ -1,54 +1,58 @@
 # Band truncation of opacity means
 
-SPEC §3 fixes a **common band** [50, 4500] cm⁻¹ for every opacity source so the
-*differential* conclusions between sources are exact. The price is an
-**absolute** band-truncation error, which this note quantifies. It is a stated
-limitation, not a bug: it cancels in FP-vs-line-list comparisons because both
-use the identical band.
+Rosseland/Planck means are integrated over a **common band shared by every
+source**, so the *differential* FP-vs-line-list conclusions are exact (the band
+is identical for both). The price is an **absolute** band-truncation error,
+quantified here. It is a stated systematic, not a bug.
 
-## Planck energy captured in-band
+## Common band (auto-detected, A14)
 
-The Planck function peaks (per unit wavenumber) near wn ≈ 1.62 k_B T / (h c),
-which for 1000–3000 K sits inside [50, 4500] cm⁻¹, but the distribution has
-tails that leave the band — increasingly so as T rises and the peak marches
-toward the upper edge:
+The band is the largest range all *available* sources support:
 
-| T (K) | Planck energy fraction in [50, 4500] cm⁻¹ |
-|-------|-------------------------------------------|
-| 1000  | 0.918 |
-| 1500  | 0.778 |
-| 2000  | 0.681 |
-| 2250  | 0.647 |
-| 2500  | 0.620 |
-| 2750  | 0.598 |
-| 3000  | 0.580 |
+    band = [ max over all spectra files of min(wn),
+             min over all spectra files of max(wn) ]
 
-## Common-band vs full-band means (FP source)
+verified per file (`opacity.detect_common_band`). With only FP present this is
+**≈ [1.34, 6000] cm⁻¹** (FP spectra span [1.11, 6000.34]; the min-of-maxes is
+6000.11). It is re-intersected automatically when line-list spectra land — e.g.
+if HITEMP starts at 10 cm⁻¹ the low edge moves to 10. Widening from the earlier
+[50, 4500] lowered the FP Rosseland means by ~35% (median), as the 4500–6000
+cm⁻¹ transparency windows enter the harmonic mean.
 
-Line-list full-band spectra are not yet available (AMENDMENTS A5), so FP
-(native span [1.11, 6000] cm⁻¹) is used as the proxy for full-band. Ratio =
-common-band mean / full-band mean, across the 27 FP grid points:
+## Residual truncation beyond the band (the real systematic)
 
-| Mean       | min ratio | median | max ratio |
-|------------|-----------|--------|-----------|
-| Planck     | 1.017     | 1.269  | 1.494     |
-| Rosseland  | 1.018     | 1.527  | 2.144     |
+The band's **upper edge is capped at 6000 cm⁻¹ by FP** (a condensed-phase
+dataset that cannot be extended). But the Planck function's peak (per unit
+wavenumber) marches to higher wavenumber with temperature — wn_peak ≈ 2.82
+k_BT/hc, which is **~5870 cm⁻¹ already at 3000 K** — so substantial radiative
+weight sits beyond the band at high T:
 
-Common-band means run **above** full-band means because the excluded regions
-(< 50 and 4500–6000 cm⁻¹) are relatively transparent water windows; dropping
-them removes low-opacity weight. Rosseland is affected most (its harmonic
-weighting is dominated by transparency windows).
+| T (K) | Planck energy fraction in [1.34, 6000] (vs a 15000 cm⁻¹ reference) |
+|-------|-------------------------------------------------------------------|
+| 1000  | 0.975 |
+| 1500  | 0.839 |
+| 2000  | 0.656 |
+| 2500  | 0.502 |
+| 3000  | 0.393 |
 
-## Consequences
+This matters most for the **Rosseland** mean. Rosseland is a *harmonic* mean
+weighted by dB/dT and is dominated by the most transparent frequencies —
+the near-IR/optical **transparency windows** between water bands, largely at
+wn > 6000 cm⁻¹. Excluding them **biases κ_R high**, which in turn makes
+atmospheres artificially optically thick (a direct cause of the very high FP
+κ_R and the need for adaptive matching, A13).
 
-- Absolute R_p / RCB from band-limited means carry this offset; it is reported
-  as a limitation on any absolute figure, not tuned away.
-- The FP↔line-list *differential* (F1/F3) is unaffected: identical band, so the
-  truncation is common-mode and cancels.
-- **To revisit once line-list spectra arrive:** recompute this table with the
-  line-list source (SPEC §3 asks for full-band vs common-band on the *line-list*
-  source specifically) and, if the largest shared band across all delivered
-  sources exceeds [50, 4500], widen the common band and re-record (AMENDMENTS A7).
+## To quantify (needs line-list full-band spectra)
 
-Reproduce: `compute_point_means("fp", cfg, band)` for `band=(50,4500)` and
-`band=(2,6000)`.
+The line-list source can be computed to much higher wavenumber than FP. When
+HITEMP spectra are delivered (ideally to ~15000–20000 cm⁻¹), quantify the
+systematic by comparing, for the line-list source only:
+
+- κ_R and κ_P on the common band [1.34, 6000] cm⁻¹, vs
+- κ_R and κ_P on the line-list's full band,
+
+and record the ratio here per (T, ρ). This isolates the absolute bias without
+touching the FP-vs-line-list differential (which stays common-band and exact).
+
+Reproduce band figures: `compute_point_means("fp", cfg, band)` for any band;
+`detect_common_band(cfg)` for the auto band.

@@ -26,8 +26,8 @@ interior:
   t_int_k: [30.0, 60.0, 100.0, 150.0, 200.0, 300.0]
 
 opacity:
-  source: "fp"         # fp | hitemp | pokazatel
-  band_cm: [50.0, 4500.0]
+  source: "fp"         # fp | hitemp | pokazatel | composite
+  band_cm: null        # null = auto-detect largest band all sources support (A14)
   clamp_fraction_threshold: 0.20
 
 boundary:

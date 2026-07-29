@@ -13,7 +13,7 @@ import numpy as np
 from config import Config
 from opacity.loaders import find_spectra, load_spectrum
 from opacity.means import planck_mean, rosseland_mean
-from opacity.registry import SourceSpec, get_spec
+from opacity.registry import REGISTRY, SourceSpec, get_spec
 from opacity.source import GridOpacitySource
 from opacity.table import CM2_PER_G_TO_SI, OpacityTable
 
@@ -24,6 +24,39 @@ _PLAUSIBLE_LO_CM2_G = 1.0e0
 _PLAUSIBLE_HI_CM2_G = 1.0e5
 
 _cache: dict[tuple[str, tuple[float, float], str], GridOpacitySource] = {}
+_band_cache: dict[str, tuple[float, float]] = {}
+
+
+def detect_common_band(cfg: Config) -> tuple[float, float]:
+    """Largest wavenumber band all *available* sources support (A14).
+
+    = [max over all spectra files of min(wn), min over all files of max(wn)],
+    verified per file across every registered source that has spectra on disk.
+    Re-intersected automatically as new sources (line lists) are delivered.
+    """
+    key = str(cfg.data_root_path)
+    if key in _band_cache:
+        return _band_cache[key]
+    mins: list[float] = []
+    maxs: list[float] = []
+    for spec in REGISTRY.values():
+        for path in sorted((cfg.data_root_path / spec.subdir).glob(spec.glob)):
+            with np.load(path) as d:
+                wn = np.asarray(d["wn"], dtype=float)
+            mins.append(float(wn.min()))
+            maxs.append(float(wn.max()))
+    if not mins:
+        raise FileNotFoundError("no opacity spectra found to detect a common band")
+    band = (max(mins), min(maxs))
+    _band_cache[key] = band
+    return band
+
+
+def resolve_band(cfg: Config) -> tuple[float, float]:
+    """Config band if set, else the auto-detected common band (A14)."""
+    if cfg.opacity.band_cm is not None:
+        return tuple(cfg.opacity.band_cm)  # type: ignore[return-value]
+    return detect_common_band(cfg)
 
 
 def compute_point_means(
@@ -68,7 +101,7 @@ def _assert_plausible(name: str, spec: SourceSpec, kappa_p_cm2_g: np.ndarray) ->
 
 def build_source(name: str, cfg: Config) -> GridOpacitySource:
     """Build a fresh gridded opacity source for ``name`` (no caching)."""
-    band_cm = tuple(cfg.opacity.band_cm)  # type: ignore[assignment]
+    band_cm = resolve_band(cfg)
     temps, rhos, kappa_r, kappa_p = compute_point_means(name, cfg, band_cm)
     _assert_plausible(name, get_spec(name), kappa_p)
 
@@ -88,7 +121,7 @@ def get_source(name: str, cfg: Config) -> GridOpacitySource:
     Cached sources share a clamp counter; reset it before a structure
     integration via ``source.reset_clamp_counter()``.
     """
-    key = (name, tuple(cfg.opacity.band_cm), str(cfg.data_root_path))
+    key = (name, resolve_band(cfg), str(cfg.data_root_path))
     if key not in _cache:
         _cache[key] = build_source(name, cfg)
     return _cache[key]
@@ -96,3 +129,4 @@ def get_source(name: str, cfg: Config) -> GridOpacitySource:
 
 def clear_cache() -> None:
     _cache.clear()
+    _band_cache.clear()

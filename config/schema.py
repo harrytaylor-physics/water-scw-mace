@@ -66,8 +66,10 @@ class Interior:
 class Opacity:
     """Opacity source + table/interpolation policy (SPEC §3)."""
 
-    source: str = "fp"  # registered name: fp | hitemp | pokazatel
-    band_cm: tuple[float, float] = (50.0, 4500.0)  # common Rosseland/Planck band
+    source: str = "fp"  # registered name: fp | hitemp | pokazatel | composite
+    # Common Rosseland/Planck band. None -> auto-detect the largest band all
+    # available sources support (A14); a tuple pins it explicitly.
+    band_cm: tuple[float, float] | None = None
     # Extrapolation is a gate, not a guess (SPEC §3): clamp to nearest grid
     # value, count clamped calls; a run whose clamped fraction exceeds this
     # threshold is flagged unreliable in its output metadata.
@@ -189,12 +191,13 @@ def _validate(cfg: Config) -> None:
         raise ValueError(f"envelope.f_env must be in (0,1), got {cfg.envelope.f_env}")
     if cfg.core.mass_mearth <= 0:
         raise ValueError("core.mass_mearth must be positive")
-    lo, hi = cfg.opacity.band_cm
-    if not lo < hi:
-        raise ValueError(f"opacity.band_cm must be increasing, got {cfg.opacity.band_cm}")
+    if cfg.opacity.band_cm is not None:
+        lo, hi = cfg.opacity.band_cm
+        if not lo < hi:
+            raise ValueError(f"opacity.band_cm must be increasing, got {cfg.opacity.band_cm}")
     if not 0.0 < cfg.opacity.clamp_fraction_threshold <= 1.0:
         raise ValueError("opacity.clamp_fraction_threshold must be in (0,1]")
-    if cfg.opacity.source not in {"fp", "hitemp", "pokazatel"}:
+    if cfg.opacity.source not in {"fp", "hitemp", "pokazatel", "composite"}:
         raise ValueError(f"unknown opacity.source {cfg.opacity.source!r}")
     if cfg.numerics.solver not in {"LSODA", "Radau", "BDF", "RK45"}:
         raise ValueError(f"unsupported numerics.solver {cfg.numerics.solver!r}")

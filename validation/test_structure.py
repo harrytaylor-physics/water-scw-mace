@@ -23,6 +23,7 @@ from opacity import (
     GridOpacitySource,
     OpacityTable,
     compute_point_means,
+    resolve_band,
 )
 from structure import (
     build_structure,
@@ -36,7 +37,7 @@ from eos import AquaEOS, core_mass_si
 def _scaled_fp_grid_source(cfg, factor):
     """A GridOpacitySource from the FP grid with κ scaled by ``factor`` so the
     fiducial structure converges (exercises grid interpolation in G4)."""
-    band = tuple(cfg.opacity.band_cm)
+    band = resolve_band(cfg)
     t, rho, kr, kp = compute_point_means("fp", cfg, band)
     table = OpacityTable(
         t, rho, kr * CM2_PER_G_TO_SI * factor, kp * CM2_PER_G_TO_SI * factor, band
@@ -51,7 +52,7 @@ def eos(cfg):
 
 def _inject_constant_fp(cfg, kappa_si):
     """Register a constant-opacity source under the name 'fp' (for gate runs)."""
-    key = ("fp", tuple(cfg.opacity.band_cm), str(cfg.data_root_path))
+    key = ("fp", resolve_band(cfg), str(cfg.data_root_path))
     bt._cache[key] = ConstantOpacitySource(kappa_si, name="fp")
 
 
@@ -127,7 +128,7 @@ def test_g4_identical_tables_identical_structure(cfg):
     full grid-interpolation + integration path. (Grid-interp determinism itself
     is covered by the opacity-level G4.)
     """
-    key = ("fp", tuple(cfg.opacity.band_cm), str(cfg.data_root_path))
+    key = ("fp", resolve_band(cfg), str(cfg.data_root_path))
 
     bt._cache[key] = _scaled_fp_grid_source(cfg, 1e-3)
     a = build_structure(cfg, t_eq_k=700.0, t_int_k=150.0, source_name="fp")

@@ -8,7 +8,14 @@ Public API::
     kappa_P = src.kappa_P(T, rho)   # m^2/kg
 """
 
-from opacity.build_tables import build_source, clear_cache, compute_point_means, get_source
+from opacity.build_tables import (
+    build_source,
+    clear_cache,
+    compute_point_means,
+    detect_common_band,
+    get_source,
+    resolve_band,
+)
 from opacity.registry import REGISTRY, SourceSpec, get_spec
 from opacity.source import ConstantOpacitySource, GridOpacitySource, OpacitySource
 from opacity.table import CM2_PER_G_TO_SI, ClampCounter, OpacityTable
@@ -26,5 +33,7 @@ __all__ = [
     "build_source",
     "get_source",
     "compute_point_means",
+    "detect_common_band",
+    "resolve_band",
     "clear_cache",
 ]
