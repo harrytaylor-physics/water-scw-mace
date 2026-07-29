@@ -33,6 +33,7 @@ opacity:
 boundary:
   match_pressure_bar: 10.0
   match_pressure_scan_bar: [1.0, 10.0, 100.0]
+  p_top_bar: 1.0e-5
 
 numerics:
   solver: "LSODA"

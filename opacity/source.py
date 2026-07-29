@@ -81,3 +81,36 @@ class GridOpacitySource(OpacitySource):
             f"GridOpacitySource(name={self.name!r}, n_points={self.n_points}, "
             f"band_cm=[{lo:g}, {hi:g}])"
         )
+
+
+class ConstantOpacitySource(OpacitySource):
+    """Constant opacity, independent of (T, ρ). SI (m² kg⁻¹).
+
+    Used for analytic limits — the G1 isothermal/Guillot-skin gate (κ → 0) and
+    grey cross-checks — and never touches the extrapolation gate (no grid).
+    """
+
+    def __init__(self, kappa_rosseland_si: float, kappa_planck_si: float | None = None,
+                 name: str = "constant") -> None:
+        if kappa_rosseland_si <= 0:
+            raise ValueError("kappa_rosseland_si must be positive")
+        self.name = name
+        self._kr = float(kappa_rosseland_si)
+        self._kp = float(kappa_planck_si if kappa_planck_si is not None else kappa_rosseland_si)
+
+    def kappa_R(self, temperature_k, rho_si):
+        return np.full_like(np.asarray(temperature_k, float), self._kr) if not np.isscalar(
+            temperature_k
+        ) else self._kr
+
+    def kappa_P(self, temperature_k, rho_si):
+        return np.full_like(np.asarray(temperature_k, float), self._kp) if not np.isscalar(
+            temperature_k
+        ) else self._kp
+
+    @property
+    def clamp_fraction(self) -> float:
+        return 0.0
+
+    def reset_clamp_counter(self) -> None:
+        pass

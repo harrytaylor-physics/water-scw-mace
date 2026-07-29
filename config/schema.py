@@ -81,6 +81,7 @@ class Boundary:
     match_pressure_bar: float = 10.0  # default matching pressure
     # Sensitivity scan range (1-100 bar), recorded in boundary_sensitivity.md.
     match_pressure_scan_bar: tuple[float, ...] = (1.0, 10.0, 100.0)
+    p_top_bar: float = 1.0e-5  # top-of-atmosphere pressure (tau ~ 0)
 
 
 @dataclass(frozen=True)
