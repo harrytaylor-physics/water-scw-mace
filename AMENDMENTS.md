@@ -4,7 +4,58 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
-## 2026-07-28
+## 2026-07-29
+
+- **A10 — Guillot (2010) boundary conventions.** Outer boundary uses Guillot
+  (2010) eq. 49 (collimated two-stream) with planet-average incidence
+  μ⋆ = 1/√3 (Eddington isotropic equivalent). The config equilibrium
+  temperature T_eq is interpreted as the full-redistribution value, so
+  T_irr = 4^(1/4)·T_eq = √2·T_eq (σT_eq⁴ = ¼σT_irr⁴). γ = κ_vis/κ_th is the
+  configurable knob (fiducial 1.0 + sensitivity scan, SPEC §10). Behaviour
+  verified: γ<1 greenhouse (deep hotter), γ=1 isothermal irradiation term,
+  γ>1 inversion; mirror symmetry γ↔1/γ. See `structure/boundary.py`, gate G1.
+
+- **A11 — No FP grid extension; composite opacity instead (owner decision).**
+  FP is a condensed-phase method and is invalid in the dilute regime, where
+  line lists are the physically correct opacity. Rather than extend FP below
+  its density floor (~109 kg/m³), the code uses a *composite* source: a
+  line-list source (HITEMP now, POKAZATEL later) for the dilute-to-moderate
+  regime (incl. the 500–1000 K radiative zone), the existing FP source for the
+  dense regime, blended in log κ over a density window. Diagnosis that forced
+  this: for the SPEC §8 fiducials the opacity-sensitive radiative zone sits at
+  T≈600–1030 K, ρ≈2×10⁻⁶–540 kg/m³ — almost entirely outside the FP grid
+  (T∈[1000,3000], ρ∈[109,2229]); pure-FP structure runs clamp ~100% of steps.
+
+- **A12 — Composite blending.** κ_R and κ_P are blended in log space with a
+  smooth weight that runs from the line-list source (dilute) to FP (dense)
+  across a configurable density window (default ρ = 30–100 kg/m³; seam =
+  geometric-mean centre). Seam location and width are sensitivity-scan
+  parameters. The FP/line-list κ ratio at the seam is logged per run as a
+  quantified systematic. Pure `fp`/`hitemp`/`pokazatel` sources remain
+  selectable for comparison figures. NOTE: the default window (30–100) lies
+  just below FP's density floor (109), so FP is mildly extrapolated on the
+  dilute side of the window (down-weighted by the blend); the per-run seam
+  ratio and clamp fraction expose this, and the window is scannable.
+
+- **A13 — Adaptive matching just above the RCB (owner decision).** SPEC §5's
+  fixed matching pressure (default 10 bar) fails when the radiative–convective
+  boundary is shallower than P_match (routine here, and catastrophic for high
+  FP opacity: τ~10⁶ at 10 bar → unphysical ~5000 K → collapse). The Guillot
+  outer integration now carries a Schwarzschild instability event
+  (grad_rad − grad_ad = 0) and matches at min(P_match_config, P_RCB): the
+  analytic radiative profile is only used where the atmosphere is actually
+  radiative. The configured match pressure remains the *deep* cap and is still
+  swept 1–100 bar for sensitivity.
+
+- **A14 — Common band widened + auto-detected.** The Rosseland/Planck common
+  band is now the largest range all *available* sources support: [max over
+  sources of min(wn), min over sources of max(wn)], verified per file. With FP
+  alone this is ≈[1, 6000] cm⁻¹ (FP spectra reach 6000); it is re-intersected
+  when line-list spectra land. Mean tables are recomputed on this band. The
+  residual truncation of the *true* Rosseland mean (harmonic weighting is
+  dominated by transparency windows beyond the band, biasing κ_R high) remains
+  a stated systematic — to be quantified against the line-list source once its
+  full-band (>6000 cm⁻¹) spectra are available. See `docs/band_limitation.md`.
 
 - **A8 — ρ(P,T) inversion through the vapor–liquid dome.** At fixed T below the
   critical point, the AQUA table has exact P(ρ) plateaus (constant saturation

@@ -40,7 +40,7 @@ def _residual(
     p_top, p_match, rtol, atol, solver,
 ):
     """r(M_c) − R_c for a trial R_p (returns the residual and the integration state)."""
-    match, outer = integrate_outer(
+    match, outer, _ = integrate_outer(
         eos, opacity, radius_p_m, mass_p, t_int, t_eq, gamma, p_top, p_match, rtol, atol, solver
     )
     lum = luminosity_int(radius_p_m, t_int)

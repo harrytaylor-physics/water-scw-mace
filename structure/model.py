@@ -34,7 +34,9 @@ class StructureResult:
     gamma: float
     mass_core_mearth: float
     f_env: float
-    match_pressure_bar: float
+    match_pressure_bar: float  # configured deep cap
+    match_pressure_actual_bar: float  # adaptive: min(cap, P_RCB) (A13)
+    matched_at_rcb: bool
 
     radius_p_m: float
     radius_p_rearth: float
@@ -147,7 +149,7 @@ def build_structure(
 
     # Final sampled profile at the converged radius; measure clamp fraction here.
     opacity.reset_clamp_counter()
-    match, outer = integrate_outer(
+    match, outer, matched_at_rcb = integrate_outer(
         eos, opacity, shot.radius_p_m, mass_p, t_int_k, t_eq_k, gamma,
         p_top, p_match, num.rtol, num.atol, num.solver, n_sample=n_sample,
     )
@@ -182,6 +184,8 @@ def build_structure(
         mass_core_mearth=mc_mearth,
         f_env=f_env,
         match_pressure_bar=cfg.boundary.match_pressure_bar,
+        match_pressure_actual_bar=match.pressure_pa / 1e5,
+        matched_at_rcb=matched_at_rcb,
         radius_p_m=shot.radius_p_m,
         radius_p_rearth=shot.radius_p_m / R_EARTH,
         radius_core_m=radius_core,

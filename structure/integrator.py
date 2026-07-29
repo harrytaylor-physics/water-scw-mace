@@ -75,6 +75,23 @@ def _outer_rhs(ln_p, y, eos, opacity, t_int, t_irr, gamma):
     return [dr, dm, dtau]
 
 
+def _outer_superadiabatic(ln_p, y, eos, opacity, t_int, t_irr, gamma):
+    """grad_rad − grad_ad in the outer region (Schwarzschild RCB event, A13).
+
+    L_int is 4π R_p² σ T_int⁴ with R_p the top radius (radius_top_m enters via
+    the initial condition; here m ≈ M_p so we use the local m and the top r
+    through L is passed implicitly by evaluating grad_rad with the local state).
+    """
+    r, m, tau = y
+    p = np.exp(ln_p)
+    temperature = float(guillot_temperature(tau, t_int, t_irr, gamma))
+    st = eos.state(p, temperature)
+    kappa = opacity.kappa_R(temperature, st.rho)
+    lum = luminosity_int(y[0], t_int)  # L uses local radius (≈ R_p in the thin outer layer)
+    grad_rad = 3.0 * kappa * lum * p / (16.0 * np.pi * G * m * SIGMA_SB * temperature**4)
+    return grad_rad - st.grad_ad
+
+
 def integrate_outer(
     eos: EOS,
     opacity: OpacitySource,
@@ -89,39 +106,61 @@ def integrate_outer(
     atol: float,
     solver: str,
     n_sample: int | None = None,
-) -> tuple[MatchState, dict]:
-    """Integrate the Guillot outer region from P_top to P_match.
+) -> tuple[MatchState, dict, bool]:
+    """Integrate the Guillot outer region from P_top down toward P_match.
 
-    If ``n_sample`` is given, the profile is returned on that many log-spaced
-    pressure points (for figures); otherwise at the solver's own steps.
+    Adaptive matching (A13): the integration stops at the radiative–convective
+    boundary (grad_rad = grad_ad) if that is reached before P_match, so the
+    analytic radiative profile is only used where the atmosphere is radiative.
+    Returns (match_state, sampled_profile, matched_at_rcb). If ``n_sample`` is
+    given the profile is returned on that many log-spaced points (via dense
+    output) up to the actual matching pressure.
     """
     t_irr = t_irr_from_t_eq(t_eq_k)
     y0 = [radius_top_m, mass_p_kg, 0.0]
-    t_eval = (
-        np.linspace(np.log(p_top_pa), np.log(p_match_pa), n_sample) if n_sample else None
-    )
+    args = (eos, opacity, t_int_k, t_irr, gamma)
+
+    event = lambda lp, y, *a: _outer_superadiabatic(lp, y, *a)  # noqa: E731
+    event.terminal = True
+    event.direction = 1.0  # radiative (−) -> convective (+)
+
+    # If the very top is already convective, match immediately at P_top.
+    if _outer_superadiabatic(np.log(p_top_pa), y0, *args) >= 0.0:
+        T0 = float(guillot_temperature(0.0, t_int_k, t_irr, gamma))
+        match = MatchState(p_top_pa, radius_top_m, mass_p_kg, T0, 0.0)
+        prof = {"P": np.array([p_top_pa]), "r": np.array([radius_top_m]),
+                "m": np.array([mass_p_kg]), "T": np.array([T0]), "tau": np.array([0.0])}
+        return match, prof, True
+
     sol = solve_ivp(
-        _outer_rhs,
-        (np.log(p_top_pa), np.log(p_match_pa)),
-        y0,
-        method=solver,
-        rtol=rtol,
-        atol=atol,
-        t_eval=t_eval,
-        args=(eos, opacity, t_int_k, t_irr, gamma),
+        _outer_rhs, (np.log(p_top_pa), np.log(p_match_pa)), y0,
+        method=solver, rtol=rtol, atol=atol, events=event,
+        dense_output=bool(n_sample), args=args,
     )
     if not sol.success:
         raise RuntimeError(f"outer integration failed: {sol.message}")
-    r_m, m_m, tau_m = sol.y[:, -1]
-    T_m = float(guillot_temperature(tau_m, t_int_k, t_irr, gamma))
-    ln_p = sol.t
-    match = MatchState(pressure_pa=p_match_pa, radius_m=r_m, mass_kg=m_m, temperature_k=T_m, tau=tau_m)
 
-    # sampled outer arrays (top -> match)
-    P = np.exp(ln_p)
-    T = guillot_temperature(sol.y[2], t_int_k, t_irr, gamma)
-    prof = {"P": P, "r": sol.y[0], "m": sol.y[1], "T": np.asarray(T), "tau": sol.y[2]}
-    return match, prof
+    matched_at_rcb = sol.t_events[0].size > 0
+    if matched_at_rcb:
+        ln_p_end = float(sol.t_events[0][0])
+        r_m, m_m, tau_m = sol.y_events[0][0]
+    else:
+        ln_p_end = float(sol.t[-1])
+        r_m, m_m, tau_m = sol.y[:, -1]
+    p_end = float(np.exp(ln_p_end))
+    T_m = float(guillot_temperature(tau_m, t_int_k, t_irr, gamma))
+    match = MatchState(pressure_pa=p_end, radius_m=r_m, mass_kg=m_m, temperature_k=T_m, tau=tau_m)
+
+    if n_sample:
+        ln_grid = np.linspace(np.log(p_top_pa), ln_p_end, n_sample)
+        y = sol.sol(ln_grid)
+        P, r, m, tau = np.exp(ln_grid), y[0], y[1], y[2]
+    else:
+        keep = sol.t <= ln_p_end
+        P, r, m, tau = np.exp(sol.t[keep]), sol.y[0][keep], sol.y[1][keep], sol.y[2][keep]
+    T = np.asarray(guillot_temperature(tau, t_int_k, t_irr, gamma))
+    prof = {"P": P, "r": r, "m": m, "T": T, "tau": tau}
+    return match, prof, matched_at_rcb
 
 
 # --------------------------------------------------------------------------

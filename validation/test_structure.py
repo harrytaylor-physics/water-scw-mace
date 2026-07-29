@@ -69,7 +69,7 @@ def test_g1_isothermal_skin_limit(cfg, eos):
     prev = None
     for kappa in (1e-3, 1e-5, 1e-7):
         op = ConstantOpacitySource(kappa)
-        match, outer = integrate_outer(
+        match, outer, _ = integrate_outer(
             eos, op, 1.79 * 6.3781e6, mass_p, t_int, t_eq, gamma,
             p_top, p_match, cfg.numerics.rtol, cfg.numerics.atol, cfg.numerics.solver,
             n_sample=200,
@@ -100,6 +100,20 @@ def test_g3_hydrostatic_residual(cfg):
     _inject_constant_fp(cfg, 0.1)
     res = build_structure(cfg, t_eq_k=600.0, t_int_k=100.0, source_name="fp")
     assert res.hydrostatic_residual < 1e-6
+
+
+# --------------------------------------------------------------------------
+# Adaptive matching (A13): the RCB match keeps high-opacity models from
+# collapsing (a fixed deep match did), and matches shallower than the cap.
+# --------------------------------------------------------------------------
+def test_adaptive_matching_converges_high_opacity(cfg):
+    bt.clear_cache()  # use the real FP grid (very high band-limited kappa_R)
+    res = build_structure(cfg, t_eq_k=700.0, t_int_k=150.0, source_name="fp")
+    assert res.radius_p_rearth > res.radius_core_m / 6.3781e6  # sane, converged
+    assert res.matched_at_rcb
+    assert res.match_pressure_actual_bar < res.match_pressure_bar  # above the 10-bar cap
+    assert res.hydrostatic_residual < 1e-6
+    bt.clear_cache()
 
 
 # --------------------------------------------------------------------------
