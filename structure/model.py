@@ -44,6 +44,8 @@ class StructureResult:
     mass_p_kg: float
     mass_env_kg: float
     luminosity_w: float
+    envelope_energy_j: float
+    tau_kh_s: float  # Kelvin-Helmholtz time |E|/L_int (SPEC §6, F3)
 
     rcb_pressures_pa: list[float]
     rcb_above_match: bool  # Schwarzschild RCB shallower than P_match (matching caveat)
@@ -73,18 +75,33 @@ def _post_process(m, r, p, t, eos, opacity, luminosity):
     rho = np.empty(n)
     grad_ad = np.empty(n)
     grad_rad = np.empty(n)
+    u = np.empty(n)
     two_phase = np.zeros(n, dtype=bool)
     for i in range(n):
         st = eos.state(p[i], t[i])
         rho[i] = st.rho
         grad_ad[i] = st.grad_ad
+        u[i] = st.internal_energy
         two_phase[i] = st.two_phase
         kappa = opacity.kappa_R(t[i], st.rho)
         grad_rad[i] = 3.0 * kappa * luminosity * p[i] / (
             16.0 * np.pi * G * m[i] * SIGMA_SB * t[i] ** 4
         )
     is_conv = grad_rad > grad_ad
-    return rho, grad_ad, grad_rad, is_conv, two_phase
+    return rho, grad_ad, grad_rad, is_conv, two_phase, u
+
+
+def _envelope_energy(m, r, u):
+    """Total envelope energy E = ∫(u − Gm/r) dm [J] over the envelope.
+
+    Internal + gravitational; the Kelvin–Helmholtz time is |E|/L_int (SPEC §6,
+    used for the F3 cooling-time ratio). ``m`` runs top→core (decreasing).
+    """
+    order = np.argsort(m)
+    m_s, r_s, u_s = m[order], r[order], u[order]
+    e_int = np.trapz(u_s, m_s)
+    e_grav = np.trapz(-G * m_s / r_s, m_s)
+    return float(e_int + e_grav)
 
 
 def _find_rcbs(pressure, is_convective):
@@ -168,8 +185,10 @@ def build_structure(
     t = np.concatenate([outer["T"], interior["T"][1:]])
     tau_outer = outer["tau"]
 
-    rho, grad_ad, grad_rad, is_conv, two_phase = _post_process(m, r, p, t, eos, opacity, lum)
+    rho, grad_ad, grad_rad, is_conv, two_phase, u = _post_process(m, r, p, t, eos, opacity, lum)
     grad = np.gradient(np.log(t), np.log(p))
+    energy_j = _envelope_energy(m, r, u)
+    tau_kh_s = abs(energy_j) / lum if lum > 0 else float("inf")
 
     rcbs = _find_rcbs(p, is_conv)
     p_phot, t_phot = _photosphere(outer["P"], tau_outer, outer["T"])
@@ -201,6 +220,8 @@ def build_structure(
         mass_p_kg=mass_p,
         mass_env_kg=mass_p - mass_core,
         luminosity_w=lum,
+        envelope_energy_j=energy_j,
+        tau_kh_s=tau_kh_s,
         rcb_pressures_pa=rcbs,
         rcb_above_match=any(rp < p_match for rp in rcbs),
         photosphere_pressure_pa=p_phot,
