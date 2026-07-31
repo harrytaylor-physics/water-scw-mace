@@ -4,6 +4,16 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-07-31
+
+- **A15 — Default composite blend window moved to ρ = 100–300 kg/m³ (owner
+  decision).** The earlier default (30–100, A12) sat below FP's density floor
+  (~109 kg/m³), so FP was extrapolated on the dilute side of the window. The
+  default is now **100–300**, where FP has real data; the line list carries the
+  full dilute side, and the seam (√(100·300) ≈ 173 kg/m³) sits on real FP data.
+  ρ = 30–100 is retained as a **documented sensitivity case**, not the default.
+  `config.opacity.composite_blend_rho`.
+
 ## 2026-07-29
 
 - **A10 — Guillot (2010) boundary conventions.** Outer boundary uses Guillot
@@ -32,10 +42,10 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   geometric-mean centre). Seam location and width are sensitivity-scan
   parameters. The FP/line-list κ ratio at the seam is logged per run as a
   quantified systematic. Pure `fp`/`hitemp`/`pokazatel` sources remain
-  selectable for comparison figures. NOTE: the default window (30–100) lies
-  just below FP's density floor (109), so FP is mildly extrapolated on the
-  dilute side of the window (down-weighted by the blend); the per-run seam
-  ratio and clamp fraction expose this, and the window is scannable.
+  selectable for comparison figures. (The default window was updated to
+  100–300 in A15 so FP stays above its data floor; 30–100 is now a sensitivity
+  case. The per-run seam ratio and clamp fraction expose any FP extrapolation,
+  and the window is scannable.)
 
 - **A13 — Adaptive matching just above the RCB (owner decision).** SPEC §5's
   fixed matching pressure (default 10 bar) fails when the radiative–convective

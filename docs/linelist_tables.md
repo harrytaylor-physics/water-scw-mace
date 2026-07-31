@@ -33,7 +33,8 @@ the common band and that κ > 0.
 
 Chosen so the line list covers the opacity-sensitive radiative zone
 (T≈600–1030 K, ρ≈2×10⁻⁶–540 kg/m³) that FP cannot reach, the composite blend
-window (ρ=30–100), and overlaps FP (T≥1000, ρ≥100) for exact comparison.
+window (default ρ=100–300; A15), and overlaps FP (T≥1000, ρ≥100) for exact
+comparison.
 
 - **T (K):** 500, 600, 700, 800, 900, 1000, 1250, 1500, 2000, 2500, 3000
 - **ρ (kg/m³):** 1e-5, 1e-4, 1e-3, 1e-2, 0.1, 1, 10, 30, 100, 300, 1000

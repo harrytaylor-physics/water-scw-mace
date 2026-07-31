@@ -11,6 +11,8 @@ the window with a smooth (C¹) weight:
 Below ρ_lo: pure line-list; above ρ_hi: pure FP. The seam (geometric-mean
 centre of the window) and its width are sensitivity-scan parameters; the
 FP/line-list κ ratio at the seam is a quantified systematic (logged per run).
+The default window is ρ = 100–300 kg/m³ so FP is used only above its real data
+floor (~109 kg/m³); ρ = 30–100 is a documented sensitivity case (A15).
 """
 
 from __future__ import annotations
@@ -32,7 +34,7 @@ class CompositeOpacitySource(OpacitySource):
         self,
         dilute: OpacitySource,
         dense: OpacitySource,
-        blend_rho_si: tuple[float, float] = (30.0, 100.0),
+        blend_rho_si: tuple[float, float] = (100.0, 300.0),
         name: str = "composite",
     ) -> None:
         lo, hi = blend_rho_si
