@@ -6,6 +6,16 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-08-01
 
+- **A19 — F3 cooling-time control variable (fork, awaiting decision).** The KH
+  ratio τ_FP/τ_LL at *fixed T_int* comes out < 1 (FP cools faster), opposite to
+  the "stay puffy longer" headline, because L_int = 4πR²σT_int⁴ is imposed by
+  T_int: the puffier FP planet has larger L (∝R²) and is less bound (smaller
+  |E|). Fixing T_int hides opacity throttling. The correct comparison is at
+  fixed interior entropy (Phase-1-feasible; opaque planet → lower T_int/L →
+  longer τ) or the Phase-2 time track. Kept as a labeled fixed-T_int diagnostic
+  until the owner picks; not presented as the headline. See
+  `docs/cooling_time_caveat.md`.
+
 - **A16 — POKAZATEL tables registered (overlap comparison only).** 27
   ExoMol-POKAZATEL spectra delivered to `~/subneptune_data/pokazatel_opacity/`
   as `T{T}_rho{rho}.npz` (no `_opacity` suffix; keys `wn,kappa,T,rho,rho_kg_m3,

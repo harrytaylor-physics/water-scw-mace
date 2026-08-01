@@ -39,9 +39,13 @@ def main(argv=None):
     register_constant_reference(cfg)
     avail = available_sources(cfg, ["fp", "hitemp", "pokazatel", "composite"])
     numerator = "fp"
-    baseline = "hitemp" if "hitemp" in avail else "constant"
-    if baseline == "constant":
-        register_constant_reference(cfg)
+    # Prefer a real line-list baseline; HITEMP > POKAZATEL > constant placeholder.
+    if "hitemp" in avail:
+        baseline = "hitemp"
+    elif "pokazatel" in avail:
+        baseline = "pokazatel"
+    else:
+        baseline = "constant"
 
     fig, ax = plt.subplots(figsize=(6.4, 5.0))
     cmap = plt.get_cmap("viridis")
@@ -59,9 +63,19 @@ def main(argv=None):
     ax.set_xscale("log")
     ax.set_xlabel("$f_{env}$")
     ax.set_ylabel(rf"$\tau_{{FP}} / \tau_{{{baseline.upper()}}}$")
-    base_lbl = "HITEMP" if baseline == "hitemp" else "constant-κ ref (LL placeholder)"
+    base_lbl = {"hitemp": "HITEMP", "pokazatel": "POKAZATEL (grid overlap; clamped)",
+                "constant": "constant-κ ref (LL placeholder)"}[baseline]
     ax.set_title(f"KH cooling-time ratio vs baseline: {base_lbl}\n"
                  f"$T_{{int}}$={t_int:.0f} K, $M_c$={cfg.core.mass_mearth:.0f} $M_⊕$")
+    # Honesty note: at FIXED T_int, L=4πR²σT_int⁴ makes the puffier (FP) planet
+    # more luminous, so τ=|E|/L < 1 here does NOT show "stay puffy longer".
+    # That headline needs a fixed-interior-entropy comparison or the Phase-2
+    # time-integrated track (see docs / AMENDMENTS).
+    ax.text(0.5, 0.03,
+            "diagnostic at fixed $T_{int}$: L∝R² imposed by $T_{int}$,\n"
+            "not opacity-throttled — see caveat (not the headline)",
+            transform=ax.transAxes, ha="center", va="bottom", fontsize=8,
+            color="#777", style="italic")
     ax.legend(fontsize=9, title="irradiation")
     path = save(fig, cfg, "F3_cooling_ratio")
     print(f"wrote {path}  (numerator=fp, baseline={baseline})")
