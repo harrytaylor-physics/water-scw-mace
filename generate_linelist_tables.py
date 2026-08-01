@@ -11,25 +11,27 @@ Assumes a fat compute node with the line-list databank cached locally and NO
 internet (no downloads). The (T, rho) grid and the AQUA broadening pressures are
 baked in below.
 
-Opacity convention (matches the FP files, correct units, NO x1000):
-  kappa[cm^2/g] = sigma(nu)[cm^2/molecule] * N_A / M_H2O[g/mol]
-where the cross-section sigma is obtained from the RADIS absorption coefficient
-abscoeff[cm^-1] and the number density n = P_broad/(k_B T):  sigma = abscoeff/n.
-This makes the mass opacity density-consistent for ANY broadening pressure, so
-the broadening-pressure choice (below) only affects Voigt line widths.
+Opacity convention (matches ~/scw/hitemp_opacity.py HitempCalculator + the
+delivered POKAZATEL files; correct units, NO x1000):
+  kappa[cm^2/g] = abscoeff[cm^-1] / rho_g_cm3,  rho_g_cm3 = n_cm3 * M / N_A,
+  n_cm3 = P_broad/(k_B T).  This is identically sigma * N_A / M with
+  sigma = abscoeff/n, so mass opacity is density-consistent for ANY broadening
+  pressure -- the broadening-pressure choice below only affects Voigt widths.
 
 Broadening pressure (PRESSURE_MODE):
   "ideal" (default) -> P = rho R T / M   (ideal-gas pressure at the real number
-      density; the width gamma_self ~ collision rate ~ real density, which is the
-      physically correct impact-broadening pressure). Equals the AQUA pressure in
-      the dilute regime where the line list is valid.
+      density; self-broadening width ~ collision rate ~ real density -- the
+      physical impact-broadening pressure). The delivered POKAZATEL p_bar equals
+      this to <0.1% at every grid point (AMENDMENTS A17), so "ideal" reproduces
+      the production pipeline. Equals AQUA P in the dilute regime.
   "aqua"            -> the tabulated AQUA P(T, rho) (baked in). Differs from
       "ideal" only in the non-ideal / two-phase regime, where the line list is
       superseded by FP anyway.
-Flip PRESSURE_MODE if you prefer the thermodynamic (AQUA) pressure for widths.
 
-The RADIS setup (databank load, isotopes, broadening) is marked CONFIG below;
-reconcile it with your ~/scw/hitemp_opacity.py HitempCalculator for your node.
+The RADIS block below is locked to the working HitempCalculator (SpectrumFactory
++ fetch_databank, DEFAULT_DOWNLOAD_PATH=$DATA/radisdb, isotopes 1,2,3 for HITEMP
+/ 1 for POKAZATEL, self-broadened; POKAZATEL via fetch_databank("exomol",
+database="POKAZATEL") with a multi-signature fallback across RADIS versions).
 """
 
 from __future__ import annotations
@@ -69,18 +71,15 @@ P_AQUA_PA = [
 
 PRESSURE_MODE = "ideal"  # "ideal" | "aqua"
 
-# --- CONFIG: reconcile with your HitempCalculator (~/scw/hitemp_opacity.py) --
+# --- RADIS setup (locked to ~/scw/hitemp_opacity.py HitempCalculator) --------
 WAVENUM_MIN_CM = 10.0
-WAVENUM_MAX_CM = 20000.0  # > 6000 so the >band Rosseland truncation is quantifiable
-WSTEP_CM = 0.01  # fine; Rosseland is sensitive to unresolved windows
-ISOTOPES = "1,2,3"  # H2(16O), H2(18O), H2(17O)
-BROADENING = "voigt"  # self-broadened Voigt (per crossover_hitemp.json meta)
-# Local, offline databank identifiers. Set these to the databank names you have
-# registered in ~/.radis (or adapt build_factory to load_databank(path=...)).
-DATABANK = {
-    "hitemp": "HITEMP-H2O",  # HITEMP2010 water, local cache
-    "pokazatel": "POKAZATEL-H2O",  # ExoMol POKAZATEL water, local cache
-}
+WAVENUM_MAX_CM = 11000.0  # HitempCalculator range; > 6000 lets us quantify the
+#                           FP band-truncation vs the line list where they overlap
+WSTEP_CM = 0.01  # HitempCalculator default; Rosseland is sensitive to windows
+# Isotopes per database: HITEMP uses 1,2,3; the POKAZATEL production used 1.
+ISOTOPES = {"hitemp": "1,2,3", "pokazatel": "1"}
+# RADIS caches the line databases under $DATA/radisdb on the cluster.
+RADISDB_ENV = "DATA"  # radis.config["DEFAULT_DOWNLOAD_PATH"] = $DATA/radisdb
 
 
 def broadening_pressure_pa(i_rho: int, i_t: int) -> float:
@@ -91,51 +90,82 @@ def broadening_pressure_pa(i_rho: int, i_t: int) -> float:
     return rho * R_GAS * temperature / M_H2O_KG_MOL  # ideal-gas P at real density
 
 
+def _fetch_databank(sf, database: str) -> None:
+    """Load the line database ONCE (offline, from the local cache).
+
+    Locked to HitempCalculator: HITEMP via fetch_databank("hitemp"); POKAZATEL
+    via fetch_databank("exomol", database="POKAZATEL") with a multi-signature
+    fallback (RADIS has moved this kwarg across versions).
+    """
+    if database == "hitemp":
+        sf.fetch_databank("hitemp")
+        return
+    # POKAZATEL: try the signatures the working script cycles through.
+    attempts = (
+        lambda: sf.fetch_databank("exomol", database="POKAZATEL"),
+        lambda: sf.fetch_databank("exomol", databank="POKAZATEL"),
+        lambda: sf.fetch_databank("exomol", name="POKAZATEL"),
+    )
+    errors = []
+    for attempt in attempts:
+        try:
+            attempt()
+            return
+        except Exception as exc:  # noqa: BLE001 - try the next signature
+            errors.append(repr(exc))
+    raise RuntimeError("could not load POKAZATEL databank; tried:\n  " + "\n  ".join(errors))
+
+
 def build_factory(database: str):
     """Create a RADIS SpectrumFactory and load the databank ONCE (offline).
 
-    CONFIG: adapt the load to match your working HitempCalculator. The
-    SpectrumFactory pressure/Tgas are set per point in compute_point().
+    Locked to HitempCalculator's SpectrumFactory signature; pressure/Tgas are
+    set per point in compute_point().
     """
+    import os
+
+    import radis
     from radis import SpectrumFactory
 
+    data_dir = os.environ.get(RADISDB_ENV)
+    if data_dir:
+        radis.config["DEFAULT_DOWNLOAD_PATH"] = os.path.join(data_dir, "radisdb")
+    else:
+        print(f"[generate] WARNING: ${RADISDB_ENV} unset; using RADIS default cache path",
+              flush=True)
+
     sf = SpectrumFactory(
-        wmin=WAVENUM_MIN_CM,
-        wmax=WAVENUM_MAX_CM,
-        wstep=WSTEP_CM,
+        wavenum_min=WAVENUM_MIN_CM,
+        wavenum_max=WAVENUM_MAX_CM,
         molecule="H2O",
-        isotope=ISOTOPES,
-        mole_fraction=1.0,  # pure water; broadening is self-broadening
-        pressure=1.0,  # bar, overridden per point
-        cutoff=0.0,
+        isotope=ISOTOPES[database],
+        wstep=WSTEP_CM,
+        pressure=1.0,  # bar; overridden per point in compute_point
+        mole_fraction=1.0,  # pure water -> self-broadening
         verbose=False,
     )
-    if database == "hitemp":
-        sf.load_databank(DATABANK["hitemp"])  # local HITEMP2010 cache, offline
-    elif database == "pokazatel":
-        sf.load_databank(DATABANK["pokazatel"])  # local ExoMol POKAZATEL cache
-    else:
-        raise ValueError(f"unknown database {database!r}")
+    _fetch_databank(sf, database)
     return sf
 
 
 def compute_point(sf, temperature_k: float, pressure_pa: float):
     """Return (wn[cm^-1], kappa[cm^2/g]) for one (T, P_broad) point.
 
-    kappa = sigma * N_A / M, with sigma = abscoeff / n and n = P/(k_B T). This is
-    density-consistent for any broadening pressure (see module docstring).
+    Locked to HitempCalculator.kappa: kappa = abscoeff / rho_g_cm3 with
+    rho_g_cm3 = n_cm3 * M / N_A, n_cm3 = P/(k_B T). Identically sigma*N_A/M.
     """
-    sf.pressure = pressure_pa / 1e5  # RADIS wants bar
-    s = sf.eq_spectrum(Tgas=temperature_k, name=f"T{temperature_k}")
-    wn, abscoeff = s.get("abscoeff", wunit="cm-1", Iunit="cm-1")  # abscoeff [cm^-1]
-    n_cm3 = pressure_pa / (K_B * temperature_k) * 1e-6  # molecules / cm^3
-    sigma_cm2 = np.asarray(abscoeff, float) / n_cm3  # cm^2 / molecule
-    kappa_cm2_g = sigma_cm2 * N_A / M_H2O_G_MOL  # cm^2 / g
+    sf.pressure = pressure_pa / 1e5  # RADIS SpectrumFactory pressure in bar
+    s = sf.eq_spectrum(Tgas=float(temperature_k))
+    wn, abscoeff = s.get("abscoeff", wunit="cm-1")  # abscoeff [cm^-1]
+    n_cm3 = (pressure_pa / (K_B * temperature_k)) * 1e-6  # molecules / cm^3
+    rho_g_cm3 = n_cm3 * M_H2O_G_MOL / N_A
+    kappa_cm2_g = np.asarray(abscoeff, float) / rho_g_cm3  # cm^2 / g
     return np.asarray(wn, float), kappa_cm2_g
 
 
 def out_path(out_dir: Path, temperature_k: float, rho_kgm3: float) -> Path:
-    return out_dir / f"T{temperature_k:g}_rho{rho_kgm3:g}_opacity.npz"
+    # Matches the delivered POKAZATEL convention (registry glob T*_rho*.npz).
+    return out_dir / f"T{temperature_k:g}_rho{rho_kgm3:g}.npz"
 
 
 def main(argv=None) -> int:
@@ -187,17 +217,20 @@ def main(argv=None) -> int:
             print(f"  [{k:3d}/{total}] T={t_k:5g} rho={rho:9.3g}  FAILED: {exc}", flush=True)
             continue
         rho_g_cm3 = rho / 1000.0
-        tmp = path.with_suffix(".npz.tmp")  # atomic write
-        np.savez_compressed(
+        # Atomic write: tmp must end in .npz or np.savez appends another .npz.
+        tmp = path.with_name(path.stem + ".tmp.npz")
+        np.savez_compressed(  # schema-consistent with the delivered POKAZATEL files
             tmp,
             wn=wn,
-            kappa=kappa,
+            kappa=kappa,  # cm^2/g
             alpha=kappa * rho_g_cm3,  # cm^-1
             T=t_k,
+            rho=rho,
             rho_kg_m3=rho,
-            database=args.database,
+            p_bar=p_pa / 1e5,
+            source=f"RADIS/{args.database}",
+            isotopes=ISOTOPES[args.database],
             pressure_mode=PRESSURE_MODE,
-            P_broadening_pa=p_pa,
             wstep_cm=WSTEP_CM,
         )
         tmp.replace(path)
