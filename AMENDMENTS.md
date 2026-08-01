@@ -4,6 +4,38 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-08-01
+
+- **A16 — POKAZATEL tables registered (overlap comparison only).** 27
+  ExoMol-POKAZATEL spectra delivered to `~/subneptune_data/pokazatel_opacity/`
+  as `T{T}_rho{rho}.npz` (no `_opacity` suffix; keys `wn,kappa,T,rho,rho_kg_m3,
+  p_bar,source`; correct units, no ×1000). They sit on the **same (T,ρ) grid as
+  FP** (T≥1000 K, ρ≥109 kg/m³) and are **windowed to [50, 4500] cm⁻¹**, so:
+  (a) registry globs for hitemp/pokazatel changed to `T*_rho*.npz`; (b) the
+  auto common band (A14) correctly re-intersects to **[50, 4499.95] cm⁻¹**
+  (FP∩POKAZATEL) whenever POKAZATEL is present — narrower than FP-alone's
+  [1.34, 6000], which raises FP κ_R back ~35% (loses the 4500–6000 windows).
+  This is SPEC §3-faithful (common band for exact differentials) but means a
+  windowed dataset on disk constrains the band globally; when the wide HITEMP
+  11×11 tables land we may want per-comparison bands so POKAZATEL's window does
+  not cap the composite — FLAGGED for decision then. POKAZATEL, like FP, does
+  **not** cover the radiative zone, so POKAZATEL *structure* runs are also
+  ~100% clamped; the meaningful POKAZATEL-vs-FP comparison today is at the
+  opacity level on the shared grid (figure `Fx_opacity_compare`).
+
+- **A17 — Delivered POKAZATEL confirms ideal-gas broadening pressure.** The
+  delivered POKAZATEL `p_bar` equals ρRT/M to <0.1% at every grid point (e.g.
+  598.8 bar at T=1000, ρ=129.744), confirming the production used per-cell
+  ideal-gas pressure — matching `generate_linelist_tables.py` default
+  `PRESSURE_MODE="ideal"`. (The `HitempCalculator` snippet uses a fixed 1-bar
+  reference; the actual POKAZATEL production did not, so the generator follows
+  the delivered data, not the snippet's p_ref.)
+
+- **A18 — numpy 2.0 compatibility.** The environment numpy was upgraded 1.26→2.4
+  between sessions; `np.trapz` was removed (renamed `trapezoid`). Integrations
+  now import `trapezoid` with a `trapz` fallback, so the code runs on numpy
+  ≥1.22 and ≥2.0 (requirement stays numpy≥1.26).
+
 ## 2026-07-31
 
 - **A15 — Default composite blend window moved to ρ = 100–300 kg/m³ (owner

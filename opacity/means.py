@@ -19,6 +19,12 @@ import numpy as np
 
 from constants import C_LIGHT, H_PLANCK, K_B
 
+# np.trapz was removed in numpy 2.0 (renamed trapezoid); support both.
+try:
+    from numpy import trapezoid as _trapz
+except ImportError:  # numpy < 2.0
+    from numpy import trapz as _trapz
+
 # Speed of light in cm/s, so that c·wn (wn in cm⁻¹) is a frequency in s⁻¹.
 _C_CM_S = C_LIGHT * 100.0
 
@@ -63,7 +69,7 @@ def planck_mean(
     wn = wn_cm[mask]
     kap = kappa[mask]
     w = planck_weight(wn, temperature_k)
-    return float(np.trapz(kap * w, wn) / np.trapz(w, wn))
+    return float(_trapz(kap * w, wn) / _trapz(w, wn))
 
 
 def rosseland_mean(
@@ -80,6 +86,6 @@ def rosseland_mean(
     if not np.all(kap > 0):
         raise ValueError("Rosseland mean requires strictly positive in-band opacity")
     w = rosseland_weight(wn, temperature_k)
-    num = np.trapz(w, wn)
-    den = np.trapz(w / kap, wn)
+    num = _trapz(w, wn)
+    den = _trapz(w / kap, wn)
     return float(num / den)

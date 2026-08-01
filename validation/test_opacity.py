@@ -132,10 +132,18 @@ def test_unknown_source_raises():
         get_spec("bogus")
 
 
-@pytest.mark.parametrize("name", ["hitemp", "pokazatel"])
-def test_undelivered_line_list_sources_raise(cfg, name):
+def test_undelivered_hitemp_raises(cfg):
+    """HITEMP spectra not yet delivered -> clear error (POKAZATEL now present)."""
     with pytest.raises(FileNotFoundError, match="not yet delivered"):
-        build_source(name, cfg)
+        build_source("hitemp", cfg)
+
+
+def test_pokazatel_builds(cfg):
+    """Delivered POKAZATEL tables build a usable source (overlap grid with FP)."""
+    pk = build_source("pokazatel", cfg)
+    assert pk.n_points == 27
+    kr = pk.kappa_R(1500.0, 300.0)  # a shared grid point
+    assert kr > 0 and kr < 1e5
 
 
 # --------------------------------------------------------------------------
@@ -157,9 +165,10 @@ def test_si_conversion_factor():
 # --------------------------------------------------------------------------
 def test_detect_common_band(cfg):
     lo, hi = detect_common_band(cfg)
-    # FP spectra span ~[1.11, 6000.34]; the intersection uses max-min / min-max.
-    assert lo == pytest.approx(1.336, abs=0.05)
-    assert hi == pytest.approx(6000.11, abs=1.0)
+    # POKAZATEL is windowed to [50, 4500], which is narrower than FP's
+    # [1.34, 6000], so the FP∩POKAZATEL common band is [50, 4499.95] (A16).
+    assert lo == pytest.approx(50.0, abs=0.1)
+    assert hi == pytest.approx(4499.95, abs=1.0)
     assert lo < hi
 
 

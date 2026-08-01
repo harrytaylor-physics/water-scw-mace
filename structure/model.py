@@ -15,6 +15,12 @@ from pathlib import Path
 
 import numpy as np
 
+# np.trapz was removed in numpy 2.0 (renamed trapezoid); support both.
+try:
+    from numpy import trapezoid as _trapz
+except ImportError:  # numpy < 2.0
+    from numpy import trapz as _trapz
+
 from config import Config
 from constants import G, R_EARTH, SIGMA_SB
 from eos import AquaEOS, core_mass_si, core_radius_si
@@ -99,8 +105,8 @@ def _envelope_energy(m, r, u):
     """
     order = np.argsort(m)
     m_s, r_s, u_s = m[order], r[order], u[order]
-    e_int = np.trapz(u_s, m_s)
-    e_grav = np.trapz(-G * m_s / r_s, m_s)
+    e_int = _trapz(u_s, m_s)
+    e_grav = _trapz(-G * m_s / r_s, m_s)
     return float(e_int + e_grav)
 
 
@@ -128,7 +134,7 @@ def _photosphere(pressure, tau, temperature):
 def _hydrostatic_residual(m, r, p):
     """Relative error of ∫(−Gm/4πr⁴)dm vs the actual ΔP over the interior (G3)."""
     rhs = -G * m / (4.0 * np.pi * r**4)
-    predicted = np.trapz(rhs, m)
+    predicted = _trapz(rhs, m)
     actual = p[-1] - p[0]
     return abs(predicted - actual) / abs(actual)
 
