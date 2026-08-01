@@ -6,6 +6,20 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-08-01
 
+- **A20 — Interim analytic validation G5a (owner-authorized).** The real G5
+  (Aguichine 2021 steam-world M–R) needs an external table not on the machine,
+  so it skips. Interim, per the owner's request for "a defensible substitute
+  from published scaling relations or an analytic limit," two *derivable* limits
+  validate the structure integration with no external data (`test_g5a_interim`):
+  (1) **bare-core limit** — R_p → R_core (Zeng 2016, already cited) as f_env→0,
+  monotone and from above, residual = atmosphere skin; (2) **isothermal scale
+  height** — radiative-zone thickness = H·ln(P_base/P_top),
+  H = k_B T/(μ_H2O·g), matched to ~2% (asserted at 12%). These are analytic
+  limits (like G1), NOT a literature M–R anchor; G5 proper stays open until the
+  Aguichine data + a valid opacity (composite/HITEMP) are available.
+  Self-consistency bonus: the f_env→0 residual (0.051 R⊕) equals the
+  scale-height thickness (0.052 R⊕).
+
 - **A19 — F3 cooling-time control variable (fork, awaiting decision).** The KH
   ratio τ_FP/τ_LL at *fixed T_int* comes out < 1 (FP cools faster), opposite to
   the "stay puffy longer" headline, because L_int = 4πR²σT_int⁴ is imposed by
