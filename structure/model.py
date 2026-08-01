@@ -53,6 +53,7 @@ class StructureResult:
     luminosity_w: float
     envelope_energy_j: float
     tau_kh_s: float  # Kelvin-Helmholtz time |E|/L_int (SPEC §6, F3)
+    interior_entropy_j_kg_k: float  # deep convective adiabat entropy (A23, F3/Phase 2)
 
     rcb_pressures_pa: list[float]
     rcb_above_match: bool  # Schwarzschild RCB shallower than P_match (matching caveat)
@@ -83,19 +84,21 @@ def _post_process(m, r, p, t, eos, opacity, luminosity):
     grad_ad = np.empty(n)
     grad_rad = np.empty(n)
     u = np.empty(n)
+    entropy = np.empty(n)
     two_phase = np.zeros(n, dtype=bool)
     for i in range(n):
         st = eos.state(p[i], t[i])
         rho[i] = st.rho
         grad_ad[i] = st.grad_ad
         u[i] = st.internal_energy
+        entropy[i] = st.entropy
         two_phase[i] = st.two_phase
         kappa = opacity.kappa_R(t[i], st.rho)
         grad_rad[i] = 3.0 * kappa * luminosity * p[i] / (
             16.0 * np.pi * G * m[i] * SIGMA_SB * t[i] ** 4
         )
     is_conv = grad_rad > grad_ad
-    return rho, grad_ad, grad_rad, is_conv, two_phase, u
+    return rho, grad_ad, grad_rad, is_conv, two_phase, u, entropy
 
 
 def _envelope_energy(m, r, u):
@@ -198,10 +201,14 @@ def build_structure(
     t = np.concatenate([outer["T"], interior["T"][1:]])
     tau_outer = outer["tau"]
 
-    rho, grad_ad, grad_rad, is_conv, two_phase, u = _post_process(m, r, p, t, eos, opacity, lum)
+    rho, grad_ad, grad_rad, is_conv, two_phase, u, entropy = _post_process(
+        m, r, p, t, eos, opacity, lum
+    )
     grad = np.gradient(np.log(t), np.log(p))
     energy_j = _envelope_energy(m, r, u)
     tau_kh_s = abs(energy_j) / lum if lum > 0 else float("inf")
+    # Interior (deep convective adiabat) specific entropy: the deepest point.
+    interior_entropy = float(entropy[-1])
 
     rcbs = _find_rcbs(p, is_conv)
     p_phot, t_phot = _photosphere(outer["P"], tau_outer, outer["T"])
@@ -236,6 +243,7 @@ def build_structure(
         luminosity_w=lum,
         envelope_energy_j=energy_j,
         tau_kh_s=tau_kh_s,
+        interior_entropy_j_kg_k=interior_entropy,
         rcb_pressures_pa=rcbs,
         rcb_above_match=any(rp < p_match for rp in rcbs),
         photosphere_pressure_pa=p_phot,
@@ -250,10 +258,51 @@ def build_structure(
         profile={
             "mass_kg": m, "radius_m": r, "pressure_pa": p, "temperature_k": t,
             "rho_si": rho, "grad": grad, "grad_ad": grad_ad, "grad_rad": grad_rad,
-            "is_convective": is_conv, "two_phase": two_phase,
+            "is_convective": is_conv, "two_phase": two_phase, "entropy_j_kg_k": entropy,
         },
     )
     return result
+
+
+def build_at_entropy(
+    cfg: Config,
+    s_target_j_kg_k: float,
+    t_eq_k: float,
+    source_name: str | None = None,
+    eos: AquaEOS | None = None,
+    t_int_bracket_k: tuple[float, float] = (20.0, 400.0),
+    tol_frac: float = 1e-3,
+    band: tuple[float, float] | None = None,
+    n_sample: int = 800,
+) -> StructureResult:
+    """Converged model whose interior entropy equals ``s_target_j_kg_k`` (A23).
+
+    Interior entropy increases monotonically with T_int, so we shoot on T_int by
+    bisection to match the target adiabat. This is the entropy-parameterized
+    sequence used for the fixed-entropy F3 headline and Phase-2 evolution: at a
+    fixed interior entropy, a more opaque envelope throttles the flux, giving a
+    lower T_int (hence lower L) and a longer cooling time.
+    """
+    from scipy.optimize import brentq
+
+    eos = eos or AquaEOS.from_config(cfg)
+
+    def entropy_gap(t_int_k: float) -> float:
+        res = build_structure(cfg, t_eq_k, float(t_int_k), source_name, eos=eos,
+                              n_sample=n_sample, band=band)
+        entropy_gap.last = res  # type: ignore[attr-defined]
+        return res.interior_entropy_j_kg_k - s_target_j_kg_k
+
+    lo, hi = t_int_bracket_k
+    f_lo, f_hi = entropy_gap(lo), entropy_gap(hi)
+    if f_lo * f_hi > 0:
+        raise ValueError(
+            f"interior entropy {s_target_j_kg_k:.1f} J/kg/K not reachable for "
+            f"source={source_name}, T_eq={t_eq_k} over T_int∈{t_int_bracket_k}: "
+            f"reachable [{f_lo + s_target_j_kg_k:.1f}, {f_hi + s_target_j_kg_k:.1f}]"
+        )
+    t_int_star = brentq(entropy_gap, lo, hi, rtol=tol_frac, maxiter=60)
+    return entropy_gap.last  # type: ignore[attr-defined]
 
 
 def save_structure(result: StructureResult, out_dir: Path) -> tuple[Path, Path]:

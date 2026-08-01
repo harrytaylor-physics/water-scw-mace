@@ -26,6 +26,7 @@ from opacity import (
     resolve_band,
 )
 from structure import (
+    build_at_entropy,
     build_structure,
     guillot_temperature,
     integrate_outer,
@@ -107,6 +108,38 @@ def test_g3_hydrostatic_residual(cfg):
 # Adaptive matching (A13): the RCB match keeps high-opacity models from
 # collapsing (a fixed deep match did), and matches shallower than the cap.
 # --------------------------------------------------------------------------
+def _register_constant(cfg, name, kappa_si):
+    """Cache a named constant-κ source under the band=None key get_source uses."""
+    bt._cache[(name, None, str(cfg.data_root_path))] = ConstantOpacitySource(kappa_si, name=name)
+
+
+# --------------------------------------------------------------------------
+# F3 headline physics (A23): at fixed interior entropy, the MORE opaque source
+# throttles L to a lower T_int and cools slower (τ ratio > 1) — "stay puffy
+# longer". At fixed T_int the ratio inverts (< 1), because L is imposed by T_int.
+# --------------------------------------------------------------------------
+def test_fixed_entropy_stays_puffy_longer(cfg):
+    _register_constant(cfg, "kap_hi", 1.0)  # more opaque
+    _register_constant(cfg, "kap_lo", 0.1)  # less opaque
+    eos = AquaEOS.from_config(cfg)
+
+    # Reference state from the less-opaque source at a fixed T_int.
+    base = build_structure(cfg, 600.0, 120.0, "kap_lo", eos=eos, n_sample=400)
+    s_star = base.interior_entropy_j_kg_k
+
+    hi = build_at_entropy(cfg, s_star, 600.0, "kap_hi", eos=eos, n_sample=400)
+    # Entropy matched, structure (R_p) nearly equal, opaque source at lower T_int.
+    assert hi.interior_entropy_j_kg_k == pytest.approx(s_star, rel=2e-3)
+    assert hi.radius_p_rearth == pytest.approx(base.radius_p_rearth, rel=0.05)
+    assert hi.t_int_k < base.t_int_k  # opaque -> throttled -> lower T_int
+    assert hi.luminosity_w < base.luminosity_w  # -> lower luminosity
+    assert hi.tau_kh_s > base.tau_kh_s  # -> longer cooling time (stays puffy)
+
+    # Contrast: at the SAME T_int the ratio inverts (the A19 artifact).
+    hi_ti = build_structure(cfg, 600.0, 120.0, "kap_hi", eos=eos, n_sample=400)
+    assert hi_ti.tau_kh_s < base.tau_kh_s
+
+
 def test_adaptive_matching_converges_high_opacity(cfg):
     bt.clear_cache()  # use the real FP grid (very high band-limited kappa_R)
     res = build_structure(cfg, t_eq_k=700.0, t_int_k=150.0, source_name="fp")

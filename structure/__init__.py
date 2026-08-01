@@ -20,7 +20,12 @@ from structure.integrator import (
     integrate_outer,
     luminosity_int,
 )
-from structure.model import StructureResult, build_structure, save_structure
+from structure.model import (
+    StructureResult,
+    build_at_entropy,
+    build_structure,
+    save_structure,
+)
 from structure.shooting import ShootResult, shoot_radius
 
 __all__ = [
@@ -36,6 +41,7 @@ __all__ = [
     "shoot_radius",
     "ShootResult",
     "build_structure",
+    "build_at_entropy",
     "save_structure",
     "StructureResult",
 ]

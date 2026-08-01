@@ -43,6 +43,19 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   Self-consistency bonus: the f_env→0 residual (0.051 R⊕) equals the
   scale-height thickness (0.052 R⊕).
 
+- **A23 — F3 headline is the fixed-INTERIOR-ENTROPY cooling ratio (owner
+  decision, resolves A19).** The KH ratio τ_FP/τ_LL is now compared at fixed
+  deep-adiabat specific entropy, not fixed T_int. `build_at_entropy` shoots on
+  T_int (interior entropy is monotone in T_int) to match a target adiabat. At
+  fixed entropy the two sources have essentially the *same R_p* (entropy sets
+  the structure), but the more opaque FP throttles the flux to a lower T_int and
+  hence lower L, giving a longer cooling time: τ_FP/τ_POKAZATEL ≈ 12 at
+  s*=13500 J/kg/K (T_eq=600, f_env=5%) — the "stay puffy longer" headline. The
+  fixed-T_int ratio (<1, A19) is retained as a labeled diagnostic panel; the
+  distinction is written up to referee standard in `docs/cooling_time_caveat.md`.
+  `StructureResult.interior_entropy_j_kg_k` records the deep entropy. The
+  definitive version is the Phase-2 radius(age) track.
+
 - **A19 — F3 cooling-time control variable (fork, awaiting decision).** The KH
   ratio τ_FP/τ_LL at *fixed T_int* comes out < 1 (FP cools faster), opposite to
   the "stay puffy longer" headline, because L_int = 4πR²σT_int⁴ is imposed by
