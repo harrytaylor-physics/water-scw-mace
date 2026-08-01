@@ -165,11 +165,26 @@ def test_si_conversion_factor():
 # --------------------------------------------------------------------------
 def test_detect_common_band(cfg):
     lo, hi = detect_common_band(cfg)
-    # POKAZATEL is windowed to [50, 4500], which is narrower than FP's
-    # [1.34, 6000], so the FP∩POKAZATEL common band is [50, 4499.95] (A16).
+    # No args = all available. POKAZATEL is windowed to [50, 4500], narrower
+    # than FP's [1.34, 6000], so FP∩POKAZATEL is [50, 4499.95] (A16).
     assert lo == pytest.approx(50.0, abs=0.1)
     assert hi == pytest.approx(4499.95, abs=1.0)
     assert lo < hi
+
+
+def test_per_comparison_bands(cfg):
+    """Each source/comparison resolves its own band (A21): a windowed dataset
+    only constrains comparisons it is part of."""
+    fp_only = detect_common_band(cfg, ["fp"])
+    pk_only = detect_common_band(cfg, ["pokazatel"])
+    both = detect_common_band(cfg, ["fp", "pokazatel"])
+
+    assert fp_only[0] == pytest.approx(1.336, abs=0.05)  # FP's own full band
+    assert fp_only[1] == pytest.approx(6000.11, abs=1.0)
+    assert pk_only == pytest.approx((50.0, 4499.95), abs=1.0)  # POKAZATEL window
+    assert both == pytest.approx((50.0, 4499.95), abs=1.0)  # intersection
+    # A pure-FP run is NOT capped by POKAZATEL being on disk.
+    assert build_source("fp", cfg).band_cm == pytest.approx(fp_only, abs=1.0)
 
 
 def test_resolve_band_prefers_explicit(cfg):
@@ -177,4 +192,4 @@ def test_resolve_band_prefers_explicit(cfg):
 
     pinned = replace(cfg.opacity, band_cm=(50.0, 4500.0))
     assert resolve_band(replace(cfg, opacity=pinned)) == (50.0, 4500.0)
-    assert resolve_band(cfg) == detect_common_band(cfg)  # auto when None
+    assert resolve_band(cfg, ["fp"]) == detect_common_band(cfg, ["fp"])

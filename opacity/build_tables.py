@@ -28,36 +28,51 @@ _cache: dict[tuple[str, tuple[float, float], str], OpacitySource] = {}
 _band_cache: dict[str, tuple[float, float]] = {}
 
 
-def detect_common_band(cfg: Config) -> tuple[float, float]:
-    """Largest wavenumber band all *available* sources support (A14).
+def detect_common_band(cfg: Config, sources: list[str] | None = None) -> tuple[float, float]:
+    """Largest wavenumber band the given sources share (A14, A21).
 
-    = [max over all spectra files of min(wn), min over all files of max(wn)],
-    verified per file across every registered source that has spectra on disk.
-    Re-intersected automatically as new sources (line lists) are delivered.
+    = [max over spectra files of min(wn), min over files of max(wn)], verified
+    per file. ``sources`` limits the intersection to those grid sources (band-
+    agnostic sources like ``constant`` and undelivered sources are ignored);
+    ``None`` uses every registered source with spectra on disk. Per-comparison
+    banding (A21): a figure passes exactly the grid sources it plots, so a
+    windowed dataset (e.g. POKAZATEL [50,4500]) only constrains comparisons it
+    is part of.
     """
-    key = str(cfg.data_root_path)
+    names = sources if sources is not None else list(REGISTRY)
+    key = (str(cfg.data_root_path), tuple(sorted(names)))
     if key in _band_cache:
         return _band_cache[key]
     mins: list[float] = []
     maxs: list[float] = []
-    for spec in REGISTRY.values():
+    for name in names:
+        if name not in REGISTRY:  # e.g. "constant" — band-agnostic, skip
+            continue
+        spec = REGISTRY[name]
         for path in sorted((cfg.data_root_path / spec.subdir).glob(spec.glob)):
             with np.load(path) as d:
                 wn = np.asarray(d["wn"], dtype=float)
             mins.append(float(wn.min()))
             maxs.append(float(wn.max()))
     if not mins:
-        raise FileNotFoundError("no opacity spectra found to detect a common band")
+        raise FileNotFoundError(
+            f"no opacity spectra found to detect a common band for sources={names}"
+        )
     band = (max(mins), min(maxs))
     _band_cache[key] = band
     return band
 
 
-def resolve_band(cfg: Config) -> tuple[float, float]:
-    """Config band if set, else the auto-detected common band (A14)."""
+def resolve_band(cfg: Config, sources: list[str] | None = None) -> tuple[float, float]:
+    """Config band if pinned, else the auto-detected band for ``sources`` (A21).
+
+    ``sources`` defaults to all registered sources with spectra. For a single
+    source this yields its own full band; for a comparison, pass the plotted
+    sources so every curve shares one exact band.
+    """
     if cfg.opacity.band_cm is not None:
         return tuple(cfg.opacity.band_cm)  # type: ignore[return-value]
-    return detect_common_band(cfg)
+    return detect_common_band(cfg, sources)
 
 
 def compute_point_means(
@@ -100,21 +115,49 @@ def _assert_plausible(name: str, spec: SourceSpec, kappa_p_cm2_g: np.ndarray) ->
         )
 
 
-def build_composite(cfg: Config) -> CompositeOpacitySource:
-    """Build the composite source: line-list (dilute) blended with FP (dense)."""
+def build_composite(cfg: Config, band: tuple[float, float] | None = None) -> CompositeOpacitySource:
+    """Build the composite source: line-list (dilute) blended with FP (dense).
+
+    The two sub-sources share the band common to *them* (not to POKAZATEL or any
+    other on-disk dataset), so the composite is not capped by an unrelated
+    windowed source (A21).
+    """
     op = cfg.opacity
-    dilute = build_source(op.composite_dilute_source, cfg)
-    dense = build_source(op.composite_dense_source, cfg)
+    names = [op.composite_dilute_source, op.composite_dense_source]
+    band = band or resolve_band(cfg, names)
+    dilute = build_source(op.composite_dilute_source, cfg, band=band)
+    dense = build_source(op.composite_dense_source, cfg, band=band)
     return CompositeOpacitySource(
         dilute=dilute, dense=dense, blend_rho_si=tuple(op.composite_blend_rho)
     )
 
 
-def build_source(name: str, cfg: Config) -> OpacitySource:
-    """Build a fresh opacity source for ``name`` (no caching)."""
+def _default_band(name: str, cfg: Config) -> tuple[float, float]:
+    """A source's own band; raise the delivery-specific error if it has no spectra."""
+    names = (
+        [cfg.opacity.composite_dilute_source, cfg.opacity.composite_dense_source]
+        if name == "composite"
+        else [name]
+    )
+    try:
+        return resolve_band(cfg, names)
+    except FileNotFoundError:
+        # Surface the clearer "not yet delivered" message per missing source.
+        for n in names:
+            find_spectra(cfg.data_root_path / get_spec(n).subdir, get_spec(n))
+        raise  # pragma: no cover - find_spectra already raised
+
+
+def build_source(name: str, cfg: Config, band: tuple[float, float] | None = None) -> OpacitySource:
+    """Build a fresh opacity source for ``name`` (no caching).
+
+    ``band`` fixes the Rosseland/Planck band; when ``None`` the source uses its
+    *own* band (A21), so a pure-source run is independent of what else is on
+    disk. Comparison contexts pass the shared band of the plotted sources.
+    """
     if name == "composite":
-        return build_composite(cfg)
-    band_cm = resolve_band(cfg)
+        return build_composite(cfg, band=band)
+    band_cm = band or _default_band(name, cfg)
     temps, rhos, kappa_r, kappa_p = compute_point_means(name, cfg, band_cm)
     _assert_plausible(name, get_spec(name), kappa_p)
 
@@ -128,15 +171,25 @@ def build_source(name: str, cfg: Config) -> OpacitySource:
     return GridOpacitySource(name, table)
 
 
-def get_source(name: str, cfg: Config) -> OpacitySource:
-    """Build or return a cached opacity source for ``name``.
+def get_source(name: str, cfg: Config, band: tuple[float, float] | None = None) -> OpacitySource:
+    """Build or return a cached opacity source for ``name`` on ``band``.
 
-    Cached sources share a clamp counter; reset it before a structure
-    integration via ``source.reset_clamp_counter()``.
+    ``band`` None -> the source's own band (A21). Cached sources share a clamp
+    counter; reset it before a structure integration via
+    ``source.reset_clamp_counter()``.
     """
-    key = (name, resolve_band(cfg), str(cfg.data_root_path))
+    root = str(cfg.data_root_path)
+    # Band-agnostic injected sources (e.g. a constant-κ reference) are keyed with
+    # band=None; they are placed in the cache directly and only looked up here.
+    if name != "composite" and name not in REGISTRY:
+        key = (name, None, root)
+        if key in _cache:
+            return _cache[key]
+        raise KeyError(f"opacity source {name!r} is not registered or cached")
+    band_cm = band or _default_band(name, cfg)
+    key = (name, band_cm, root)
     if key not in _cache:
-        _cache[key] = build_source(name, cfg)
+        _cache[key] = build_source(name, cfg, band=band_cm)
     return _cache[key]
 
 

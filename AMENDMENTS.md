@@ -6,6 +6,29 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-08-01
 
+- **A21 — Per-comparison opacity bands (owner decision).** The common
+  Rosseland/Planck band is now resolved per *set of sources being compared*, not
+  globally: `resolve_band(cfg, sources)`. A pure source uses its own full band
+  (`get_source(name)` → that source's band); a figure passes exactly the grid
+  sources it plots, so a windowed dataset (POKAZATEL [50,4500]) only constrains
+  comparisons it is part of, and the composite (HITEMP+FP) is not capped by it.
+  Two consequences the owner wanted: (a) adding a source never silently changes
+  previously computed numbers — each result is reproducible on its own band; (b)
+  every figure and results file records the band it used (`StructureResult.
+  band_cm`, figure captions, `Fx_opacity_compare.csv` band columns). Band-
+  agnostic sources (constant-κ) are cached with a band=None key.
+
+- **A22 — Fx opacity comparison: Planck reproduces the crossover, Rosseland runs
+  ~2× high.** `Fx_opacity_compare` (FP vs POKAZATEL, exact, unclamped) matches
+  `crossover_hitemp.json` (FP vs HITEMP) in trend everywhere and in Planck to
+  ~15–20%, but its Rosseland ratios are ~2× the crossover's. Verified not a
+  resolution artifact (smoothing POKAZATEL leaves κ_R unchanged) and not an FP
+  error — it is a genuine POKAZATEL–HITEMP Rosseland difference and/or a
+  band/method difference in the crossover pipeline (Rosseland is window-
+  dominated and band-sensitive). Planck is the trustworthy headline; Rosseland
+  carries a ±~2× line-list caveat until Fx is run against HITEMP to isolate it.
+  See `docs/opacity_crosscheck.md`.
+
 - **A20 — Interim analytic validation G5a (owner-authorized).** The real G5
   (Aguichine 2021 steam-world M–R) needs an external table not on the machine,
   so it skips. Interim, per the owner's request for "a defensible substitute

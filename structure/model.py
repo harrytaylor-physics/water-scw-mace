@@ -40,6 +40,7 @@ class StructureResult:
     gamma: float
     mass_core_mearth: float
     f_env: float
+    band_cm: tuple[float, float] | None  # opacity band used (A21)
     match_pressure_bar: float  # configured deep cap
     match_pressure_actual_bar: float  # adaptive: min(cap, P_RCB) (A13)
     matched_at_rcb: bool
@@ -146,11 +147,17 @@ def build_structure(
     source_name: str | None = None,
     eos: AquaEOS | None = None,
     n_sample: int = 2000,
+    band: tuple[float, float] | None = None,
 ) -> StructureResult:
-    """Build one converged static structure model."""
+    """Build one converged static structure model.
+
+    ``band`` fixes the opacity band; None -> the source's own band (A21).
+    Comparison figures pass the common band of all plotted sources so every
+    overlaid profile shares one exact band.
+    """
     source_name = source_name or cfg.opacity.source
     eos = eos or AquaEOS.from_config(cfg)
-    opacity = get_source(source_name, cfg)
+    opacity = get_source(source_name, cfg, band=band)
 
     mc_mearth = cfg.core.mass_mearth
     f_env = cfg.envelope.f_env
@@ -217,6 +224,7 @@ def build_structure(
         gamma=gamma,
         mass_core_mearth=mc_mearth,
         f_env=f_env,
+        band_cm=getattr(opacity, "band_cm", None),
         match_pressure_bar=cfg.boundary.match_pressure_bar,
         match_pressure_actual_bar=match.pressure_pa / 1e5,
         matched_at_rcb=matched_at_rcb,

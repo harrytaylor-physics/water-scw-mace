@@ -45,6 +45,8 @@ class CompositeOpacitySource(OpacitySource):
         self.dense = dense  # FP
         self.blend_rho_si = (float(lo), float(hi))
         self.seam_rho_si = float(np.sqrt(lo * hi))  # geometric-mean centre
+        # Both sub-sources are built on the same band (A21); expose it.
+        self.band_cm = getattr(dense, "band_cm", getattr(dilute, "band_cm", None))
         self._log_lo = np.log10(lo)
         self._log_hi = np.log10(hi)
         self._total = 0

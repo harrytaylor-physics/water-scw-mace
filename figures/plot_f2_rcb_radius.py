@@ -17,6 +17,8 @@ from figures._common import (
     SOURCE_COLOR,
     SOURCE_LABEL,
     available_sources,
+    band_caption,
+    comparison_band,
     load_cfg,
     register_constant_reference,
     run_t_int_grid,
@@ -33,10 +35,11 @@ def main(argv=None):
 
     register_constant_reference(cfg)
     sources = available_sources(cfg, ["fp", "hitemp", "pokazatel", "composite"]) + ["constant"]
+    band = comparison_band(cfg, sources)  # one exact band for every curve (A21)
 
     fig, (ax_r, ax_p) = plt.subplots(1, 2, figsize=(10.5, 4.6))
     for name in sources:
-        models = run_t_int_grid(cfg, name, t_eq, eos)
+        models = run_t_int_grid(cfg, name, t_eq, eos, band=band)
         t_int = [m.t_int_k for m in models]
         r_p = [m.radius_p_rearth for m in models]
         # deepest (highest-pressure) RCB per model
@@ -59,7 +62,7 @@ def main(argv=None):
     ax_p.set_title("Radiative–convective boundary")
 
     fig.suptitle(f"$T_{{eq}}$={t_eq:.0f} K, $M_c$={cfg.core.mass_mearth:.0f} $M_⊕$, "
-                 f"$f_{{env}}$={cfg.envelope.f_env:.0%}", y=1.02)
+                 f"$f_{{env}}$={cfg.envelope.f_env:.0%} — {band_caption(band)}", y=1.02)
     path = save(fig, cfg, "F2_rcb_radius")
     print(f"wrote {path}")
     return path

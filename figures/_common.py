@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from config import Config, load_config  # noqa: E402
 from eos import AquaEOS  # noqa: E402
-from opacity import ConstantOpacitySource, get_source  # noqa: E402
+from opacity import ConstantOpacitySource, get_source, resolve_band  # noqa: E402
 import opacity.build_tables as _bt  # noqa: E402
 from structure import StructureResult, build_structure  # noqa: E402
 
@@ -59,25 +59,45 @@ def available_sources(cfg: Config, names) -> list[str]:
         try:
             get_source(name, cfg)
             ok.append(name)
-        except (FileNotFoundError, AssertionError):
+        except (FileNotFoundError, AssertionError, KeyError):
             pass
     return ok
 
 
+def comparison_band(cfg: Config, sources) -> tuple[float, float]:
+    """The single opacity band shared by all grid sources in ``sources`` (A21).
+
+    Band-agnostic entries (e.g. 'constant') are ignored. Every source plotted in
+    a figure is built on this band so the differential is exact and each figure
+    records the band it used.
+    """
+    grid = [s for s in sources if s != "constant"]
+    return resolve_band(cfg, grid) if grid else resolve_band(cfg, ["fp"])
+
+
+def band_caption(band: tuple[float, float]) -> str:
+    return f"band [{band[0]:.0f}, {band[1]:.0f}] cm⁻¹"
+
+
 def register_constant_reference(cfg: Config, kappa_si: float = 0.1) -> str:
-    """Register a constant-κ reference source under the name 'constant'."""
-    key = ("constant", _bt.resolve_band(cfg), str(cfg.data_root_path))
+    """Register a constant-κ reference source under the name 'constant'.
+
+    Band-agnostic, so it is cached with the band=None key that get_source uses
+    to look up non-registered sources (A21)."""
+    key = ("constant", None, str(cfg.data_root_path))
     _bt._cache[key] = ConstantOpacitySource(kappa_si, name="constant")
     return "constant"
 
 
 def run_t_int_grid(
-    cfg: Config, source: str, t_eq_k: float, eos: AquaEOS, n_sample: int = 800
+    cfg: Config, source: str, t_eq_k: float, eos: AquaEOS, n_sample: int = 800,
+    band: tuple[float, float] | None = None,
 ) -> list[StructureResult]:
     """Build converged models across the config T_int grid for one source/T_eq."""
     out = []
     for t_int in cfg.interior.t_int_k:
-        out.append(build_structure(cfg, t_eq_k, float(t_int), source, eos=eos, n_sample=n_sample))
+        out.append(build_structure(cfg, t_eq_k, float(t_int), source, eos=eos,
+                                   n_sample=n_sample, band=band))
     return out
 
 
