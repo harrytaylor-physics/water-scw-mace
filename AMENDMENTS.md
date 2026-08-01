@@ -6,6 +6,19 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-08-01
 
+- **A24 — Phase-2 evolution scheme + G6.** Static-sequence cooling (Lopez &
+  Fortney 2014; Ginzburg 2016) parameterized by T_int: a sequence of static
+  models gives E(T_int), L(T_int), R_p(T_int); age follows from dt = dE/L,
+  integrated as a Simpson cumulative integral of 1/L against E (E monotone in
+  T_int). L(T_int) spans ~4 decades, so the age integral is dominated by the
+  cool, low-L end; the G6 residual |∫L dt − ΔE|/ΔE converges ~2nd order in grid
+  size — Simpson reaches ~2e-3 at n=60 (default), comfortably under the 1% gate
+  (trapz needed n≈100). `evolution.cooling_track`; gate G6 in
+  `validation/test_evolution.py`. The definitive "stay puffy longer": at fixed
+  R_p the more opaque source is older — age_FP/age_POKAZATEL ≈ 15 at R_p≈1.85–1.9
+  (T_eq=600), matching the fixed-entropy F3 headline via an independent method.
+  Its magnitude inherits the Rosseland ±~2× line-list caveat (A22).
+
 - **A21 — Per-comparison opacity bands (owner decision).** The common
   Rosseland/Planck band is now resolved per *set of sources being compared*, not
   globally: `resolve_band(cfg, sources)`. A pure source uses its own full band
