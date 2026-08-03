@@ -6,6 +6,21 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-08-03
 
+- **A27 — FP does not affect these planets' structure; the ~15× was an
+  extrapolation artifact (headline correction).** With the composite reliable
+  (A26), composite R_p ≡ pure-line-list R_p to 3 decimals across the whole
+  fiducial grid: the radiative zone that sets the structure is at ρ ≲ 7 kg/m³,
+  1.5–4 dex below FP's grid floor (109 kg/m³), so FP never enters the
+  opacity-relevant regime. The earlier pure-FP "stay puffy longer" ratio
+  (~15–28×) was nearest-neighbor extrapolation of FP into the dilute radiative
+  zone (now flagged unreliable) and is excluded from the deck. The exact
+  FP-vs-line-list opacity difference (2–3× at the dense/hot overlap, Fx) is real
+  but does not propagate to this planet class (that regime is convective here);
+  it is a documented extension for denser envelopes. The reliable opacity
+  systematic is the **line-list choice**: HITEMP vs POKAZATEL differ ~1.5× in
+  κ_R → ~2× in cooling age, plus the ~2× band systematic (A25). See
+  `docs/fp_validity_regime.md`. Awaiting owner decision on deck framing.
+
 - **A25 — Default science band [100, 4000] cm⁻¹ + Rosseland floor; resolves the
   A22 Rosseland discrepancy (it was the BAND, not the floor).** With HITEMP
   delivered, Fx was run FP-vs-HITEMP through our own pipeline. Under the owner's
