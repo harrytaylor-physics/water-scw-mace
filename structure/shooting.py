@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.optimize import brentq
+from scipy.optimize import brentq, newton
 
 from constants import R_EARTH
 from eos.base import EOS
@@ -67,8 +67,14 @@ def shoot_radius(
     rp_bracket_m: tuple[float, float],
     shoot_rtol: float,
     max_iter: int,
+    rp_guess_m: float | None = None,
 ) -> ShootResult:
-    """Find R_p such that r(M_c) = R_c to relative tolerance ``shoot_rtol``."""
+    """Find R_p such that r(M_c) = R_c to relative tolerance ``shoot_rtol``.
+
+    ``rp_guess_m`` warm-starts the search: a narrow bracket around the guess is
+    tried first (cheap when successive models are close, e.g. along a cooling
+    track or entropy sweep) before falling back to the full bracket + scan.
+    """
     lo = max(rp_bracket_m[0], radius_core_m * 1.001)
     hi = rp_bracket_m[1]
 
@@ -83,6 +89,23 @@ def shoot_radius(
         )
         cache[rp] = out
         return out[0]
+
+    # Warm start: a secant solve seeded at the guess converges in a few
+    # evaluations for the smooth, nearby problems along a track / entropy sweep.
+    # The residual r(M_c)−R_c is monotone increasing in R_p, so secant is stable;
+    # accept only a root inside the bracket, else fall back to brentq below.
+    if rp_guess_m is not None and lo < rp_guess_m < hi:
+        try:
+            root = newton(resid, rp_guess_m, x1=min(hi, rp_guess_m * 1.02),
+                          tol=shoot_rtol * radius_core_m, rtol=shoot_rtol, maxiter=20)
+            if lo <= root <= hi:
+                if root not in cache:
+                    resid(root)  # populate the profile at the converged radius
+                if abs(cache[root][0]) <= shoot_rtol * radius_core_m * 10:
+                    residual, match, outer, interior, lum = cache[root]
+                    return ShootResult(root, match, outer, interior, lum, calls["n"], residual)
+        except (RuntimeError, RuntimeWarning, KeyError, ValueError):
+            pass  # fall back to the robust bracketed solve
 
     # Ensure the bracket straddles a sign change; expand/scan if not.
     f_lo, f_hi = resid(lo), resid(hi)

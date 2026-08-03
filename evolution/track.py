@@ -94,10 +94,15 @@ def cooling_track(
         t_int_grid_k = np.geomspace(25.0, 500.0, 60)
     t_int_grid_k = np.sort(np.asarray(t_int_grid_k, dtype=float))
 
-    rows = [
-        build_structure(cfg, t_eq_k, float(ti), source_name, eos=eos, n_sample=n_sample, band=band)
-        for ti in t_int_grid_k
-    ]
+    # Warm-start each model from the previous R_p (T_int grid is ascending, so
+    # R_p rises smoothly): successive shoots converge in a couple of iterations.
+    rows = []
+    rp_guess = None
+    for ti in t_int_grid_k:
+        res = build_structure(cfg, t_eq_k, float(ti), source_name, eos=eos,
+                              n_sample=n_sample, band=band, rp_guess_rearth=rp_guess)
+        rows.append(res)
+        rp_guess = res.radius_p_rearth
     entropy = np.array([r.interior_entropy_j_kg_k for r in rows])
     radius = np.array([r.radius_p_rearth for r in rows])
     lum = np.array([r.luminosity_w for r in rows])

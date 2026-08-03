@@ -95,9 +95,12 @@ def run_t_int_grid(
 ) -> list[StructureResult]:
     """Build converged models across the config T_int grid for one source/T_eq."""
     out = []
-    for t_int in cfg.interior.t_int_k:
-        out.append(build_structure(cfg, t_eq_k, float(t_int), source, eos=eos,
-                                   n_sample=n_sample, band=band))
+    rp_guess = None
+    for t_int in sorted(cfg.interior.t_int_k):  # ascending -> R_p rises smoothly
+        res = build_structure(cfg, t_eq_k, float(t_int), source, eos=eos,
+                             n_sample=n_sample, band=band, rp_guess_rearth=rp_guess)
+        out.append(res)
+        rp_guess = res.radius_p_rearth
     return out
 
 

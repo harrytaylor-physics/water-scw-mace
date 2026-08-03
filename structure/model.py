@@ -153,12 +153,14 @@ def build_structure(
     eos: AquaEOS | None = None,
     n_sample: int = 2000,
     band: tuple[float, float] | None = None,
+    rp_guess_rearth: float | None = None,
 ) -> StructureResult:
     """Build one converged static structure model.
 
     ``band`` fixes the opacity band; None -> the source's own band (A21).
     Comparison figures pass the common band of all plotted sources so every
-    overlaid profile shares one exact band.
+    overlaid profile shares one exact band. ``rp_guess_rearth`` warm-starts the
+    R_p shooting (cheap for sequences of nearby models).
     """
     source_name = source_name or cfg.opacity.source
     eos = eos or AquaEOS.from_config(cfg)
@@ -181,6 +183,7 @@ def build_structure(
         p_top, p_match, num.rtol, num.atol, num.solver,
         (num.rp_bracket_rearth[0] * R_EARTH, num.rp_bracket_rearth[1] * R_EARTH),
         num.shoot_rtol, num.max_shoot_iter,
+        rp_guess_m=None if rp_guess_rearth is None else rp_guess_rearth * R_EARTH,
     )
 
     # Final sampled profile at the converged radius; measure clamp fraction here.
