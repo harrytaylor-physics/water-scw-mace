@@ -67,9 +67,18 @@ class Opacity:
     """Opacity source + table/interpolation policy (SPEC §3)."""
 
     source: str = "fp"  # registered name: fp | hitemp | pokazatel | composite
-    # Common Rosseland/Planck band. None -> auto-detect the largest band all
-    # available sources support (A14); a tuple pins it explicitly.
-    band_cm: tuple[float, float] | None = None
+    # Common Rosseland/Planck band. Default [100, 4000] cm⁻¹ is the
+    # crossover-consistent science band (A25): it excludes the far-band
+    # transparency windows (50-100, 4000-4500 cm⁻¹) that dominate the Rosseland
+    # harmonic mean and drive a ~2× band systematic, and it reproduces the
+    # independent crossover analysis to ~1%. None -> auto-detect the largest
+    # band all sources share (A14/A21); [50,4500] is the reported systematic.
+    band_cm: tuple[float, float] | None = (100.0, 4000.0)
+    # Relative opacity floor before the harmonic Rosseland mean: κ ≥ rel_floor·
+    # max(κ) (A25). Guards against zero-transparency windows; inactive for the
+    # current data at 1e-6 (window minima are shallower), kept for convention
+    # parity and robustness.
+    rel_floor: float = 1.0e-6
     # Extrapolation is a gate, not a guess (SPEC §3): clamp to nearest grid
     # value, count clamped calls; a run whose clamped fraction exceeds this
     # threshold is flagged unreliable in its output metadata.
@@ -203,6 +212,8 @@ def _validate(cfg: Config) -> None:
         lo, hi = cfg.opacity.band_cm
         if not lo < hi:
             raise ValueError(f"opacity.band_cm must be increasing, got {cfg.opacity.band_cm}")
+    if not 0.0 <= cfg.opacity.rel_floor < 1.0:
+        raise ValueError(f"opacity.rel_floor must be in [0,1), got {cfg.opacity.rel_floor}")
     if not 0.0 < cfg.opacity.clamp_fraction_threshold <= 1.0:
         raise ValueError("opacity.clamp_fraction_threshold must be in (0,1]")
     if cfg.opacity.source not in {"fp", "hitemp", "pokazatel", "composite"}:

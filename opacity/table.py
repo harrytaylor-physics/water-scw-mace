@@ -24,18 +24,29 @@ CM2_PER_G_TO_SI = 0.1
 
 @dataclass
 class ClampCounter:
-    """Counts opacity evaluations and how many fell outside the grid hull."""
+    """Counts opacity evaluations and how they were extrapolated.
+
+    ``clamped_calls`` are genuine out-of-hull clamps (unreliable, gate the run);
+    ``flat_rho_calls`` are dilute-limit ρ-floored calls (physically justified,
+    reported separately, A26).
+    """
 
     total_calls: int = 0
     clamped_calls: int = 0
+    flat_rho_calls: int = 0
 
     def reset(self) -> None:
         self.total_calls = 0
         self.clamped_calls = 0
+        self.flat_rho_calls = 0
 
     @property
     def fraction(self) -> float:
         return self.clamped_calls / self.total_calls if self.total_calls else 0.0
+
+    @property
+    def flat_rho_fraction(self) -> float:
+        return self.flat_rho_calls / self.total_calls if self.total_calls else 0.0
 
 
 @dataclass
@@ -57,6 +68,9 @@ class OpacityTable:
     kappa_rosseland_si: np.ndarray
     kappa_planck_si: np.ndarray
     band_cm: tuple[float, float]
+    # Dilute-limit flat-κ extrapolation below the grid ρ floor (A26): for line
+    # lists, hold κ flat in ρ under ρ_min rather than clamping to nearest.
+    dilute_flat: bool = False
     clamp: ClampCounter = field(default_factory=ClampCounter)
 
     def __post_init__(self) -> None:
@@ -87,18 +101,36 @@ class OpacityTable:
         )
         self._lin = LinearNDInterpolator(pts, vals, rescale=True)
         self._near = NearestNDInterpolator(pts, vals, rescale=True)
+        self._logrho_min = float(np.log10(self.rho_si.min()))
 
     @property
     def n_points(self) -> int:
         return self.temperature_k.size
 
+    @property
+    def rho_floor_si(self) -> float:
+        """Grid ρ floor below which dilute-flat extrapolation applies (A26)."""
+        return float(self.rho_si.min())
+
     def _eval_log10(self, temperature_k, rho_si) -> np.ndarray:
-        """Return log10 κ (SI) for both means; shape (N, 2). Counts clamps."""
+        """Return log10 κ (SI) for both means; shape (N, 2). Counts clamps.
+
+        Dilute-flat (A26): for line lists, a query below the grid ρ floor has its
+        ρ pinned to ρ_min (flat κ in ρ) and is counted as ``flat_rho`` — a
+        physically-justified extrapolation, not an unreliable hull clamp.
+        """
         t = np.atleast_1d(np.asarray(temperature_k, dtype=float))
         r = np.atleast_1d(np.asarray(rho_si, dtype=float))
         t, r = np.broadcast_arrays(t, r)
-        pts = np.column_stack([t.ravel(), np.log10(r.ravel())])
+        logr = np.log10(r.ravel())
 
+        n_flat = 0
+        if self.dilute_flat:
+            below = logr < self._logrho_min
+            n_flat = int(below.sum())
+            logr = np.where(below, self._logrho_min, logr)  # flat κ in ρ under floor
+
+        pts = np.column_stack([t.ravel(), logr])
         out = self._lin(pts)  # (N, 2); NaN rows are outside the hull
         outside = np.isnan(out[:, 0])
         n_out = int(outside.sum())
@@ -107,6 +139,7 @@ class OpacityTable:
 
         self.clamp.total_calls += pts.shape[0]
         self.clamp.clamped_calls += n_out
+        self.clamp.flat_rho_calls += n_flat
         return out
 
     def kappa_rosseland(self, temperature_k, rho_si):
@@ -129,11 +162,16 @@ class OpacityTable:
     def clamped_mask(self, temperature_k, rho_si) -> np.ndarray:
         """Boolean mask (per point) of queries outside the grid hull.
 
-        Does not mutate the clamp counter (used by the composite source to
-        attribute reliability to the actually-used sub-source).
+        Dilute-flat ρ-floored queries are NOT counted as clamped (they are
+        reliable via the dilute limit, A26). Does not mutate the clamp counter
+        (used by the composite source to attribute reliability to the used
+        sub-source).
         """
         t = np.atleast_1d(np.asarray(temperature_k, dtype=float))
         r = np.atleast_1d(np.asarray(rho_si, dtype=float))
         t, r = np.broadcast_arrays(t, r)
-        pts = np.column_stack([t.ravel(), np.log10(r.ravel())])
+        logr = np.log10(r.ravel())
+        if self.dilute_flat:
+            logr = np.maximum(logr, self._logrho_min)  # floored ρ -> in-hull, reliable
+        pts = np.column_stack([t.ravel(), logr])
         return np.isnan(self._lin(pts)[:, 0])

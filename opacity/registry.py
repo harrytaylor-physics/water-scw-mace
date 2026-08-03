@@ -23,6 +23,11 @@ class SourceSpec:
     glob: str  # filename pattern within subdir
     scale: float  # multiply kappa/alpha by this on load
     scale_reason: str
+    # Below the grid's ρ floor, hold κ flat in ρ (dilute limit): pressure
+    # broadening is negligible so mass opacity becomes ρ-independent (A26). True
+    # for line lists (physically justified in the dilute regime); False for FP,
+    # a condensed-phase method whose low-ρ extrapolation is not justified.
+    dilute_flat: bool = False
 
 
 REGISTRY: dict[str, SourceSpec] = {
@@ -43,6 +48,7 @@ REGISTRY: dict[str, SourceSpec] = {
         glob="T*_rho*.npz",
         scale=1.0,
         scale_reason="line-list opacity already in correct units",
+        dilute_flat=True,  # HITEMP delivered only for ρ≥0.1 (A26)
     ),
     "pokazatel": SourceSpec(
         name="pokazatel",
@@ -50,6 +56,7 @@ REGISTRY: dict[str, SourceSpec] = {
         glob="T*_rho*.npz",
         scale=1.0,
         scale_reason="line-list opacity already in correct units",
+        dilute_flat=True,
     ),
 }
 

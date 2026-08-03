@@ -53,7 +53,7 @@ def eos(cfg):
 
 def _inject_constant_fp(cfg, kappa_si):
     """Register a constant-opacity source under the name 'fp' (for gate runs)."""
-    key = ("fp", resolve_band(cfg, ["fp"]), str(cfg.data_root_path))
+    key = ("fp", resolve_band(cfg, ["fp"]), cfg.opacity.rel_floor, str(cfg.data_root_path))
     bt._cache[key] = ConstantOpacitySource(kappa_si, name="fp")
 
 
@@ -140,6 +140,19 @@ def test_fixed_entropy_stays_puffy_longer(cfg):
     assert hi_ti.tau_kh_s < base.tau_kh_s
 
 
+def test_composite_reliable_via_radiative_zone(cfg):
+    """With HITEMP + dilute-flat, the composite's radiative zone is unclamped
+    (reliable), while pure FP stays fully clamped (A26)."""
+    bt.clear_cache()
+    comp = build_structure(cfg, t_eq_k=600.0, t_int_k=100.0, source_name="composite")
+    assert comp.clamp_fraction_radiative < 0.20
+    assert comp.clamp_reliable
+    assert comp.flat_rho_fraction > 0.0  # outer atmosphere uses the dilute limit
+    fp = build_structure(cfg, t_eq_k=600.0, t_int_k=100.0, source_name="fp")
+    assert not fp.clamp_reliable  # FP does not cover the radiative zone
+    bt.clear_cache()
+
+
 def test_adaptive_matching_converges_high_opacity(cfg):
     bt.clear_cache()  # use the real FP grid (very high band-limited kappa_R)
     res = build_structure(cfg, t_eq_k=700.0, t_int_k=150.0, source_name="fp")
@@ -161,7 +174,7 @@ def test_g4_identical_tables_identical_structure(cfg):
     full grid-interpolation + integration path. (Grid-interp determinism itself
     is covered by the opacity-level G4.)
     """
-    key = ("fp", resolve_band(cfg, ["fp"]), str(cfg.data_root_path))
+    key = ("fp", resolve_band(cfg, ["fp"]), cfg.opacity.rel_floor, str(cfg.data_root_path))
 
     bt._cache[key] = _scaled_fp_grid_source(cfg, 1e-3)
     a = build_structure(cfg, t_eq_k=700.0, t_int_k=150.0, source_name="fp")

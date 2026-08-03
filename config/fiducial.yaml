@@ -27,7 +27,8 @@ interior:
 
 opacity:
   source: "fp"         # fp | hitemp | pokazatel | composite
-  band_cm: null        # null = auto-detect largest band all sources support (A14)
+  band_cm: [100.0, 4000.0]  # crossover-consistent science band (A25); null=auto
+  rel_floor: 1.0e-6    # transparency-window floor before Rosseland mean (A25)
   clamp_fraction_threshold: 0.20
 
 boundary:

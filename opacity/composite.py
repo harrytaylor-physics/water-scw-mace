@@ -51,6 +51,7 @@ class CompositeOpacitySource(OpacitySource):
         self._log_hi = np.log10(hi)
         self._total = 0
         self._clamped = 0
+        self._flat_rho = 0
 
     def _weight(self, rho_si) -> np.ndarray:
         """FP weight w(ρ): 0 (pure line-list) → 1 (pure FP) across the window."""
@@ -80,6 +81,10 @@ class CompositeOpacitySource(OpacitySource):
         )
         self._total += clamped.size
         self._clamped += int(clamped.sum())
+        # Dilute-flat (A26): dilute-dominated points below the line list's ρ floor.
+        floor = getattr(self.dilute, "rho_floor_si", None)
+        if floor is not None:
+            self._flat_rho += int(np.sum((~use_dense) & (r.ravel() < floor)))
 
         return float(out[0]) if scalar else out
 
@@ -89,13 +94,26 @@ class CompositeOpacitySource(OpacitySource):
     def kappa_P(self, temperature_k, rho_si):
         return self._blend("kappa_P", temperature_k, rho_si)
 
+    def clamped_mask(self, temperature_k, rho_si):
+        """Per-point clamp mask, attributed to the dominant sub-source (A26)."""
+        t = np.atleast_1d(np.asarray(temperature_k, float))
+        r = np.atleast_1d(np.asarray(rho_si, float))
+        t, r = np.broadcast_arrays(t, r)
+        use_dense = self._weight(r) >= 0.5
+        return np.where(use_dense, self.dense.clamped_mask(t, r), self.dilute.clamped_mask(t, r))
+
     @property
     def clamp_fraction(self) -> float:
         return self._clamped / self._total if self._total else 0.0
 
+    @property
+    def flat_rho_fraction(self) -> float:
+        return self._flat_rho / self._total if self._total else 0.0
+
     def reset_clamp_counter(self) -> None:
         self._total = 0
         self._clamped = 0
+        self._flat_rho = 0
         self.dilute.reset_clamp_counter()
         self.dense.reset_clamp_counter()
 

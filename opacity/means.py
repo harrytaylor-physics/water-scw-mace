@@ -58,31 +58,49 @@ def _band_slice(wn_cm: np.ndarray, band_cm: tuple[float, float]) -> np.ndarray:
     return mask
 
 
+def _apply_floor(kap: np.ndarray, rel_floor: float) -> np.ndarray:
+    """Clamp opacity below to ``rel_floor × max(κ)`` (transparency-window floor).
+
+    The Rosseland (harmonic) mean is dominated by the most transparent windows,
+    so a relative floor caps how transparent they count and raises κ_R. Used to
+    reproduce external conventions (A25); default off (rel_floor=0).
+    """
+    if rel_floor and rel_floor > 0:
+        return np.maximum(kap, rel_floor * float(np.max(kap)))
+    return kap
+
+
 def planck_mean(
-    wn_cm: np.ndarray, kappa: np.ndarray, temperature_k: float, band_cm: tuple[float, float]
+    wn_cm: np.ndarray, kappa: np.ndarray, temperature_k: float, band_cm: tuple[float, float],
+    rel_floor: float = 0.0,
 ) -> float:
     """Planck mean opacity ⟨κ⟩_P = ∫κ B dν / ∫B dν over ``band_cm``.
 
-    Units of the result match the units of ``kappa``.
+    Units of the result match the units of ``kappa``. ``rel_floor`` clamps κ from
+    below at rel_floor·max(κ) (negligible for the arithmetic Planck mean; provided
+    for convention parity with the Rosseland mean).
     """
     mask = _band_slice(wn_cm, band_cm)
     wn = wn_cm[mask]
-    kap = kappa[mask]
+    kap = _apply_floor(kappa[mask], rel_floor)
     w = planck_weight(wn, temperature_k)
     return float(_trapz(kap * w, wn) / _trapz(w, wn))
 
 
 def rosseland_mean(
-    wn_cm: np.ndarray, kappa: np.ndarray, temperature_k: float, band_cm: tuple[float, float]
+    wn_cm: np.ndarray, kappa: np.ndarray, temperature_k: float, band_cm: tuple[float, float],
+    rel_floor: float = 0.0,
 ) -> float:
     """Rosseland mean opacity via the harmonic weighting
     1/⟨κ⟩_R = ∫(1/κ)(dB/dT) dν / ∫(dB/dT) dν over ``band_cm``.
 
     Units of the result match the units of ``kappa``. Requires κ > 0 in-band.
+    ``rel_floor`` clamps κ from below at rel_floor·max(κ) before the harmonic
+    mean (transparency-window floor; raises κ_R). Default 0 (off).
     """
     mask = _band_slice(wn_cm, band_cm)
     wn = wn_cm[mask]
-    kap = kappa[mask]
+    kap = _apply_floor(kappa[mask], rel_floor)
     if not np.all(kap > 0):
         raise ValueError("Rosseland mean requires strictly positive in-band opacity")
     w = rosseland_weight(wn, temperature_k)

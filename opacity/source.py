@@ -43,6 +43,11 @@ class OpacitySource(ABC):
     def reset_clamp_counter(self) -> None:
         """Reset the clamp counter (call before a structure integration)."""
 
+    @property
+    def flat_rho_fraction(self) -> float:
+        """Fraction of evaluations dilute-flat ρ-floored (justified; A26). 0 by default."""
+        return 0.0
+
     def clamped_mask(self, temperature_k, rho_si) -> np.ndarray:
         """Per-point mask of extrapolated queries. Default: none (no grid)."""
         shape = np.broadcast(np.asarray(temperature_k), np.asarray(rho_si)).shape
@@ -79,6 +84,14 @@ class GridOpacitySource(OpacitySource):
     @property
     def clamp_fraction(self) -> float:
         return self.table.clamp.fraction
+
+    @property
+    def flat_rho_fraction(self) -> float:
+        return self.table.clamp.flat_rho_fraction
+
+    @property
+    def rho_floor_si(self) -> float:
+        return self.table.rho_floor_si
 
     def reset_clamp_counter(self) -> None:
         self.table.clamp.reset()

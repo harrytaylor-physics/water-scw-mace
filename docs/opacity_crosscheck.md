@@ -1,52 +1,64 @@
-# Fx opacity comparison vs the crossover_hitemp.json cross-check
+# Fx opacity comparison — cross-check vs crossover_hitemp.json (RESOLVED)
 
-`Fx_opacity_compare` computes the exact FP-vs-line-list band-limited κ_R/κ_P
-ratios on the 27 shared (T,ρ) grid points, over the common band the plotted
-sources share (currently [50, 4499.95] cm⁻¹, set by POKAZATEL's window). The
-owner's independent `crossover_hitemp.json` (FP vs **HITEMP**, RADIS pipeline)
-is used as a cross-check.
+`Fx_opacity_compare` computes the exact band-limited κ_R/κ_P ratios FP vs line
+list on shared (T,ρ) points. With HITEMP delivered, we ran FP-vs-HITEMP through
+our own pipeline against the owner's independent `crossover_hitemp.json`
+(FP-vs-HITEMP, RADIS) to close the ~2× Rosseland discrepancy flagged earlier
+(A22). **It is closed: the gap was the band convention, not the floor.**
 
-## What agrees, what doesn't
+## The resolution
 
-| point (T, ρ)        | my FP/POKAZATEL Planck | crossover FP/HITEMP Planck | my Rosseland | crossover Rosseland |
-|---------------------|------------------------|----------------------------|--------------|---------------------|
-| 1000, 129.7         | 1.63                   | 1.38                       | 14.9         | 7.6                 |
-| 1500, 1200          | 5.41                   | 4.81                       | 50.8         | 21.9                |
-| 2000, 150           | 1.92                   | 1.49                       | 4.2          | 1.7                 |
-| 3000, 2228.7        | 22.5                   | 18.2                       | 84.3         | 39.6                |
-| 3000, 108.8         | 1.73                   | 1.40                       | 2.8          | 1.4                 |
+Under the owner's convention — band **[100, 4000] cm⁻¹**, relative floor
+1e-6 — our FP/HITEMP means reproduce the crossover to ~1%:
 
-- **Trend: reproduced exactly** — monotone rise from ~1.4 (cool, low-ρ) to ~20
-  (hot, dense), same ordering across all 27 points.
-- **Planck: agrees to ~15–20%** (mine runs slightly high). Good for two
-  different line lists compared through two different pipelines.
-- **Rosseland: mine runs ~2× the crossover** consistently.
+| point (T, ρ)  | FP/HT κ_R (ours) | crossover κ_R | FP/HT κ_P (ours) | crossover κ_P |
+|---------------|------------------|---------------|------------------|---------------|
+| 1500, 300     | 3.43             | 3.42          | 1.81             | 1.80          |
+| 2000, 300     | 2.11             | 2.11          | 1.55             | 1.55          |
+| 2500, 300     | 1.52             | 1.52          | 1.55             | 1.54          |
 
-## Why the Rosseland factor of ~2 (not a bug)
+## Decomposition: it was the BAND, not the floor
 
-- It is **not resolution**: box-smoothing the fine POKAZATEL (0.05 cm⁻¹) up to
-  10–40 cm⁻¹ leaves its κ_R unchanged (2.58 → 2.59), so the FP–POKAZATEL
-  spectral-resolution mismatch does not explain it.
-- It is **not my FP means**: FP κ_P = 425, κ_R = 38.5 cm²/g at (1000, 129.7)
-  reproduce the session-start values and the same FP files the crossover used.
-- The residual is therefore a **genuine POKAZATEL-vs-HITEMP difference in the
-  Rosseland mean** (κ_R(HITEMP) ≈ 5.1 vs κ_R(POKAZATEL) ≈ 2.6 at that point),
-  and/or a **band/method difference in the crossover pipeline** (its band is not
-  recorded; Rosseland is a harmonic, transparency-window-dominated mean and is
-  far more band/method-sensitive than Planck). Two water line lists differing by
-  ~2× in the Rosseland mean while agreeing to ~15% in Planck is physically
-  reasonable — the Rosseland mean lives in the weak-line windows where the lists
-  are least complete and most divergent.
+FP/HITEMP κ_R at (1500, 300), varying band and floor independently:
 
-## Status & how to close it
+| band          | floor | FP/HT κ_R |
+|---------------|-------|-----------|
+| [50, 4500]    | 0     | 6.47      |
+| [50, 4500]    | 1e-6  | 6.47      | ← floor inactive
+| [100, 4000]   | 0     | 3.43      | ← matches crossover
+| [100, 4000]   | 1e-6  | 3.43      |
 
-**Not declared "solid" for Rosseland.** The Planck comparison is trustworthy;
-the Rosseland absolute ratio carries a line-list/band systematic of order 2.
-To isolate it, run `Fx_opacity_compare` against the **HITEMP** tables once
-generated (same band, same means pipeline): FP/HITEMP from Fx should then match
-`crossover_hitemp.json` closely, confirming the pipeline and pinning the
-remaining POKAZATEL–HITEMP difference as physical. Until then, quote **Planck
-ratios** as the headline opacity contrast and present Rosseland with this ±~2×
-line-list caveat.
+- The **band** drives it: [50,4500]→[100,4000] moves 6.47→3.43. The far-band
+  transparency windows (50–100 and 4000–4500 cm⁻¹) dominate the harmonic
+  Rosseland mean and inflate the FP/line-list ratio for the fine line lists more
+  than for smoothed FP.
+- The **1e-6 floor is inactive**: every source's in-band κ_min/κ_max
+  (FP 1.8e-3, POKAZATEL 3e-4, HITEMP 6e-6) is ≥ 1e-6, so the floor never binds.
+  (It binds and matters at ≥1e-4; kept as a robustness knob.)
 
-Numbers are dumped to `outputs/Fx_opacity_compare.csv` (band recorded per row).
+## wstep is not a systematic
+
+HITEMP is at wstep 0.01 cm⁻¹, POKAZATEL at 0.05, FP smoothed to 20. Downsampling
+HITEMP 0.01→0.05 changes κ_R by **−0.0%**, so the resolution difference does not
+bias the Rosseland comparison — both line lists resolve the in-band windows.
+
+## Line-list agreement and the residual systematic
+
+- HITEMP and POKAZATEL agree on κ_R to ~1.15–1.46× (POKAZATEL slightly less
+  opaque) and on κ_P to ~5% — a genuine, modest line-list difference.
+- The **band choice is the real ~2× systematic** on the *absolute* Rosseland
+  mean (hence on the cooling ratio): [50,4500] gives ~2× larger FP/LL κ_R than
+  [100,4000]. We adopt **[100, 4000]** as the default science band (A25): it is
+  crossover-consistent, mutually consistent across FP/HITEMP/POKAZATEL, and the
+  well-resolved core. The [50,4500] result is reported as the systematic bound.
+
+## Confidence statement
+
+The Rosseland numbers can be stated with confidence **on the [100, 4000] band**:
+FP/HITEMP reproduces the independent crossover to ~1%, resolution is irrelevant,
+and the two line lists agree to ~1.5×. The remaining uncertainty is the band
+choice itself (~2× between [100,4000] and [50,4500]), which propagates to the
+headline cooling ratio and is quoted as such.
+
+Numbers: `outputs/Fx_opacity_compare.csv` (band recorded per row). Reproduce the
+convention variants with `compute_point_means(..., rel_floor=...)` over any band.

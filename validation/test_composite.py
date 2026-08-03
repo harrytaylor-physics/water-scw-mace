@@ -80,7 +80,37 @@ def test_blend_window_validation():
         CompositeOpacitySource(d, d, blend_rho_si=(-1.0, 30.0))  # lo <= 0
 
 
-def test_registered_composite_needs_line_list(cfg):
-    """Building the registered composite fails clearly until HITEMP lands."""
-    with pytest.raises(FileNotFoundError, match="not yet delivered"):
-        build_source("composite", cfg)
+def test_dilute_flat_extrapolation(cfg):
+    """Below the grid ρ floor, a line-list source holds κ flat in ρ (A26) and
+    counts the call as flat_rho, not as a hull clamp."""
+    ht = build_source("hitemp", cfg)
+    floor = ht.rho_floor_si
+    ht.reset_clamp_counter()
+    # A grid T (in range) at ρ below the floor -> flat κ in ρ.
+    k_floor = ht.kappa_R(1000.0, floor)
+    k_below = ht.kappa_R(1000.0, floor * 1e-3)
+    assert k_below == pytest.approx(k_floor, rel=1e-9)  # flat in ρ
+    assert ht.flat_rho_fraction > 0.0
+    assert ht.clamp_fraction == 0.0  # not counted as an unreliable clamp
+
+
+def test_fp_not_dilute_flat(cfg):
+    """FP (condensed-phase) does NOT flat-extrapolate; below its floor it clamps."""
+    fp = build_source("fp", cfg)
+    assert fp.flat_rho_fraction == 0.0
+    fp.reset_clamp_counter()
+    fp.kappa_R(2000.0, 1e-4)  # far below FP's ρ floor (~109)
+    assert fp.clamp_fraction == 1.0
+    assert fp.flat_rho_fraction == 0.0
+
+
+def test_registered_composite_builds(cfg):
+    """The registered composite (HITEMP dilute + FP dense) builds now that HITEMP
+    is delivered, and blends across the config density window."""
+    comp = build_source("composite", cfg)
+    assert isinstance(comp, CompositeOpacitySource)
+    assert comp.dilute.name == "hitemp"
+    assert comp.dense.name == "fp"
+    lo, hi = comp.blend_rho_si
+    # Below the window -> dilute (HITEMP); above -> dense (FP).
+    assert comp.kappa_R(700.0, lo * 0.5) == pytest.approx(comp.dilute.kappa_R(700.0, lo * 0.5), rel=1e-9)

@@ -132,18 +132,15 @@ def test_unknown_source_raises():
         get_spec("bogus")
 
 
-def test_undelivered_hitemp_raises(cfg):
-    """HITEMP spectra not yet delivered -> clear error (POKAZATEL now present)."""
-    with pytest.raises(FileNotFoundError, match="not yet delivered"):
-        build_source("hitemp", cfg)
-
-
-def test_pokazatel_builds(cfg):
-    """Delivered POKAZATEL tables build a usable source (overlap grid with FP)."""
+def test_line_list_sources_build(cfg):
+    """Delivered POKAZATEL (27, FP grid) and HITEMP (76, 11×11 grid) both build."""
     pk = build_source("pokazatel", cfg)
     assert pk.n_points == 27
-    kr = pk.kappa_R(1500.0, 300.0)  # a shared grid point
-    assert kr > 0 and kr < 1e5
+    ht = build_source("hitemp", cfg)
+    assert ht.n_points == 76  # 11 T × 7 ρ − 1 (T=500,ρ=0.1 missing)
+    for src in (pk, ht):
+        kr = src.kappa_R(1500.0, 300.0)  # a shared grid point
+        assert kr > 0 and kr < 1e5
 
 
 # --------------------------------------------------------------------------
@@ -173,23 +170,25 @@ def test_detect_common_band(cfg):
 
 
 def test_per_comparison_bands(cfg):
-    """Each source/comparison resolves its own band (A21): a windowed dataset
-    only constrains comparisons it is part of."""
+    """detect_common_band resolves per set of sources (A21): a windowed dataset
+    only constrains comparisons it is part of. Independent of the config pin."""
     fp_only = detect_common_band(cfg, ["fp"])
-    pk_only = detect_common_band(cfg, ["pokazatel"])
-    both = detect_common_band(cfg, ["fp", "pokazatel"])
+    both_pk = detect_common_band(cfg, ["fp", "pokazatel"])
+    both_ht = detect_common_band(cfg, ["fp", "hitemp"])
 
     assert fp_only[0] == pytest.approx(1.336, abs=0.05)  # FP's own full band
     assert fp_only[1] == pytest.approx(6000.11, abs=1.0)
-    assert pk_only == pytest.approx((50.0, 4499.95), abs=1.0)  # POKAZATEL window
-    assert both == pytest.approx((50.0, 4499.95), abs=1.0)  # intersection
-    # A pure-FP run is NOT capped by POKAZATEL being on disk.
-    assert build_source("fp", cfg).band_cm == pytest.approx(fp_only, abs=1.0)
+    assert both_pk == pytest.approx((50.0, 4499.95), abs=1.0)  # POKAZATEL caps it
+    # HITEMP [10,11000] does NOT cap FP at 4500; FP∩HITEMP = [10, 6000].
+    assert both_ht[0] == pytest.approx(10.0, abs=1.0)
+    assert both_ht[1] == pytest.approx(6000.0, abs=2.0)
 
 
 def test_resolve_band_prefers_explicit(cfg):
     from dataclasses import replace
 
-    pinned = replace(cfg.opacity, band_cm=(50.0, 4500.0))
-    assert resolve_band(replace(cfg, opacity=pinned)) == (50.0, 4500.0)
-    assert resolve_band(cfg, ["fp"]) == detect_common_band(cfg, ["fp"])
+    # Config pins the science band [100,4000] (A25) -> resolve_band returns it.
+    assert resolve_band(cfg, ["fp"]) == (100.0, 4000.0)
+    # None -> auto-detect per source set.
+    auto = replace(cfg, opacity=replace(cfg.opacity, band_cm=None))
+    assert resolve_band(auto, ["fp"]) == detect_common_band(auto, ["fp"])

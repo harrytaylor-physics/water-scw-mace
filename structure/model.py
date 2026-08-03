@@ -60,8 +60,10 @@ class StructureResult:
     photosphere_pressure_pa: float
     photosphere_temperature_k: float
 
-    clamp_fraction: float
-    clamp_reliable: bool
+    clamp_fraction: float  # raw fraction of all opacity evals clamped
+    clamp_fraction_radiative: float  # clamped fraction in the radiative zone (A26)
+    clamp_reliable: bool  # radiative clamp fraction <= threshold
+    flat_rho_fraction: float  # dilute-limit ρ-floored fraction (justified; A26)
     two_phase_fraction: float
     hydrostatic_residual: float
     shoot_iterations: int
@@ -193,6 +195,7 @@ def build_structure(
         num.rtol, num.atol, num.solver, n_sample=n_sample,
     )
     clamp_fraction = opacity.clamp_fraction
+    flat_rho_fraction = opacity.flat_rho_fraction
 
     # Concatenate top -> core (drop duplicate matching point).
     m = np.concatenate([outer["m"], interior["m"][1:]])
@@ -214,6 +217,16 @@ def build_structure(
     p_phot, t_phot = _photosphere(outer["P"], tau_outer, outer["T"])
     hydro = _hydrostatic_residual(interior["m"], interior["r"], interior["P"])
     threshold = cfg.opacity.clamp_fraction_threshold
+
+    # Reliability is set by clamps in the RADIATIVE zone only: opacity shapes the
+    # structure just there; convective clamps (deep interior above the grid T)
+    # are physically irrelevant since the profile follows the adiabat (A26).
+    radiative = ~is_conv
+    if np.any(radiative):
+        rad_clamped = opacity.clamped_mask(t[radiative], rho[radiative])
+        clamp_fraction_radiative = float(np.mean(rad_clamped))
+    else:
+        clamp_fraction_radiative = 0.0
 
     # Composite: log the FP/line-list κ ratio at the seam over the radiative
     # zone (the quantified systematic, A12).
@@ -249,7 +262,9 @@ def build_structure(
         photosphere_pressure_pa=p_phot,
         photosphere_temperature_k=t_phot,
         clamp_fraction=clamp_fraction,
-        clamp_reliable=clamp_fraction <= threshold,
+        clamp_fraction_radiative=clamp_fraction_radiative,
+        clamp_reliable=clamp_fraction_radiative <= threshold,
+        flat_rho_fraction=flat_rho_fraction,
         two_phase_fraction=float(two_phase.mean()),
         hydrostatic_residual=hydro,
         shoot_iterations=shot.n_iter,

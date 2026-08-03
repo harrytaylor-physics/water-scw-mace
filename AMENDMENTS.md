@@ -4,6 +4,41 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-08-03
+
+- **A25 — Default science band [100, 4000] cm⁻¹ + Rosseland floor; resolves the
+  A22 Rosseland discrepancy (it was the BAND, not the floor).** With HITEMP
+  delivered, Fx was run FP-vs-HITEMP through our own pipeline. Under the owner's
+  convention (band [100, 4000], relative floor 1e-6) our FP/HITEMP κ_R
+  reproduces `crossover_hitemp.json` to ~1% (3.43 vs 3.42, 2.11 vs 2.11, 1.52 vs
+  1.52); Planck likewise. Decomposition shows the entire ~2× gap was the **band**:
+  [50,4500]→[100,4000] moves FP/HT κ_R 6.47→3.43, while the 1e-6 floor is
+  **inactive** (all sources' in-band κ_min/κ_max ≥ 1e-6, so it never binds). The
+  far-band transparency windows (50–100, 4000–4500 cm⁻¹) dominate the harmonic
+  Rosseland mean and inflate the ratio for the fine line lists more than for
+  smoothed FP. The default `opacity.band_cm` is therefore [100, 4000] (the
+  crossover-consistent, mutually-consistent-across-FP/HITEMP/POKAZATEL core
+  band); `rel_floor`=1e-6 is kept for convention parity + robustness (a knob).
+  [50,4500] is the reported band systematic (~2× on κ_R). HITEMP and POKAZATEL
+  agree on κ_R to ~1.5× (POKAZATEL slightly less opaque). See
+  `docs/opacity_crosscheck.md`.
+
+- **A26 — Dilute-limit flat-κ extrapolation + radiative-zone reliability.**
+  HITEMP is delivered only for ρ≥0.1 kg/m³ (45 dilute points OOM/rejected in
+  RADIS at wstep=0.01 — Doppler widths ~4e-5 cm⁻¹). Below the grid ρ floor, κ is
+  held flat in ρ for line-list sources (`SourceSpec.dilute_flat=True`): pressure
+  broadening is negligible there, so mass opacity κ = σ·N_A/M becomes
+  ρ-independent (cross-section per molecule fixed). These ρ-floored calls are
+  counted as `flat_rho` (physically justified) — NOT as unreliable hull clamps.
+  Separately, run reliability is now judged on the **radiative-zone** clamp
+  fraction, since opacity shapes the structure only there; clamps in the deep
+  convective interior (T above the grid ceiling, structure on the adiabat) are
+  irrelevant. Effect: composite/HITEMP fiducial runs have radiative clamp = 0.0
+  (reliable) with flat_rho ≈ 0.25; pure FP stays 1.0 (unreliable), as it must.
+  Flat-extrapolation region and both clamp fractions are in run metadata and
+  figure captions. `StructureResult.{clamp_fraction, clamp_fraction_radiative,
+  flat_rho_fraction}`.
+
 ## 2026-08-01
 
 - **A24 — Phase-2 evolution scheme + G6.** Static-sequence cooling (Lopez &

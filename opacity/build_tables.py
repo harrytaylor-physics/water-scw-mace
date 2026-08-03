@@ -76,13 +76,16 @@ def resolve_band(cfg: Config, sources: list[str] | None = None) -> tuple[float, 
 
 
 def compute_point_means(
-    name: str, cfg: Config, band_cm: tuple[float, float]
+    name: str, cfg: Config, band_cm: tuple[float, float], rel_floor: float | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Per-point (T, ρ, κ_R, κ_P) means in cm²/g over ``band_cm``.
 
-    Reusable by the table builder and by the band-limitation quantification
-    (full-band vs common-band, docs/band_limitation.md).
+    ``rel_floor`` (default from config) applies the transparency-window floor
+    before the Rosseland mean (A25). Reusable by the table builder and by the
+    band/convention studies (docs/band_limitation.md, docs/opacity_crosscheck.md).
     """
+    if rel_floor is None:
+        rel_floor = cfg.opacity.rel_floor
     spec = get_spec(name)
     spectra_dir = cfg.data_root_path / spec.subdir
     paths = find_spectra(spectra_dir, spec)
@@ -90,8 +93,8 @@ def compute_point_means(
     temps, rhos, kappa_r, kappa_p = [], [], [], []
     for path in paths:
         rec = load_spectrum(path, spec, band_cm)
-        kappa_p.append(planck_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band_cm))
-        kappa_r.append(rosseland_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band_cm))
+        kappa_p.append(planck_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band_cm, rel_floor))
+        kappa_r.append(rosseland_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band_cm, rel_floor))
         temps.append(rec.temperature_k)
         rhos.append(rec.rho_si)
     return (
@@ -167,6 +170,7 @@ def build_source(name: str, cfg: Config, band: tuple[float, float] | None = None
         kappa_rosseland_si=kappa_r * CM2_PER_G_TO_SI,
         kappa_planck_si=kappa_p * CM2_PER_G_TO_SI,
         band_cm=band_cm,
+        dilute_flat=get_spec(name).dilute_flat,
     )
     return GridOpacitySource(name, table)
 
@@ -187,7 +191,7 @@ def get_source(name: str, cfg: Config, band: tuple[float, float] | None = None) 
             return _cache[key]
         raise KeyError(f"opacity source {name!r} is not registered or cached")
     band_cm = band or _default_band(name, cfg)
-    key = (name, band_cm, root)
+    key = (name, band_cm, cfg.opacity.rel_floor, root)  # rel_floor changes the means
     if key not in _cache:
         _cache[key] = build_source(name, cfg, band=band_cm)
     return _cache[key]
