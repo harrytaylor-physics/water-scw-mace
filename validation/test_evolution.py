@@ -53,6 +53,19 @@ def test_cooling_track_monotone(cfg, eos):
     assert tr.radius_at_age(tr.age_gyr.max()) < tr.radius_p_rearth.max()  # contracts with age
 
 
+def test_history_comparison_diagnostics(cfg, eos):
+    """A29: composite-vs-line-list history has a well-defined FP-relevant epoch
+    (RCB reaches ρ≥109 only at late/cold ages) and the escape window is clean."""
+    from evolution import compare_histories
+
+    g = np.geomspace(15.0, 400.0, 12)  # coarse but reaches the cold epoch
+    h = compare_histories(cfg, "composite", "hitemp", 600.0, eos=eos, t_int_grid_k=g)
+    # Young ages (shallow RCB) -> the two opacities agree; FP-relevance is late.
+    assert abs(h.diff_at_age(0.1)) < 5e-3  # <0.5% at 100 Myr (escape window clean)
+    ep = h.fp_relevant_epoch_gyr()
+    assert ep is not None and ep[0] > 0.5  # FP-relevant epoch starts well after 0.5 Gyr
+
+
 def test_more_opaque_stays_puffy_longer(cfg, eos):
     """Definitive Phase-2 statement: at a fixed radius, the more opaque source is
     older (took longer to contract there)."""

@@ -56,6 +56,9 @@ class StructureResult:
     interior_entropy_j_kg_k: float  # deep convective adiabat entropy (A23, F3/Phase 2)
 
     rcb_pressures_pa: list[float]
+    rcb_densities_si: list[float]  # ρ at each RCB (A28 scan)
+    max_radiative_rho_si: float  # densest radiative point: where opacity still matters
+    reaches_fp_grid: bool  # max_radiative_rho ≥ FP grid floor (109 kg/m³) → FP-relevant
     rcb_above_match: bool  # Schwarzschild RCB shallower than P_match (matching caveat)
     photosphere_pressure_pa: float
     photosphere_temperature_k: float
@@ -121,6 +124,15 @@ def _find_rcbs(pressure, is_convective):
     flips = np.nonzero(np.diff(is_convective.astype(int)) != 0)[0]
     # geometric mean of the bracketing pressures at each flip
     return [float(np.sqrt(pressure[i] * pressure[i + 1])) for i in flips]
+
+
+def _rcb_densities(rho, is_convective):
+    """ρ at each convective<->radiative flip (geometric mean of neighbours)."""
+    flips = np.nonzero(np.diff(is_convective.astype(int)) != 0)[0]
+    return [float(np.sqrt(rho[i] * rho[i + 1])) for i in flips]
+
+
+FP_GRID_FLOOR_SI = 108.796  # FP's least-dense grid point (kg/m³); FP-relevance boundary
 
 
 def _photosphere(pressure, tau, temperature):
@@ -217,6 +229,9 @@ def build_structure(
     interior_entropy = float(entropy[-1])
 
     rcbs = _find_rcbs(p, is_conv)
+    rcb_rho = _rcb_densities(rho, is_conv)
+    radiative_rho = rho[~is_conv]
+    max_rad_rho = float(radiative_rho.max()) if radiative_rho.size else 0.0
     p_phot, t_phot = _photosphere(outer["P"], tau_outer, outer["T"])
     hydro = _hydrostatic_residual(interior["m"], interior["r"], interior["P"])
     threshold = cfg.opacity.clamp_fraction_threshold
@@ -261,6 +276,9 @@ def build_structure(
         tau_kh_s=tau_kh_s,
         interior_entropy_j_kg_k=interior_entropy,
         rcb_pressures_pa=rcbs,
+        rcb_densities_si=rcb_rho,
+        max_radiative_rho_si=max_rad_rho,
+        reaches_fp_grid=max_rad_rho >= FP_GRID_FLOOR_SI,
         rcb_above_match=any(rp < p_match for rp in rcbs),
         photosphere_pressure_pa=p_phot,
         photosphere_temperature_k=t_phot,

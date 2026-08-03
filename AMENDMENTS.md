@@ -6,20 +6,44 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
 ## 2026-08-03
 
-- **A27 — FP does not affect these planets' structure; the ~15× was an
-  extrapolation artifact (headline correction).** With the composite reliable
-  (A26), composite R_p ≡ pure-line-list R_p to 3 decimals across the whole
-  fiducial grid: the radiative zone that sets the structure is at ρ ≲ 7 kg/m³,
-  1.5–4 dex below FP's grid floor (109 kg/m³), so FP never enters the
-  opacity-relevant regime. The earlier pure-FP "stay puffy longer" ratio
-  (~15–28×) was nearest-neighbor extrapolation of FP into the dilute radiative
-  zone (now flagged unreliable) and is excluded from the deck. The exact
-  FP-vs-line-list opacity difference (2–3× at the dense/hot overlap, Fx) is real
-  but does not propagate to this planet class (that regime is convective here);
-  it is a documented extension for denser envelopes. The reliable opacity
-  systematic is the **line-list choice**: HITEMP vs POKAZATEL differ ~1.5× in
-  κ_R → ~2× in cooling age, plus the ~2× band systematic (A25). See
-  `docs/fp_validity_regime.md`. Awaiting owner decision on deck framing.
+- **A29 — FP-relevant domain + history effect (owner scan).** Systematic map of
+  where FP propagates to structure/evolution. `D1_fp_domain`: over (M_c 2–20,
+  f_env 1–50%) at cold T_int=20, the line-list radiative zone reaches ρ≥109 in
+  31/36 cells, but the structural impact |ΔR_p|(composite−line-list) is **≤1.7%**
+  everywhere (largest for low-mass/high-f_env; ~0.5% fiducial). `evolution.
+  compare_histories` + `E2_history`: matched-IC cooling under composite vs
+  HITEMP. Findings — the FP-relevant epoch is **late (~2.6–14 Gyr)**, so a hot
+  start has a *shallow* RCB and the **first-100-Myr escape window is unaffected**
+  (ΔR_p≈0.00%, RCB ρ≈2–5) — a clean null for mass-loss imprint; the peak radius
+  divergence (~0.33% fiducial) is reached late and **persists** to Gyr (no
+  reconvergence). The strong-FP regime lies beyond steam sub-Neptunes (denser
+  envelopes whose RCB is at ρ≥109 while warm) — the promoted follow-up. See
+  `docs/fp_validity_regime.md`. Not asking FP to matter; this is where it does
+  (little for radius, qualitatively for RCB topology, not at all for escape).
+
+- **A27 — CORRECTED by A28. (Superseded.)** A27 claimed FP never affects these
+  planets because the radiative zone stays at ρ ≲ 7 kg/m³. That was tested only
+  at T_int ≥ 50 and was **wrong for cold/old planets**. Retained for the record;
+  see A28.
+
+- **A28 — FP matters for OLD/COLD planets; reconciles the ρ≈540 vs ρ≈7 conflict.**
+  RCB depth is set by the opacity value and T_int: higher κ or higher T_int →
+  convection starts shallower. Sweeping T_int with the *real* opacity: the
+  radiative zone is dilute (ρ ≲ 7) for T_int ≳ 50 (young/warm — A27's regime),
+  but the RCB **migrates deep into FP territory** as T_int drops, reaching max
+  radiative ρ ≈ 60 (T_int=30), 120–450 (T_int=20), 140–680 (T_int=15). This
+  reconciles the earlier ρ≈540 (that scan was cold + low constant κ). Since cold
+  planets are the observed population, FP is relevant there. **Qualitative
+  effect (as the owner predicted):** pure line lists open a *deep radiative
+  window* at ρ≥109 that the FP-informed composite **closes** (FP is 2–3× more
+  opaque there → those layers convect). At T_int=20 (fiducial) pure HITEMP has 3
+  RCBs and a radiative zone to ρ=453; the composite has 1 RCB to ρ=123. The
+  instantaneous R_p difference is small (~0.1–0.24%); the structural/RCB
+  topology difference is qualitative. Whether it accumulates over cooling
+  history (and whether it touches the young escape window) is the A29 evolution
+  study. NOTE: the FP-relevant epoch is LATE (cold), so a HOT start has a
+  *shallow* RCB — FP relevance grows with age, opposite to a naive expectation.
+  See `docs/fp_validity_regime.md`.
 
 - **A25 — Default science band [100, 4000] cm⁻¹ + Rosseland floor; resolves the
   A22 Rosseland discrepancy (it was the BAND, not the floor).** With HITEMP

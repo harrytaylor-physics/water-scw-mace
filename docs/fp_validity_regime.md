@@ -1,64 +1,66 @@
-# Does FP opacity affect these steam worlds? (Headline caveat)
+# Where does FP opacity matter for steam sub-Neptunes? (Complete finding)
 
-## Finding
+This note supersedes the earlier "FP never matters" claim (A27, which was tested
+only at T_int ≥ 50). The corrected picture (A28/A29) is below.
 
-For the SPEC §8 fiducial class (M_c = 5 M⊕, f_env = 1–10% steam, T_eq 500–800 K,
-T_int 30–300 K), **FP opacity does not change the interior structure or cooling
-at all.** The composite (FP-dense + line-list-dilute) is identical to the pure
-line list:
+## RCB depth is set by the opacity value AND T_int
 
-| T_eq | T_int | R_p (composite) | R_p (HITEMP) | max radiative-zone ρ [kg/m³] |
-|------|-------|-----------------|--------------|------------------------------|
-| 500  | 50    | 1.759           | 1.759        | 6.70 |
-| 500  | 150   | 1.849           | 1.849        | 0.04 |
-| 500  | 300   | 1.917           | 1.917        | 0.00 |
-| 800  | 50    | 1.815           | 1.815        | 2.98 |
-| 800  | 150   | 1.888           | 1.888        | 0.09 |
-| 800  | 300   | 1.958           | 1.958        | 0.01 |
+Higher κ or higher T_int → convection starts shallower (grad_rad ∝ κ, L). So:
 
-## Why
+- **Warm/young planets (T_int ≳ 50 K):** the radiative zone is dilute
+  (ρ ≲ 7 kg/m³), far below FP's grid floor (109 kg/m³). FP is irrelevant; the
+  composite ≡ pure line list.
+- **Cold/old planets (T_int ≲ 30 K):** the RCB migrates deep — max radiative-zone
+  ρ ≈ 60 (T_int=30), 120–450 (T_int=20), 140–680 (T_int=15) — into FP territory.
 
-Opacity shapes the structure only in the **radiative zone**; the convective
-interior follows the adiabat regardless of κ. For these planets the radiative
-zone is the outer atmosphere, at **ρ ≲ 7 kg/m³** (down to ~10⁻² at high T_int).
-FP is a condensed-phase method with a grid floor at **ρ = 109 kg/m³** — 1.5 to 4
-orders of magnitude denser than anywhere opacity matters here. So the composite
-uses the line list throughout the radiative zone, and FP enters only the deep
-convective interior (ρ > 100), where it does not affect the structure.
+This reconciles the two earlier numbers (ρ≈540 at cold + low κ; ρ≈7 at T_int=50).
+Cold planets are the observed population, so FP is relevant for them.
 
-## The earlier "~15× stay puffy longer" was an extrapolation artifact
+## The qualitative effect: FP closes a deep radiative window
 
-Pure-FP runs give age_FP/age_LL ≈ 15–28 at fixed R_p, but that model
-nearest-neighbor-clamps FP from its coldest/least-dense grid point
-(T=1000 K, ρ=109) down into the (T≈650 K, ρ≈0.01) radiative zone — physically
-unjustified, and now flagged unreliable (radiative clamp fraction = 1.0, A26).
-It must **not** be the deck headline.
+Because FP is 2–3× more opaque than line lists at ρ ≥ 109 (Fx, crossover-
+validated), pure line lists **open a deep radiative window** that the FP-informed
+composite **closes** (those layers convect under FP). At the fiducial, T_int=20:
+pure HITEMP has 3 RCBs and a radiative zone to ρ=453; composite has 1 RCB to
+ρ=123. This is a qualitative RCB-topology difference — line lists can spuriously
+predict deep radiative zones.
 
-## What FP vs line-list opacity *does* say (exact, reliable)
+## But the radius impact is small
 
-At the overlap where FP is valid (dense, hot; ρ ≥ 109, T ≥ 1000), FP is **2–3×
-more opaque** than HITEMP/POKAZATEL in the Rosseland mean on the [100, 4000]
-band (`Fx_opacity_compare`, reproduces the crossover to ~1%). This is a real,
-quantified opacity difference — it simply does not propagate to the structure of
-*this* planet class, because that (dense, hot) regime is convective here. It
-would matter for denser/hotter envelopes whose RCB sits at ρ ≳ 100 (more massive
-planets, magma-ocean-coupled layers) — a documented extension, not v1.
+Across (M_c 2–20 M⊕, f_env 1–50%) at T_eq=500, T_int=20 (`D1_fp_domain`):
 
-## The real opacity systematic for these planets: line-list choice
+- The radiative zone reaches ρ≥109 in **31/36** cells (most of space, at cold T_int).
+- The **structural impact |ΔR_p|(composite − line-list) ≤ 1.7%** everywhere,
+  largest for low-mass, high-f_env (puffy, low-g) planets; **~0.5% at the
+  fiducial**. Closing a near-convective deep window barely moves the radius.
 
-The dominant, *reliable* opacity uncertainty is between line lists, not FP vs
-line list. HITEMP vs POKAZATEL: κ_R differs by ~1.5× (POKAZATEL less opaque),
-giving a **cooling-age ratio ≈ 2×** at fixed R_p. Plus the band systematic
-(~2× on κ_R between [100,4000] and [50,4500]).
+## History effect and the escape window (`E2_history`, A29)
 
-## Deck-ready statement
+Evolving matched initial conditions (same M_c, f_env, T_eq, T_int sequence)
+under composite vs HITEMP, fiducial, T_eq=600:
 
-- FP water opacity is 2–3× higher than line-list at the overlap (dense, hot) —
-  exact, crossover-validated.
-- For steam sub-Neptunes, opacity sets the structure in the dilute (ρ ≲ 10),
-  cool (600–1000 K) radiative zone — outside FP's condensed-phase validity — so
-  **FP does not change their radius or cooling** (composite ≡ line list here).
-- The reliable opacity uncertainty is the **line-list choice (~2× in cooling
-  age)**, not FP vs line list.
-- The "~15× puffier with FP" number is an artifact of extrapolating FP beyond
-  its grid and is excluded.
+- **FP-relevant epoch: ≈ 2.6–14 Gyr.** The RCB only reaches ρ≥109 after ~2.6 Gyr;
+  FP relevance grows with age (opposite to a naive "hot start = deep RCB").
+- **Escape window (first 100 Myr): untouched.** There the RCB is at ρ ≈ 2–5
+  kg/m³ (shallow, hot), so composite ≡ line list and **ΔR_p ≈ 0.00%**. FP leaves
+  **no imprint on the escape-sculpting epoch** — a clean, reportable null for the
+  mass-loss history.
+- **Peak radius divergence ≈ 0.33%**, reached late and **persisting** to Gyr
+  ages (it does not reconverge — it is driven by the ongoing deep-RCB regime).
+
+## Deck-ready summary
+
+1. FP water opacity is 2–3× higher than line-list at ρ ≥ 109 / T ≥ 1000
+   (exact, crossover-validated, Fx).
+2. This regime is **convective** in warm/young steam sub-Neptunes, so FP does not
+   change their structure; the composite equals the line list there.
+3. It becomes the **radiative** deep interior only for **old/cold** planets
+   (≳ 2.6 Gyr), where FP **closes deep radiative windows** the line lists open —
+   a qualitative RCB-topology change with a **small radius effect (≤ 1.7% across
+   planet space, ~0.5% fiducial)** that **persists to Gyr ages**.
+4. The **atmospheric-escape window (first 100 Myr) is unaffected** by the FP vs
+   line-list opacity choice — no irreversible mass-loss imprint.
+5. The **larger structural effect lives beyond steam sub-Neptunes** — denser
+   envelopes whose RCB sits at ρ ≥ 109 while still warm (more massive water
+   worlds, magma-ocean-coupled layers). That is the natural follow-up where FP's
+   opacity difference propagates strongly, promoted from footnote to next study.
