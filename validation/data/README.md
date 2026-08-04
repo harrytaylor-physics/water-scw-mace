@@ -1,25 +1,23 @@
 # Literature reference data (for gate G5)
 
-## `aguichine2021.csv` — NOT committed; provide to enable G5
+## `Aguichine_2021_ApJ_914_84.pdf` — the source paper
 
-Static mass–radius benchmark for steam worlds from Aguichine, Mousis, Deleuil &
-Marcq (2021, ApJ 914, 84). Not on the machine and not fetchable offline, so
-gate G5 (`validation/test_g5_literature.py`) **skips** until this file exists.
+Aguichine, Mousis, Deleuil & Marcq (2021), ApJ 914, 84. Their steam-world
+mass–radius fit is Eq. 29:
 
-Expected CSV columns (header row required):
+    log10 R_p = a·log10(M_p) + b + exp(−d·(log10(M_p) + c))
 
-    m_earth,f_env,t_eq_k,r_earth
+with a,b,c,d tabulated per (composition, T_irr). That coefficient table is an
+**online machine-readable table, not contained in the PDF**, so we anchor G5 to
+points digitized from their Figure 8 instead (see below and AMENDMENTS A32).
 
-- `m_earth` — planet mass in Earth masses
-- `f_env`   — steam envelope mass fraction (their water mass fraction)
-- `t_eq_k`  — equilibrium temperature [K]
-- `r_earth` — published planet radius [Earth radii]
+## `aguichine2021_fig8_points.csv` — the G5 anchor
 
-Source options: the paper's machine-readable tables, or the authors' grid /
-`MSEI`-style output. A handful of points spanning the fiducial box (M ~ 1–10
-M⊕, f_env ~ 1–10%, T_eq ~ 500–800 K) is enough for the ≤5–10% check.
-
-G5 also wants a *physically valid* opacity for a fair comparison; with only FP
-(flagged unreliable in the radiative zone) available now, run G5 against the
-`composite` source once the HITEMP tables land. The residual report records
-which opacity was used.
+Eight (WMF, T_irr, M, R) points read from Figure 8 (Ma19+ model, no metallic
+core; read uncertainty ~5%). Columns: `wmf, t_irr_k, m_earth, r_earth`. Gate
+`test_g5_literature.py` matches each point (WMF→f_env, T_irr→T_eq=T_irr/√2,
+pure-rock core cmf=0, mature T_int=30 K), computes R_p, and writes
+`outputs/g5_residuals.json`. Residuals (documented, not tuned): ~6–15% at
+WMF=20%, ~18–23% at WMF=50%, our R_p smaller — driven by our pure-steam envelope
+vs their full water-phase layers, plus core-composition and thermal-state
+differences.

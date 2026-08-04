@@ -183,7 +183,7 @@ def build_structure(
     mp_mearth = mc_mearth / (1.0 - f_env)
     mass_p = core_mass_si(mp_mearth)
     mass_core = core_mass_si(mc_mearth)
-    radius_core = core_radius_si(mc_mearth)
+    radius_core = core_radius_si(mc_mearth, cmf=cfg.core.cmf)
 
     gamma = cfg.irradiation.gamma
     p_top = cfg.boundary.p_top_bar * 1e5

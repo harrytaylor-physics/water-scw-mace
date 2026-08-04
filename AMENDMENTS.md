@@ -4,6 +4,48 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-08-04 (deck prep)
+
+- **A32 — G5 anchor is the published Aguichine (2021) fit; coefficients are
+  online-only, so the numerical anchor is digitized Figure 8.** Their M–R fit is
+  Eq. 29, log₁₀R_p = a·log₁₀M_p + b + exp(−d·(log₁₀M_p + c)), with a,b,c,d
+  tabulated per (composition, T_irr) in an online machine-readable table not in
+  the PDF. G5 therefore anchors to 8 points read from their Figure 8 (Ma19+, no
+  metallic core; read uncertainty ~5%), in
+  `validation/data/aguichine2021_fig8_points.csv`. Matching: WMF→f_env
+  (pure-steam envelope), T_irr→T_eq via T_irr=√2·T_eq, **cmf=0** (pure-rock core,
+  matching their no-metallic-core case — `core.cmf` added to config, A9 default
+  0.325), T_int=30 K. Residuals (documented, not tuned, per SPEC §7): our R_p is
+  systematically smaller by **6–15% at WMF=20% (meets SPEC's 5–10% aim) and
+  18–23% at WMF=50%**. Causes, in order: our pure-steam envelope vs their full
+  water-phase (ice/liquid/supercritical) layers — dominant at high WMF; residual
+  core-composition difference; cooler mature thermal state + Guillot-radiative vs
+  their atmosphere. Gate asserts <30% (structural agreement) and writes
+  `outputs/g5_residuals.json`. G5 now runs (was skipping).
+
+- **A33 — POKAZATEL 11×11 regeneration declined (owner).** POKAZATEL stays on the
+  27-point FP grid; its role is the overlap-agreement cross-check (banked, A22:
+  HITEMP/POKAZATEL agree ~1.5× in κ_R, ~5% in κ_P). **HITEMP is the sole reliable
+  structural line list** (full T=500–3000, ρ=0.1–1000 coverage); POKAZATEL and
+  pure-FP are flagged unreliable in structure runs (radiative-zone coverage).
+
+- **A34 — Final deck narrative framing (owner-approved, amended).** Headline
+  states the failure mechanism and the DFT-MD justification up front, and frames
+  the denser-envelope regime as a *mapped applicability boundary of the
+  first-principles correction*, not a follow-up commitment: "First-principles
+  (DFT-MD) water opacity is 2–3× higher than HITEMP/POKAZATEL at ρ≥109 kg/m³,
+  T≥1000 K — the warm-dense regime where the line picture breaks down (discrete
+  Voigt lines leave transparent windows a collective continuum fills; far-wing/
+  continuum absorption is truncated; the line concept dissolves once collision
+  time ≈ vibrational period). For steam sub-Neptunes this regime is convective
+  while warm and radiogenically unreachable once old (core ≈ M_c×20 TW floors
+  T_int above the ~25 K needed for the deep RCB), so the correction does not
+  measurably change their radius (≤1.7%, and unreached) or observable cooling and
+  leaves no atmospheric-escape imprint. The mapped applicability boundary of the
+  correction is denser envelopes — massive water worlds and magma-ocean-coupled
+  layers — whose RCB sits at ρ≥109 while still warm." Reflected in figure
+  captions and docs.
+
 ## 2026-08-04
 
 - **A30 — Reachability of the FP-relevant regime (checks 1–2). Radiogenic

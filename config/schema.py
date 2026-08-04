@@ -36,6 +36,8 @@ class Core:
 
     mass_mearth: float = 5.0  # M_c in Earth masses
     mr_relation: str = "zeng2016_rock"  # Earth-like rock mass-radius relation
+    cmf: float = 0.325  # core (iron) mass fraction; Earth-like default (A9). 0 =
+    #                     pure rock (matches Aguichine's no-metallic-core, G5).
 
 
 @dataclass(frozen=True)
