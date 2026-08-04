@@ -76,10 +76,10 @@ def main(argv=None):
             transform=ax.transAxes, fontsize=8, color="#555", va="bottom",
             bbox=dict(boxstyle="round", fc="white", ec="#aaa", alpha=0.9))
 
-    ax.set_title(f"Planetary-model anatomy — fiducial composite, $T_{{eq}}$=600 K, "
-                 f"$T_{{int}}$=100 K\nsource: composite (HITEMP dilute + FP dense), "
+    ax.set_title(f"Model structure: fiducial composite profile, $T_{{eq}}$=600 K, "
+                 f"$T_{{int}}$=100 K\nsource: composite (HITEMP dilute, FP dense), "
                  f"{band_caption(res.band_cm)}; radiative clamp {res.clamp_fraction_radiative:.0%} "
-                 f"({'reliable' if res.clamp_reliable else 'UNRELIABLE'})", fontsize=9)
+                 f"({'reliable' if res.clamp_reliable else 'unreliable'})", fontsize=9)
     ax.legend(fontsize=8.5, loc="lower left", bbox_to_anchor=(0.0, 0.12))
     path = save(fig, cfg, "M3_anatomy")
     print(f"wrote {path}")

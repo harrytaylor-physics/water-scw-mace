@@ -69,10 +69,9 @@ def main(argv=None):
     ax.set_xscale("log")
     ax.set_xlim(1e-3, 2300); ax.set_ylim(500, 3200)
     ax.set_xlabel("Density ρ [kg/m³]"); ax.set_ylabel("Temperature [K]")
-    ax.set_title("Planets in opacity space — databases (line-list) at low ρ, the "
-                 "FP correction at high ρ,\nand where planets travel. "
-                 "White ○ = RCB. Background = FP/line-list Planck ratio (ρ≥109)\n"
-                 f"sources: FP + HITEMP; {band_caption(band)}", fontsize=9)
+    ax.set_title("Opacity sources and structure trajectories in the (T, ρ) plane\n"
+                 "white circle = RCB; background = FP/line-list Planck ratio (ρ≥109); "
+                 f"sources FP, HITEMP; {band_caption(band)}", fontsize=9)
     ax.legend(fontsize=8.3, loc="upper left", framealpha=0.9)
     path = save(fig, cfg, "M4_opacity_space")
     print(f"wrote {path}")

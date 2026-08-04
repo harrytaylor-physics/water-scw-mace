@@ -77,9 +77,9 @@ def main(argv=None):
             fontsize=8.5, color=FP_C, style="italic", ha="center", va="center",
             bbox=dict(boxstyle="round", fc="white", ec=FP_C, alpha=0.9))
 
-    ax.set_title(f"Why line lists fail in the warm-dense interior — κ(ν) at "
-                 f"T={T_POINT:.0f} K, ρ={RHO_POINT:.0f} kg/m³\n"
-                 f"sources: POKAZATEL (line list) vs FP (first-principles); "
+    ax.set_title(f"Monochromatic opacity κ(ν) at T={T_POINT:.0f} K, "
+                 f"ρ={RHO_POINT:.0f} kg/m³\n"
+                 f"sources: POKAZATEL (line list), FP (first-principles); "
                  f"native resolution, no band mean applied", fontsize=9)
     ax.legend(fontsize=9, loc="upper right")
     path = save(fig, cfg, "M1_mechanism")

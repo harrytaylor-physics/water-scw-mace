@@ -69,11 +69,10 @@ def main(argv=None):
     ax.set_yscale("log")  # FP artifact (~25×) and the reliable ~1-2× both readable
     ax.set_xlabel("$f_{env}$")
     ax.set_ylabel(r"$\tau_{KH}$(source) / $\tau_{KH}$(HITEMP)  at fixed interior entropy")
-    ax.set_title("Cooling-time systematic vs HITEMP — the reliable spread is the "
-                 "line-list choice\n"
-                 f"composite ≈ HITEMP (FP doesn't reach the radiative zone); "
-                 f"$T_{{eq}}$={t_eq:.0f} K, $T_{{int,ref}}$={t_int_ref:.0f} K, {band_caption(band)}",
-                 fontsize=9)
+    ax.set_title("τ_KH ratio to HITEMP at fixed interior entropy\n"
+                 f"composite equals HITEMP; FP and POKAZATEL opacity-extrapolated "
+                 f"(unreliable); $T_{{eq}}$={t_eq:.0f} K, $T_{{int,ref}}$={t_int_ref:.0f} K, "
+                 f"{band_caption(band)}", fontsize=9)
     ax.legend(fontsize=8.5)
     path = save(fig, cfg, "F3_cooling_ratio")
     print(f"wrote {path}  (baseline=HITEMP; reliable sources: composite/pokazatel)")

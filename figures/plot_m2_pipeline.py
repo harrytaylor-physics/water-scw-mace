@@ -67,13 +67,12 @@ def main(argv=None):
             fontweight="bold")
 
     ax.text(len(STAGES) / 2.0, 1.28,
-            "First-principles water opacity pipeline — validation gates are "
-            "first-class checkpoints, not afterthoughts",
+            "First-principles water opacity pipeline with validation gates",
             ha="center", va="center", fontsize=10.5, fontweight="bold")
     ax.text(len(STAGES) / 2.0, -1.55,
-            "Output feeds the FP opacity source; combined with HITEMP/POKAZATEL in "
-            "the composite (line-list dilute + FP dense).",
-            ha="center", va="center", fontsize=8.5, color="#555", style="italic")
+            "Output is the FP opacity source; combined with HITEMP or POKAZATEL in "
+            "the composite (line-list dilute, FP dense).",
+            ha="center", va="center", fontsize=8.5, color="#555")
     path = save(fig, cfg, "M2_pipeline")
     print(f"wrote {path}")
     return path
