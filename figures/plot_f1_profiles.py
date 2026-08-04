@@ -48,9 +48,10 @@ def main(argv=None):
         res = build_structure(cfg, t_eq, t_int, name, eos=eos, band=band)
         p_bar = res.profile["pressure_pa"] / 1e5
         temp = res.profile["temperature_k"]
-        flagged = "" if res.clamp_reliable else "  [clamp>thr]"
-        ax.plot(temp, p_bar, color=SOURCE_COLOR[name],
-                label=f"{SOURCE_LABEL[name]}  (R_p={res.radius_p_rearth:.2f} R⊕){flagged}")
+        flagged = res.clamp_reliable is False
+        ax.plot(temp, p_bar, color=SOURCE_COLOR[name], ls="--" if flagged else "-",
+                label=f"{SOURCE_LABEL[name]}  (R_p={res.radius_p_rearth:.2f} R⊕)"
+                      + ("  [UNRELIABLE: FP grid not reached]" if flagged else ""))
         # RCB marker(s)
         for i, p_rcb in enumerate(res.rcb_pressures_pa):
             ax.plot(
@@ -65,7 +66,8 @@ def main(argv=None):
     ax.set_ylabel("Pressure [bar]")
     ax.set_title(f"T(P) profiles — $T_{{eq}}$={t_eq:.0f} K, $T_{{int}}$={t_int:.0f} K, "
                  f"$M_c$={cfg.core.mass_mearth:.0f} $M_⊕$, $f_{{env}}$={cfg.envelope.f_env:.0%}\n"
-                 f"{band_caption(band)}", fontsize=10)
+                 f"{band_caption(band)}; solid = reliable, dashed = opacity-extrapolated. "
+                 f"Reliable sources coincide.", fontsize=9)
     ax.legend(fontsize=8.5, loc="upper left")
     path = save(fig, cfg, "F1_tp_profiles")
     print(f"wrote {path}")

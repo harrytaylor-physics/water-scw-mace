@@ -8,6 +8,7 @@ Public API::
 """
 
 from evolution.history import HistoryComparison, compare_histories
+from evolution.radiogenic import radiogenic_power_w, t_int_floor_k
 from evolution.track import (
     SECONDS_PER_GYR,
     CoolingTrack,
@@ -22,4 +23,6 @@ __all__ = [
     "SECONDS_PER_GYR",
     "HistoryComparison",
     "compare_histories",
+    "radiogenic_power_w",
+    "t_int_floor_k",
 ]

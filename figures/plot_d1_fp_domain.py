@@ -21,7 +21,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # run as script or
 import matplotlib.pyplot as plt
 import numpy as np
 
+from constants import R_EARTH
 from eos import AquaEOS
+from evolution import t_int_floor_k
 from figures._common import band_caption, comparison_band, load_cfg, save, set_style
 from structure import build_structure
 from structure.model import FP_GRID_FLOOR_SI
@@ -41,6 +43,7 @@ def main(argv=None):
     max_rad = np.full((F_ENV_GRID.size, M_C_GRID.size), np.nan)
     d_rp_pct = np.full_like(max_rad, np.nan)  # 100·|R_p(comp) − R_p(LL)|/R_p
     d_nrcb = np.zeros_like(max_rad)  # (#RCB line-list) − (#RCB composite)
+    radiogenic_truncated = np.zeros_like(max_rad, dtype=bool)  # T_int=20 unreachable (A30)
     for i, f_env in enumerate(F_ENV_GRID):
         rp_guess = None
         for m_c in sorted(M_C_GRID):  # ascending mass warm-starts
@@ -55,6 +58,9 @@ def main(argv=None):
                 max_rad[i, j] = ht.max_radiative_rho_si
                 d_rp_pct[i, j] = 100.0 * abs(co.radius_p_rearth - ht.radius_p_rearth) / ht.radius_p_rearth
                 d_nrcb[i, j] = len(ht.rcb_pressures_pa) - len(co.rcb_pressures_pa)
+                # Radiogenic floor (A30): is this cold T_int reachable at ~10 Gyr?
+                floor = t_int_floor_k(float(m_c), ht.radius_p_rearth * R_EARTH, age_gyr=10.0)
+                radiogenic_truncated[i, j] = floor > T_INT_COLD
                 rp_guess = ht.radius_p_rearth
             except Exception as exc:  # noqa: BLE001
                 print(f"  (M_c={m_c}, f_env={f_env}) failed: {exc}")
@@ -71,6 +77,12 @@ def main(argv=None):
     if fi.size:
         ax.plot(M_C_GRID[fj], F_ENV_GRID[fi] * 100, "w*", ms=13, mec="k", mew=0.5,
                 ls="none", label="LL opens deep window")
+    # Cells where radiogenic heating floors T_int above 20 K: this cold snapshot
+    # is unreachable, so the FP-relevant regime is radiogenically truncated (A30).
+    ti, tj = np.where(radiogenic_truncated)
+    if ti.size:
+        ax.plot(M_C_GRID[tj], F_ENV_GRID[ti] * 100, "x", color="white", ms=9, mew=1.8,
+                ls="none", label="radiogenic floor > 20 K (unreachable)")
     ax.plot(cfg.core.mass_mearth, cfg.envelope.f_env * 100, "o", ms=14, ls="none",
             mfc="none", mec="lime", mew=2.5, label="fiducial")
 

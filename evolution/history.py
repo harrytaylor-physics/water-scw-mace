@@ -35,6 +35,7 @@ class HistoryComparison:
     t_eq_k: float
     f_env: float
     age_gyr: np.ndarray  # common grid
+    t_int_k: np.ndarray  # T_int on the age grid (≈ shared by both tracks)
     radius_a: np.ndarray
     radius_b: np.ndarray
     rcb_rho_a: np.ndarray  # deepest RCB density [kg/m³] vs age
@@ -70,6 +71,26 @@ class HistoryComparison:
     def diff_at_age(self, age_gyr: float) -> float:
         """Radius fractional difference at a given age (interpolated)."""
         return float(np.interp(age_gyr, self.age_gyr, self.radius_frac_diff))
+
+    def radiogenic_floor_age_gyr(self, mass_core_mearth: float) -> float | None:
+        """Age at which T_int reaches the radiogenic floor (A30): beyond this the
+        planet is radiogenically supported and cools no further, truncating the
+        FP-relevant epoch. None if the floor is never reached within the track.
+
+        Solved self-consistently over the age grid: floor depends on R_p(age) and
+        age; the crossing is where the (no-radiogenic) track T_int drops to it.
+        """
+        from constants import R_EARTH
+        from evolution.radiogenic import t_int_floor_k
+
+        floor = np.array([
+            t_int_floor_k(mass_core_mearth, self.radius_b[i] * R_EARTH, self.age_gyr[i])
+            for i in range(self.age_gyr.size)
+        ])
+        below = self.t_int_k <= floor  # T_int has cooled to/under the floor
+        if not below.any():
+            return None
+        return float(self.age_gyr[np.argmax(below)])
 
 
 def _deepest_rcb_rho(track: CoolingTrack, eos: AquaEOS, cfg: Config) -> np.ndarray:
@@ -122,7 +143,7 @@ def compare_histories(
 
     return HistoryComparison(
         source_a=source_a, source_b=source_b, t_eq_k=t_eq_k, f_env=cfg.envelope.f_env,
-        age_gyr=age,
+        age_gyr=age, t_int_k=on_age(tb, tb.t_int_k),
         radius_a=on_age(ta, ta.radius_p_rearth), radius_b=on_age(tb, tb.radius_p_rearth),
         rcb_rho_a=on_age(ta, rho_a), rcb_rho_b=on_age(tb, rho_b),
         entropy_a=on_age(ta, ta.entropy_j_kg_k), entropy_b=on_age(tb, tb.entropy_j_kg_k),

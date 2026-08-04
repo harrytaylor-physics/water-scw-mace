@@ -39,15 +39,20 @@ def main(argv=None):
     t_int_grid = np.geomspace(12.0, 450.0, 44)
     h = compare_histories(cfg, "composite", line_list, t_eq, eos=eos, t_int_grid_k=t_int_grid)
 
-    fig, (ax_r, ax_rho, ax_d) = plt.subplots(3, 1, figsize=(7.2, 9.0), sharex=True,
+    fig, (ax_r, ax_rho, ax_d) = plt.subplots(3, 1, figsize=(7.2, 9.2), sharex=True,
                                              constrained_layout=True)
     ep = h.fp_relevant_epoch_gyr()
+    floor_age = h.radiogenic_floor_age_gyr(cfg.core.mass_mearth)  # A30
 
-    def annotate_epochs(ax):
+    def annotate_epochs(ax, label=True):
         ax.axvspan(h.age_gyr.min(), ESCAPE_WINDOW_GYR, color="orange", alpha=0.12,
-                   label="escape window (<100 Myr)")
+                   label="escape window (<100 Myr)" if label else None)
         if ep:
-            ax.axvspan(ep[0], ep[1], color="green", alpha=0.10, label="FP-relevant epoch")
+            ax.axvspan(ep[0], ep[1], color="green", alpha=0.10,
+                       label="FP-relevant epoch" if label else None)
+        if floor_age is not None:
+            ax.axvspan(floor_age, h.age_gyr.max(), color="grey", alpha=0.22,
+                       label="radiogenically supported\n(T_int floored; v1 omits core L)" if label else None)
 
     ax_r.plot(h.age_gyr, h.radius_a, color="#CC79A7", label="composite (FP-informed)")
     ax_r.plot(h.age_gyr, h.radius_b, color="#D55E00", ls="--", label=line_list.upper())
@@ -62,7 +67,7 @@ def main(argv=None):
     ax_rho.plot(h.age_gyr, h.rcb_rho_a, color="#CC79A7", label="composite")
     ax_rho.plot(h.age_gyr, h.rcb_rho_b, color="#D55E00", ls="--", label=line_list.upper())
     ax_rho.axhline(FP_GRID_FLOOR_SI, color="k", lw=1, ls=":", label="FP floor 109 kg/m³")
-    annotate_epochs(ax_rho)
+    annotate_epochs(ax_rho, label=False)
     ax_rho.set_yscale("log")
     ax_rho.set_ylabel("deepest RCB ρ [kg/m³]")
     ax_rho.legend(fontsize=8.5)
@@ -70,7 +75,7 @@ def main(argv=None):
     ax_d.plot(h.age_gyr, h.radius_frac_diff * 100, color="#0072B2", label="ΔR_p/R_p")
     ax_d.plot(h.age_gyr, h.entropy_frac_diff * 100, color="#009E73", ls="--", label="Δs/s (interior)")
     ax_d.axhline(0, color="k", lw=0.6)
-    annotate_epochs(ax_d)
+    annotate_epochs(ax_d, label=False)
     ax_d.set_ylabel("composite − line-list [%]")
     ax_d.set_xlabel("Age [Gyr]")
     ax_d.set_xscale("log")
