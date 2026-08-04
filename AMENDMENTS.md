@@ -4,7 +4,40 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
-## 2026-08-03
+## 2026-08-04
+
+- **A30 — Reachability of the FP-relevant regime (checks 1–2). Radiogenic
+  heating TRUNCATES it for steam sub-Neptunes.** The FP-relevant regime lives at
+  T_int ≲ 25 K (where the RCB reaches ρ≥109). Two reachability checks:
+  (1) *Cooling age.* From the tracks (no radiogenics), the fiducial reaches
+  T_int=30 at 0.9 Gyr, 20 at 7.4 Gyr, 15 at 9.6 Gyr — old but within Hubble
+  time; but the low-mass/high-f_env planets that showed the largest ΔR_p (1.7%,
+  D1) reach T_int=20 only at ~61 Gyr, i.e. **never** — their large FP impact is
+  unreachable.
+  (2) *Radiogenic T_int floor (v1 omission sensitivity).* An Earth-like rocky
+  core of mass M_c produces ≈ M_c × 20 TW present-day radiogenic power (Earth ≈
+  20 TW, range 15–25; declines to ~0.5× by 10 Gyr via the U/Th/K decay
+  ensemble). Setting L_int(T_int) = L_radio gives an equilibrium **T_int floor of
+  ≈ 33 K (fiducial, present) → 28 K at 10 Gyr**; ≈ 24–40 K over M_c = 2–20. Since
+  the floor (28–40 K for M_c ≳ 3) sits **above** the ~25 K FP threshold,
+  radiogenic heating keeps these planets warm enough that the RCB never reaches
+  ρ≥109 — **FP never becomes relevant to their structure.** Robust to the
+  15–25 TW uncertainty (floor ∝ L^¼ → ±~10%). v1 omits core luminosity (SPEC §4),
+  so the code's T_int can go arbitrarily low; this is a stated sensitivity, not a
+  code change. Net: for realistic steam sub-Neptunes the FP structural effect is
+  **not reached**; it is confined to the denser-envelope follow-up (RCB at ρ≥109
+  while warm). See `docs/fp_validity_regime.md`.
+
+- **A31 — Multi-RCB topology is physics, not solver noise (check 3).** For the
+  fiducial at T_int=20, pure HITEMP has 3 RCBs (ρ≈[285,509,487]), composite 1
+  (ρ≈212). Robust to G7-style refinement (halved tolerances + doubled sampling:
+  still 3 RCBs, densities shift <5%). The exact *count* is marginally sensitive
+  to the opacity value (a +3% κ_R perturbation flips 3→1), so "3 RCBs" is not a
+  robust prediction — but the qualitative FP effect (its 2–3× higher opacity
+  closing the deep radiative window the line list opens) far exceeds that ~3%
+  flip threshold and is robust. (Realized only below the radiogenic T_int floor,
+  A30 — for the fiducial this topology is not reached; marginally reachable for
+  the lowest-mass cores.)
 
 - **A29 — FP-relevant domain + history effect (owner scan).** Systematic map of
   where FP propagates to structure/evolution. `D1_fp_domain`: over (M_c 2–20,
