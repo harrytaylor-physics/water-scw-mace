@@ -1,13 +1,14 @@
-"""D1: the FP-relevant domain in planet space (A28).
+"""D1: reachability of the FP-radiative regime versus core mass (A28/A30).
 
     python figures/plot_d1_fp_domain.py config/fiducial.yaml
 
-Maps where the (pure line-list) radiative zone reaches ρ ≥ FP's grid floor
-(109 kg/m³) — the region where first-principles opacity would change the deep
-structure. Scanned over (M_c, f_env) at fixed T_eq for a cold "mature" T_int
-(the RCB deepens as T_int drops, so a cold snapshot is the most FP-favourable).
-The fiducial planet is marked. Also reports, per cell, the number of RCBs for
-line-list vs composite (FP closes deep radiative windows, A28).
+Two curves per core mass, for the fiducial envelope. The lower curve is the
+internal temperature at which the line-list radiative zone first reaches
+rho = 109 kg/m^3 (the FP grid floor); a planet must cool below it to put the
+first-principles opacity into the radiative interior. The upper curve is the
+radiogenic internal-temperature floor set by an Earth-like core; a planet does
+not cool below it. The floor lies above the reach threshold at every mass, so
+the FP-radiative regime is not reached for these steam sub-Neptunes.
 """
 
 from __future__ import annotations
@@ -24,13 +25,13 @@ import numpy as np
 from constants import R_EARTH
 from eos import AquaEOS
 from evolution import t_int_floor_k
-from figures._common import band_caption, comparison_band, load_cfg, save, set_style
+from figures._common import band_caption, load_cfg, save, set_style
 from structure import build_structure
 from structure.model import FP_GRID_FLOOR_SI
 
-M_C_GRID = np.array([2.0, 3.0, 5.0, 8.0, 12.0, 20.0])       # Earth masses
-F_ENV_GRID = np.array([0.01, 0.02, 0.05, 0.10, 0.25, 0.50])  # envelope fraction
-T_INT_COLD = 20.0  # K, a mature/old planet (RCB deepest -> most FP-relevant)
+M_C_GRID = np.array([2.0, 3.0, 5.0, 8.0, 12.0, 20.0])
+T_INT_PROBE = np.array([15.0, 20.0, 25.0, 30.0, 35.0, 40.0])
+FLOOR_AGE_GYR = 10.0
 
 
 def main(argv=None):
@@ -38,69 +39,45 @@ def main(argv=None):
     set_style()
     eos = AquaEOS.from_config(cfg)
     t_eq = float(cfg.irradiation.t_eq_k[0])
-    band = comparison_band(cfg, ["hitemp", "fp"])
+    band = tuple(cfg.opacity.band_cm)
 
-    max_rad = np.full((F_ENV_GRID.size, M_C_GRID.size), np.nan)
-    d_rp_pct = np.full_like(max_rad, np.nan)  # 100·|R_p(comp) − R_p(LL)|/R_p
-    d_nrcb = np.zeros_like(max_rad)  # (#RCB line-list) − (#RCB composite)
-    radiogenic_truncated = np.zeros_like(max_rad, dtype=bool)  # T_int=20 unreachable (A30)
-    for i, f_env in enumerate(F_ENV_GRID):
-        rp_guess = None
-        for m_c in sorted(M_C_GRID):  # ascending mass warm-starts
-            c = replace(cfg, core=replace(cfg.core, mass_mearth=float(m_c)),
-                        envelope=replace(cfg.envelope, f_env=float(f_env)))
-            j = list(M_C_GRID).index(m_c)
-            try:
-                ht = build_structure(c, t_eq, T_INT_COLD, "hitemp", eos=eos,
-                                     n_sample=600, band=band, rp_guess_rearth=rp_guess)
-                co = build_structure(c, t_eq, T_INT_COLD, "composite", eos=eos,
-                                     n_sample=600, band=band, rp_guess_rearth=ht.radius_p_rearth)
-                max_rad[i, j] = ht.max_radiative_rho_si
-                d_rp_pct[i, j] = 100.0 * abs(co.radius_p_rearth - ht.radius_p_rearth) / ht.radius_p_rearth
-                d_nrcb[i, j] = len(ht.rcb_pressures_pa) - len(co.rcb_pressures_pa)
-                # Radiogenic floor (A30): is this cold T_int reachable at ~10 Gyr?
-                floor = t_int_floor_k(float(m_c), ht.radius_p_rearth * R_EARTH, age_gyr=10.0)
-                radiogenic_truncated[i, j] = floor > T_INT_COLD
-                rp_guess = ht.radius_p_rearth
-            except Exception as exc:  # noqa: BLE001
-                print(f"  (M_c={m_c}, f_env={f_env}) failed: {exc}")
+    reach, floor = [], []
+    for m_c in M_C_GRID:
+        c = replace(cfg, core=replace(cfg.core, mass_mearth=float(m_c)))
+        rho, rp0 = [], None
+        for ti in T_INT_PROBE:
+            r = build_structure(c, t_eq, float(ti), "hitemp", eos=eos, n_sample=500, band=band)
+            rho.append(r.max_radiative_rho_si)
+            rp0 = rp0 or r.radius_p_rearth
+        rho = np.array(rho)
+        # max radiative density falls as T_int rises; invert for T_int at 109.
+        reach.append(float(np.interp(FP_GRID_FLOOR_SI, rho[::-1], T_INT_PROBE[::-1])))
+        floor.append(t_int_floor_k(float(m_c), rp0 * R_EARTH, FLOOR_AGE_GYR))
+    reach, floor = np.array(reach), np.array(floor)
 
-    fig, ax = plt.subplots(figsize=(7.2, 5.6))
-    pcm = ax.pcolormesh(M_C_GRID, F_ENV_GRID * 100, d_rp_pct, shading="nearest", cmap="magma")
-    fig.colorbar(pcm, ax=ax, label="|ΔR_p| composite vs line-list [%]  (FP structural impact)")
-    # FP-relevance boundary: where the line-list radiative zone reaches ρ = 109.
-    cs = ax.contour(M_C_GRID, F_ENV_GRID * 100, max_rad, levels=[FP_GRID_FLOOR_SI],
-                    colors="cyan", linewidths=2.5)
-    ax.clabel(cs, fmt={FP_GRID_FLOOR_SI: "ρ_rad=109"}, fontsize=9)
-    # Cells where the line list opens a deep radiative window the composite closes.
-    fi, fj = np.where(d_nrcb > 0)
-    if fi.size:
-        ax.plot(M_C_GRID[fj], F_ENV_GRID[fi] * 100, "w*", ms=13, mec="k", mew=0.5,
-                ls="none", label="LL opens deep window")
-    # Cells where radiogenic heating floors T_int above 20 K: this cold snapshot
-    # is unreachable, so the FP-relevant regime is radiogenically truncated (A30).
-    ti, tj = np.where(radiogenic_truncated)
-    if ti.size:
-        ax.plot(M_C_GRID[tj], F_ENV_GRID[ti] * 100, "x", color="white", ms=9, mew=1.8,
-                ls="none", label="radiogenic floor > 20 K (unreachable)")
-    ax.plot(cfg.core.mass_mearth, cfg.envelope.f_env * 100, "o", ms=14, ls="none",
-            mfc="none", mec="lime", mew=2.5, label="fiducial")
+    fig, ax = plt.subplots(figsize=(7.6, 5.4))
+    ax.fill_between(M_C_GRID, reach, floor, color="grey", alpha=0.18)
+    ax.plot(M_C_GRID, reach, "o-", color="black", lw=2.0, ms=6,
+            label="reach: $T_{int}$ for radiative zone to reach ρ = 109 kg/m³")
+    ax.plot(M_C_GRID, floor, "s--", color="#D55E00", lw=2.0, ms=6,
+            label="radiogenic floor: minimum $T_{int}$ at 10 Gyr")
+    ax.plot(cfg.core.mass_mearth, np.interp(cfg.core.mass_mearth, M_C_GRID, floor),
+            "*", color="black", ms=15, mec="white", mew=0.8)
 
     ax.set_xscale("log")
-    ax.set_yscale("log")
+    ax.set_xticks(M_C_GRID)
+    ax.set_xticklabels([f"{int(m)}" for m in M_C_GRID])
     ax.set_xlabel("Core mass $M_c$ [$M_⊕$]")
-    ax.set_ylabel("Envelope fraction $f_{env}$ [%]")
-    ax.set_title(f"FP structural impact across planet space — $T_{{eq}}$={t_eq:.0f} K, "
-                 f"$T_{{int}}$={T_INT_COLD:.0f} K (mature)\n"
-                 f"cyan = line-list radiative zone reaches FP floor (ρ≥109); {band_caption(band)}",
-                 fontsize=9.5)
-    ax.legend(loc="lower left", fontsize=8.5)
+    ax.set_ylabel("Internal temperature $T_{int}$ [K]")
+    ax.set_title("Radiogenic floor sits above the FP-reach threshold at every mass")
+    ax.legend(fontsize=9, loc="upper left")
+    gap = float(np.mean(floor - reach))
+    fig.text(0.5, -0.01,
+             f"$T_{{eq}}$={t_eq:.0f} K, $f_{{env}}$={cfg.envelope.f_env:.0%}, {band_caption(band)}; "
+             f"floor above reach by {gap:.1f} K on average (grey band); star = fiducial",
+             ha="center", va="top", fontsize=9)
     path = save(fig, cfg, "D1_fp_domain")
-    print(f"wrote {path}")
-    n_relevant = int(np.nansum(max_rad >= FP_GRID_FLOOR_SI))
-    print(f"FP-relevant cells (ρ_rad≥109): {n_relevant}/{max_rad.size}; "
-          f"deep-window cells: {int((d_nrcb>0).sum())}; "
-          f"max |ΔR_p| = {np.nanmax(d_rp_pct):.2f}%")
+    print(f"wrote {path}; mean(floor - reach) = {gap:+.2f} K")
     return path
 
 

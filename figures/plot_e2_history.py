@@ -46,22 +46,21 @@ def main(argv=None):
 
     def annotate_epochs(ax, label=True):
         ax.axvspan(h.age_gyr.min(), ESCAPE_WINDOW_GYR, color="orange", alpha=0.12,
-                   label="escape window (<100 Myr)" if label else None)
+                   label="first 100 Myr (escape window)" if label else None)
         if ep:
             ax.axvspan(ep[0], ep[1], color="green", alpha=0.10,
-                       label="FP-relevant epoch" if label else None)
+                       label="RCB density ≥ 109 kg/m³" if label else None)
         if floor_age is not None:
             ax.axvspan(floor_age, h.age_gyr.max(), color="grey", alpha=0.22,
-                       label="radiogenically supported\n(T_int floored; v1 omits core L)" if label else None)
+                       label="radiogenically supported" if label else None)
 
     ax_r.plot(h.age_gyr, h.radius_a, color="#CC79A7", label="composite (FP-informed)")
     ax_r.plot(h.age_gyr, h.radius_b, color="#D55E00", ls="--", label=line_list.upper())
     annotate_epochs(ax_r)
     ax_r.set_ylabel("$R_p$ [$R_⊕$]")
-    ax_r.set_title(f"Cooling history — composite vs {line_list.upper()} — "
+    ax_r.set_title(f"Cooling history: composite vs {line_list.upper()}, "
                    f"$M_c$={cfg.core.mass_mearth:.0f} $M_⊕$, $f_{{env}}$={cfg.envelope.f_env:.0%}, "
-                   f"$T_{{eq}}$={t_eq:.0f} K\n{band_caption(h and cfg.opacity.band_cm or (100,4000))}",
-                   fontsize=9.5)
+                   f"{band_caption(cfg.opacity.band_cm or (100, 4000))}", fontsize=9.5)
     ax_r.legend(fontsize=8.5)
 
     ax_rho.plot(h.age_gyr, h.rcb_rho_a, color="#CC79A7", label="composite")
@@ -81,6 +80,10 @@ def main(argv=None):
     ax_d.set_xscale("log")
     ax_d.legend(fontsize=8.5)
 
+    fig.text(0.5, -0.005,
+             "Radiogenically supported epoch: internal temperature held at the radiogenic "
+             "floor; core luminosity not evolved in this model.",
+             ha="center", va="top", fontsize=8.5)
     path = save(fig, cfg, "E2_history")
     print(f"wrote {path}")
     print(f"peak |ΔR_p/R_p| = {h.peak_radius_frac_diff*100:.2f}%; "

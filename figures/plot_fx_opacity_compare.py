@@ -73,6 +73,9 @@ def main(argv=None):
 
     fig, (ax_r, ax_p) = plt.subplots(1, 2, figsize=(11.0, 4.8), constrained_layout=True)
     csv_rows = []
+    marker = {"pokazatel": "o", "hitemp": "s"}  # distinguish the two line lists
+    all_t = []
+    sc = None
 
     for name in line_lists:
         t_ll, rho_ll, kr_ll, kp_ll = compute_point_means(name, cfg, band)
@@ -84,9 +87,13 @@ def main(argv=None):
         t_shared, rho_shared = t_ll[keep], rho_ll[keep]
         ratio_r = kr_fp[jj] / kr_ll[keep]  # FP / line-list, Rosseland
         ratio_p = kp_fp[jj] / kp_ll[keep]  # FP / line-list, Planck
-        c = SOURCE_COLOR[name]
-        ax_r.scatter(t_shared, ratio_r, color=c, label=f"FP / {SOURCE_LABEL[name]}", s=36)
-        ax_p.scatter(t_shared, ratio_p, color=c, label=f"FP / {SOURCE_LABEL[name]}", s=36)
+        all_t.append(t_shared)
+        mk = marker.get(name, "o")
+        lab = f"FP / {SOURCE_LABEL[name].split()[0]}"
+        sc = ax_r.scatter(rho_shared, ratio_r, c=t_shared, cmap="viridis", marker=mk,
+                          s=42, edgecolor="k", linewidth=0.3, label=lab, vmin=1000, vmax=3000)
+        ax_p.scatter(rho_shared, ratio_p, c=t_shared, cmap="viridis", marker=mk,
+                     s=42, edgecolor="k", linewidth=0.3, label=lab, vmin=1000, vmax=3000)
         for k, i in enumerate(keep):
             # compute_point_means returns cm^2/g already (SI conversion happens
             # later in build_source), so these are quoted directly in cm^2/g.
@@ -97,15 +104,18 @@ def main(argv=None):
             })
 
     for ax, lab in ((ax_r, "Rosseland"), (ax_p, "Planck")):
-        ax.axhline(1.0, color="k", lw=0.8, ls=":")
-        ax.set_xlabel("Temperature [K]")
+        ax.axhline(1.0, color="grey", lw=0.8, ls=":")
+        ax.set_xlabel("Density ρ [kg/m³]")
         ax.set_ylabel(f"$\\kappa_{{{lab[0]}}}$(FP) / $\\kappa_{{{lab[0]}}}$(line list)")
+        ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_title(f"{lab} mean")
-        ax.legend(fontsize=9)
+        ax.legend(fontsize=9, loc="upper left")
+    if sc is not None:
+        fig.colorbar(sc, ax=ax_p, label="Temperature [K]")
 
-    fig.suptitle(f"FP vs line-list opacity on the shared grid — {band_caption(band)} "
-                 f"(exact differential, unclamped)")
+    fig.suptitle(f"FP / line-list band-limited opacity ratio versus density, "
+                 f"{band_caption(band)}")
     csv_rows.sort(key=lambda r: (r["ll"], r["T"], r["rho"]))
     csv_path = _dump_csv(cfg, band, csv_rows)
     path = save(fig, cfg, "Fx_opacity_compare")

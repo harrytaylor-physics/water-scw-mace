@@ -117,25 +117,26 @@ SLIDES = [
          ]),
 
     dict(figure="F1_tp_profiles.png",
-         title="Reliable opacity sources give the same profile",
+         title="Line-list radiative window at low internal temperature",
          bullets=[
-             "At T_eq=500 K, T_int=150 K the composite, HITEMP, and constant-κ profiles coincide; "
-             "R_p=1.85 R⊕ for all three (F1_tp_profiles).",
-             "Pure FP (R_p=1.94 R⊕) and POKAZATEL (R_p=1.87 R⊕) are opacity-extrapolated in the "
-             "T=600–1000 K radiative zone and are flagged unreliable (dashed).",
-             "Where the RCB reaches ρ≥109 kg/m³, FP closes a deep radiative window: HITEMP gives "
-             "3 RCBs, composite 1; stable under halved tolerances.",
+             "At T_int=20 K the composite and HITEMP temperature profiles coincide above "
+             "~150 bar and diverge below it (F1_tp_profiles).",
+             "HITEMP has 3 radiative-convective boundaries and a radiative zone at ρ=150–500 "
+             "kg/m³ (∇_rad/∇_ad < 1); the composite has 1 boundary and no deep radiative zone.",
+             "FP is 2–3× more opaque there, so the composite deep interior stays convective and "
+             "warmer. Pure FP and POKAZATEL are opacity-extrapolated here and are not shown.",
          ]),
 
     dict(figure="D1_fp_domain.png",
-         title="FP changes radius by at most 1.7 percent",
+         title="Radiogenic floor exceeds the FP-reach temperature",
          bullets=[
-             "Across M_c=2–20 M⊕, f_env=1–50%, |ΔR_p| between composite and line-list is ≤1.7% "
-             "(~0.5% at the fiducial), at T_int=20 K (D1_fp_domain).",
-             "The effect requires T_int≲25 K. The radiogenic T_int floor (core ≈ M_c × 20 TW) is "
-             "28–40 K for M_c≥3 M⊕, so T_int=20 K is unreachable in every cell (marked ×).",
-             "Radiogenic core heating is omitted from the v1 evolution; this floor is a stated "
-             "sensitivity, computed separately.",
+             "The line-list radiative zone reaches ρ=109 kg/m³ only below T_int=24–32 K (rising "
+             "with M_c); a planet must cool below this to put FP in the radiative interior "
+             "(D1_fp_domain).",
+             "The radiogenic floor (Earth-like core ≈ M_c × 20 TW, 10 Gyr) is 25–33 K, above the "
+             "reach threshold by ~1 K at every mass from 2 to 20 M⊕.",
+             "The planet cools to the radiogenic floor and stops, so the FP-radiative regime is "
+             "not reached; where it is reached (denser envelopes) the radius change is ≤1.7%.",
          ]),
 
     dict(figure="E2_history.png",
