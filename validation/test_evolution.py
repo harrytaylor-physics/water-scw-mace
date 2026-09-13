@@ -19,7 +19,7 @@ from opacity import ConstantOpacitySource
 
 
 def _register_constant(cfg, name, kappa_si):
-    bt._cache[(name, None, str(cfg.data_root_path))] = ConstantOpacitySource(kappa_si, name=name)
+    bt._cache[bt.cache_key(name, cfg, None)] = ConstantOpacitySource(kappa_si, name=name)
 
 
 @pytest.fixture(scope="module")

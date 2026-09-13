@@ -4,6 +4,58 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-13 (Nature manuscript checks)
+
+- **A35 — Blend prescription is a config knob and a stated systematic; the deep
+  radiative zones close under every prescription.** The composite's surviving RCB
+  at the cold fiducial sits *inside* the default blend window (ρ ≈ 190–234 vs the
+  window 100–300), so its location is set partly by the blend prescription and
+  had to be scanned rather than assumed. Added
+  `opacity.blend_window_kg_m3` (default `[100, 300]`, unchanged behaviour) as the
+  canonical name — `opacity.composite_blend_rho` is kept as a deprecated
+  read-only alias so existing figure scripts are untouched — and
+  `opacity.blend_mode` (`linear` | `sharp`, default `linear`). **`linear` labels
+  the pre-existing C¹ smoothstep log-blend (A12), not a piecewise-linear weight**;
+  `sharp` is a hard switch to FP at the window's lower edge with no blending, for
+  which a zero-width window (e.g. `[108.796, 108.796]`, the FP grid floor) is
+  legal and is refused in `linear` mode. The built-source cache key now carries
+  these knobs (`opacity.build_tables.cache_key`), so a scan rebuilds instead of
+  silently reusing the first source; the constant-κ injections in the gates and
+  `figures/_common` use the same helper. New diagnostic
+  `structure.deep_radiative_zones(result, rho_min)` returns the contiguous
+  radiative runs denser than a threshold — `[] ` is the closure statement.
+  `figures/plot_s1_blend_sensitivity.py` (T_int=20 K, T_eq=500 K, n_sample=1500,
+  band [100,4000]) gives, with **HITEMP: 3 RCBs at ρ = 285/515/522, radiative to
+  ρ = 504, one deep radiative zone (ρ 450–504)**:
+
+  | case | #RCB | RCB ρ [kg/m³] | max radiative ρ | deep zones (ρ>300) | R_p [R⊕] |
+  |---|---|---|---|---|---|
+  | [100,200] linear | 1 | 191 | 127 | none | 1.7223 |
+  | [100,300] linear (default) | 1 | 218 | 127 | none | 1.7165 |
+  | [100,500] linear | 1 | 234 | 172 | none | 1.7139 |
+  | sharp @ 108.796 | 3 | 105/116/112 | 109 | none | 1.7257 |
+
+  The RCB density moves 191→234 (±10% about the default) across the blend
+  windows, and the sharp switch instead pins the boundary at the switch density
+  itself (the discontinuous κ makes the profile flip across it three times) — but
+  **no composite prescription leaves a radiative layer at ρ > 300**, so the
+  closure claim (A28) is prescription-independent while the RCB *density* is not.
+  Gate `validation/test_s1_blend_window.py` asserts closure for every case, with
+  HITEMP's deep zone as a positive control so the assertion is not vacuous.
+
+- **A36 — The deep radiative zones are thin slivers at the steam→dense-water
+  density jump; report max-radiative-ρ and RCB density separately.** Resolving
+  the HITEMP case shows the deep radiative layers sit exactly where AQUA's
+  density jumps from ρ = 151 to 538 kg/m³ across P ≈ 176→184 bar at T ≈ 630 K
+  (vapour → dense water). ρ is locally non-monotonic there (538, 541, 491, 450,
+  504, 541), which is why the deepest *RCB densities* (515, 522) exceed the
+  densest *radiative* point (504). Consequence for the manuscript: the numbers
+  quoted as "RCB at 453 / 123 kg/m³" are **max-radiative-ρ**, not RCB densities;
+  both are now reported side by side in every table. Presence of the zone is
+  robust to sampling (3 RCBs and one deep zone at n_sample = 600/1000/1500/2000)
+  but its extent is not (max radiative ρ = 439/513/504/477), so gates assert
+  presence/absence, never a count or a density.
+
 ## 2026-08-04 (deck prep)
 
 - **A32 — G5 anchor is the published Aguichine (2021) fit; coefficients are

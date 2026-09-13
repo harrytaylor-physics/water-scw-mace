@@ -3,7 +3,8 @@
 For a registered source: load its spectra, compute band-limited Planck and
 Rosseland means over the common band (cm²/g), assert the factor-1000
 plausibility check (SPEC §2), convert to SI, and wrap in a
-:class:`GridOpacitySource`. Sources are cached by (name, band, data_root).
+:class:`GridOpacitySource`. Sources are cached by ``cache_key`` = (name, band,
+rel_floor, source-specific knobs, data_root).
 """
 
 from __future__ import annotations
@@ -24,8 +25,33 @@ from opacity.table import CM2_PER_G_TO_SI, OpacityTable
 _PLAUSIBLE_LO_CM2_G = 1.0e0
 _PLAUSIBLE_HI_CM2_G = 1.0e5
 
-_cache: dict[tuple[str, tuple[float, float], str], OpacitySource] = {}
+_cache: dict[tuple, OpacitySource] = {}
 _band_cache: dict[str, tuple[float, float]] = {}
+
+
+def _source_variant(name: str, cfg: Config) -> tuple:
+    """Config knobs, beyond (name, band, rel_floor), that change the built source.
+
+    Keeping these in the cache key means a scan over the composite blend
+    prescription (A35) rebuilds rather than silently reusing the first source.
+    """
+    op = cfg.opacity
+    if name == "composite":
+        return (
+            op.composite_dilute_source,
+            op.composite_dense_source,
+            tuple(op.blend_window_kg_m3),
+            op.blend_mode,
+        )
+    return ()
+
+
+def cache_key(name: str, cfg: Config, band: tuple[float, float] | None) -> tuple:
+    """Cache key for a built source. Band-agnostic injected sources use band=None."""
+    if band is None:
+        return (name, None, str(cfg.data_root_path))
+    return (name, band, cfg.opacity.rel_floor, _source_variant(name, cfg),
+            str(cfg.data_root_path))
 
 
 def detect_common_band(cfg: Config, sources: list[str] | None = None) -> tuple[float, float]:
@@ -131,7 +157,8 @@ def build_composite(cfg: Config, band: tuple[float, float] | None = None) -> Com
     dilute = build_source(op.composite_dilute_source, cfg, band=band)
     dense = build_source(op.composite_dense_source, cfg, band=band)
     return CompositeOpacitySource(
-        dilute=dilute, dense=dense, blend_rho_si=tuple(op.composite_blend_rho)
+        dilute=dilute, dense=dense, blend_rho_si=tuple(op.blend_window_kg_m3),
+        mode=op.blend_mode,
     )
 
 
@@ -182,16 +209,16 @@ def get_source(name: str, cfg: Config, band: tuple[float, float] | None = None) 
     counter; reset it before a structure integration via
     ``source.reset_clamp_counter()``.
     """
-    root = str(cfg.data_root_path)
     # Band-agnostic injected sources (e.g. a constant-κ reference) are keyed with
     # band=None; they are placed in the cache directly and only looked up here.
     if name != "composite" and name not in REGISTRY:
-        key = (name, None, root)
+        key = cache_key(name, cfg, None)
         if key in _cache:
             return _cache[key]
         raise KeyError(f"opacity source {name!r} is not registered or cached")
     band_cm = band or _default_band(name, cfg)
-    key = (name, band_cm, cfg.opacity.rel_floor, root)  # rel_floor changes the means
+    # rel_floor changes the means; the variant carries the composite blend knobs.
+    key = cache_key(name, cfg, band_cm)
     if key not in _cache:
         _cache[key] = build_source(name, cfg, band=band_cm)
     return _cache[key]

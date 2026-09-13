@@ -52,8 +52,12 @@ def eos(cfg):
 
 
 def _inject_constant_fp(cfg, kappa_si):
-    """Register a constant-opacity source under the name 'fp' (for gate runs)."""
-    key = ("fp", resolve_band(cfg, ["fp"]), cfg.opacity.rel_floor, str(cfg.data_root_path))
+    """Register a constant-opacity source under the name 'fp' (for gate runs).
+
+    Uses the builder's own key helper so the injection keeps working as
+    source-identifying config knobs are added to the cache key.
+    """
+    key = bt.cache_key("fp", cfg, resolve_band(cfg, ["fp"]))
     bt._cache[key] = ConstantOpacitySource(kappa_si, name="fp")
 
 

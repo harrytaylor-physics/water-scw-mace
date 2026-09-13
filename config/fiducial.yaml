@@ -30,6 +30,10 @@ opacity:
   band_cm: [100.0, 4000.0]  # crossover-consistent science band (A25); null=auto
   rel_floor: 1.0e-6    # transparency-window floor before Rosseland mean (A25)
   clamp_fraction_threshold: 0.20
+  # Composite blend prescription (A35). The surviving RCB sits inside this
+  # window, so both knobs are scanned by figures/plot_s1_blend_sensitivity.py.
+  blend_window_kg_m3: [100.0, 300.0]  # line-list -> FP density window
+  blend_mode: "linear"  # linear (smoothstep log-blend) | sharp (switch at lo)
 
 boundary:
   match_pressure_bar: 10.0

@@ -135,6 +135,28 @@ def _rcb_densities(rho, is_convective):
 FP_GRID_FLOOR_SI = 108.796  # FP's least-dense grid point (kg/m³); FP-relevance boundary
 
 
+def deep_radiative_zones(result: "StructureResult", rho_min_si: float = 300.0):
+    """Contiguous radiative segments denser than ``rho_min_si`` (A35).
+
+    The headline structural claim is that the FP-informed composite *closes* the
+    deep radiative window the line list opens (A28): pure HITEMP leaves radiative
+    layers at ρ ≳ 300 kg/m³, the composite does not. Returns one (ρ_min, ρ_max)
+    pair per contiguous radiative run, in depth order — so ``len(...) == 0`` is
+    the closure statement, checked by the blend-window and fp_scale gates.
+    """
+    prof = result.profile
+    rho = np.asarray(prof["rho_si"], float)
+    mask = (~np.asarray(prof["is_convective"], bool)) & (rho >= rho_min_si)
+    zones: list[tuple[float, float]] = []
+    idx = np.flatnonzero(mask)
+    if idx.size == 0:
+        return zones
+    breaks = np.flatnonzero(np.diff(idx) > 1)
+    for run in np.split(idx, breaks + 1):
+        zones.append((float(rho[run].min()), float(rho[run].max())))
+    return zones
+
+
 def _photosphere(pressure, tau, temperature):
     """(P, T) where τ = 2/3, interpolated in log P; fallback to the top."""
     target = 2.0 / 3.0

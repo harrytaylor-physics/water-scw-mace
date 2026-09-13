@@ -89,10 +89,22 @@ class Opacity:
     # Composite source (A11/A12): line-list (dilute) blended with FP (dense)
     # across a density window (kg/m³). Default 100-300 keeps FP above its real
     # data floor (~109); 30-100 is a documented sensitivity case (A15). Seam
-    # location/width are scan parameters.
+    # location/width are scan parameters (A35: the surviving RCB sits inside the
+    # window, so the blend prescription is a stated systematic, scanned by
+    # figures/plot_s1_blend_sensitivity.py).
     composite_dilute_source: str = "hitemp"
     composite_dense_source: str = "fp"
-    composite_blend_rho: tuple[float, float] = (100.0, 300.0)
+    blend_window_kg_m3: tuple[float, float] = (100.0, 300.0)
+    # "linear": the existing log-space blend across the window (smoothstep
+    # weight, C¹ — unchanged default behaviour, A12/A35). "sharp": a hard switch
+    # to FP at the window's lower edge, no blending (the window may be
+    # zero-width, e.g. [108.796, 108.796] = switch at the FP grid floor).
+    blend_mode: str = "linear"
+
+    @property
+    def composite_blend_rho(self) -> tuple[float, float]:
+        """Deprecated alias for :attr:`blend_window_kg_m3` (A35)."""
+        return self.blend_window_kg_m3
 
 
 @dataclass(frozen=True)
@@ -220,6 +232,13 @@ def _validate(cfg: Config) -> None:
         raise ValueError("opacity.clamp_fraction_threshold must be in (0,1]")
     if cfg.opacity.source not in {"fp", "hitemp", "pokazatel", "composite"}:
         raise ValueError(f"unknown opacity.source {cfg.opacity.source!r}")
+    if cfg.opacity.blend_mode not in {"linear", "sharp"}:
+        raise ValueError(f"opacity.blend_mode must be linear|sharp, got {cfg.opacity.blend_mode!r}")
+    lo, hi = cfg.opacity.blend_window_kg_m3
+    if not 0.0 < lo <= hi:
+        raise ValueError(f"opacity.blend_window_kg_m3 must satisfy 0 < lo <= hi, got {(lo, hi)}")
+    if cfg.opacity.blend_mode == "linear" and lo == hi:
+        raise ValueError("a zero-width blend window requires opacity.blend_mode='sharp'")
     if cfg.numerics.solver not in {"LSODA", "Radau", "BDF", "RK45"}:
         raise ValueError(f"unsupported numerics.solver {cfg.numerics.solver!r}")
     if not all(t > 0 for t in cfg.irradiation.t_eq_k):

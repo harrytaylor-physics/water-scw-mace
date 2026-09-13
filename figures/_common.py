@@ -84,8 +84,9 @@ def register_constant_reference(cfg: Config, kappa_si: float = 0.1) -> str:
 
     Band-agnostic, so it is cached with the band=None key that get_source uses
     to look up non-registered sources (A21)."""
-    key = ("constant", None, str(cfg.data_root_path))
-    _bt._cache[key] = ConstantOpacitySource(kappa_si, name="constant")
+    _bt._cache[_bt.cache_key("constant", cfg, None)] = ConstantOpacitySource(
+        kappa_si, name="constant"
+    )
     return "constant"
 
 

@@ -13,6 +13,12 @@ centre of the window) and its width are sensitivity-scan parameters; the
 FP/line-list κ ratio at the seam is a quantified systematic (logged per run).
 The default window is ρ = 100–300 kg/m³ so FP is used only above its real data
 floor (~109 kg/m³); ρ = 30–100 is a documented sensitivity case (A15).
+
+Two prescriptions (``mode``, A35): ``"linear"`` is the blend above (the default,
+unchanged); ``"sharp"`` switches to FP discontinuously at ρ_lo with no blending,
+i.e. w(ρ) = 1[ρ ≥ ρ_lo], for which the window may be zero-width. The composite's
+surviving RCB sits *inside* the default window, so its location depends on the
+prescription — scanned by ``figures/plot_s1_blend_sensitivity.py``.
 """
 
 from __future__ import annotations
@@ -36,15 +42,24 @@ class CompositeOpacitySource(OpacitySource):
         dense: OpacitySource,
         blend_rho_si: tuple[float, float] = (100.0, 300.0),
         name: str = "composite",
+        mode: str = "linear",
     ) -> None:
+        if mode not in ("linear", "sharp"):
+            raise ValueError(f"blend mode must be linear|sharp, got {mode!r}")
         lo, hi = blend_rho_si
-        if not 0.0 < lo < hi:
-            raise ValueError(f"blend window must satisfy 0 < lo < hi, got {blend_rho_si}")
+        if not 0.0 < lo <= hi or (mode == "linear" and lo == hi):
+            raise ValueError(
+                f"blend window must satisfy 0 < lo < hi (0 < lo <= hi when "
+                f"mode='sharp'), got {blend_rho_si} with mode={mode!r}"
+            )
         self.name = name
+        self.mode = mode
         self.dilute = dilute  # line-list (HITEMP/POKAZATEL)
         self.dense = dense  # FP
         self.blend_rho_si = (float(lo), float(hi))
-        self.seam_rho_si = float(np.sqrt(lo * hi))  # geometric-mean centre
+        # Seam = where the FP weight passes 1/2: the window's geometric-mean
+        # centre when blending, the switch density itself when sharp.
+        self.seam_rho_si = float(lo) if mode == "sharp" else float(np.sqrt(lo * hi))
         # Both sub-sources are built on the same band (A21); expose it.
         self.band_cm = getattr(dense, "band_cm", getattr(dilute, "band_cm", None))
         self._log_lo = np.log10(lo)
@@ -54,11 +69,15 @@ class CompositeOpacitySource(OpacitySource):
         self._flat_rho = 0
 
     def _weight(self, rho_si) -> np.ndarray:
-        """FP weight w(ρ): 0 (pure line-list) → 1 (pure FP) across the window."""
-        frac = (np.log10(np.asarray(rho_si, float)) - self._log_lo) / (
-            self._log_hi - self._log_lo
-        )
-        return _smoothstep(frac)
+        """FP weight w(ρ): 0 (pure line-list) → 1 (pure FP) across the window.
+
+        ``mode='sharp'``: a step at ρ_lo (no blending), which also keeps a
+        zero-width window well defined (A35).
+        """
+        logr = np.log10(np.asarray(rho_si, float))
+        if self.mode == "sharp":
+            return (logr >= self._log_lo).astype(float)
+        return _smoothstep((logr - self._log_lo) / (self._log_hi - self._log_lo))
 
     def _blend(self, which: str, temperature_k, rho_si):
         scalar = np.isscalar(temperature_k) and np.isscalar(rho_si)
@@ -140,5 +159,6 @@ class CompositeOpacitySource(OpacitySource):
         lo, hi = self.blend_rho_si
         return (
             f"CompositeOpacitySource(dilute={self.dilute.name!r}, dense={self.dense.name!r}, "
-            f"blend_rho=[{lo:g}, {hi:g}] kg/m^3, seam={self.seam_rho_si:g})"
+            f"blend_rho=[{lo:g}, {hi:g}] kg/m^3, mode={self.mode!r}, "
+            f"seam={self.seam_rho_si:g})"
         )
