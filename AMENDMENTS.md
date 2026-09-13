@@ -56,6 +56,42 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   but its extent is not (max radiative ρ = 439/513/504/477), so gates assert
   presence/absence, never a count or a density.
 
+- **A37 — `opacity.fp_scale`: the conclusions survive a ±20–25% perturbation of
+  the FP table.** Added `opacity.fp_scale` (default 1.0), a constant multiplier
+  on the FP table's κ_R and κ_P applied at table-build time, i.e. *before* the
+  composite blends, and carried in the source cache key. The SPEC §2
+  factor-1000 plausibility assertion is evaluated on the **unperturbed** means,
+  since it guards a data error and not a deliberate perturbation.
+  `figures/plot_s2_opacity_scaling.py` repeats the cold-fiducial structure and
+  the E2 cooling comparison (E2's T_int grid; the HITEMP track carries no FP, so
+  it is built once and reused) for fp_scale ∈ {0.8, 1.0, 1.25}:
+
+  | fp_scale | #RCB | RCB ρ | max radiative ρ | deep zones | Δs(7 Gyr) [J/kg/K] | Δs/s | ΔR_p(7 Gyr) | ΔR_p/R_p |
+  |---|---|---|---|---|---|---|---|---|
+  | 0.80 | 1 | 219.0 | 127.9 | none | +533.87 | +7.13% | +0.00467 R⊕ | +0.2725% |
+  | 1.00 | 1 | 217.9 | 127.3 | none | +539.56 | +7.21% | +0.00467 R⊕ | +0.2729% |
+  | 1.25 | 1 | 216.8 | 126.8 | none | +544.82 | +7.28% | +0.00467 R⊕ | +0.2725% |
+
+  A ±25% change in FP's κ moves the RCB density by ~1% and the 7 Gyr entropy
+  bias by ~2% *of itself*; closure holds and the entropy bias keeps its sign
+  (positive: the composite stays hotter/higher-entropy at fixed age). The
+  composite−HITEMP difference is therefore set by *where* FP takes over, not by
+  FP's magnitude. Note the diagnostic asymmetry the manuscript should quote:
+  **the interior-entropy bias at 7 Gyr is ~7%, the radius bias only ~0.27%** —
+  entropy is the sensitive observable-adjacent quantity, R_p is not. Gate
+  `validation/test_s2_fp_scale.py`.
+
+- **A38 — Cooling-track ages need ≳20 T_int nodes; below that the quadrature
+  returns negative ages.** Building the fp_scale gate on a 14-node grid gave a
+  track spanning [−8.35, 2.79] Gyr: `cumulative_simpson` of 1/L against E
+  overshoots when L varies by ~4 decades across too few nodes (A24 already found
+  the G6 residual needs n≈60 for 2e-3; the failure mode below ~20 is worse than
+  inaccurate, it is unphysical). No guard added inside `cooling_track` (that
+  would change existing gates' behaviour); instead every age-based gate uses
+  E2's 44-node grid, and `figures/plot_s2_opacity_scaling._at_age` now **raises
+  rather than extrapolating** — `np.interp` would silently clamp "the difference
+  at 7 Gyr" to the end of a short track.
+
 ## 2026-08-04 (deck prep)
 
 - **A32 — G5 anchor is the published Aguichine (2021) fit; coefficients are

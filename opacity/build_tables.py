@@ -42,7 +42,10 @@ def _source_variant(name: str, cfg: Config) -> tuple:
             op.composite_dense_source,
             tuple(op.blend_window_kg_m3),
             op.blend_mode,
+            op.fp_scale,
         )
+    if name == "fp":
+        return (op.fp_scale,)
     return ()
 
 
@@ -189,13 +192,19 @@ def build_source(name: str, cfg: Config, band: tuple[float, float] | None = None
         return build_composite(cfg, band=band)
     band_cm = band or _default_band(name, cfg)
     temps, rhos, kappa_r, kappa_p = compute_point_means(name, cfg, band_cm)
+    # Plausibility is asserted on the *unperturbed* means: it guards the
+    # factor-1000 data error (SPEC §2), not the deliberate fp_scale perturbation.
     _assert_plausible(name, get_spec(name), kappa_p)
+    # fp_scale (A37): a constant perturbation of the FP table, applied to both
+    # means here so it is already in place when the composite blends (or when FP
+    # is used pure). No effect on any other source.
+    scale = cfg.opacity.fp_scale if name == "fp" else 1.0
 
     table = OpacityTable(
         temperature_k=temps,
         rho_si=rhos,
-        kappa_rosseland_si=kappa_r * CM2_PER_G_TO_SI,
-        kappa_planck_si=kappa_p * CM2_PER_G_TO_SI,
+        kappa_rosseland_si=kappa_r * CM2_PER_G_TO_SI * scale,
+        kappa_planck_si=kappa_p * CM2_PER_G_TO_SI * scale,
         band_cm=band_cm,
         dilute_flat=get_spec(name).dilute_flat,
     )

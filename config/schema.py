@@ -100,6 +100,10 @@ class Opacity:
     # to FP at the window's lower edge, no blending (the window may be
     # zero-width, e.g. [108.796, 108.796] = switch at the FP grid floor).
     blend_mode: str = "linear"
+    # Constant multiplier on the FP table's κ_R and κ_P, applied at table-build
+    # time (before any blending) — the opacity-perturbation robustness knob
+    # (A37). 1.0 = unperturbed; the manuscript scan is 0.8 / 1.0 / 1.25.
+    fp_scale: float = 1.0
 
     @property
     def composite_blend_rho(self) -> tuple[float, float]:
@@ -239,6 +243,8 @@ def _validate(cfg: Config) -> None:
         raise ValueError(f"opacity.blend_window_kg_m3 must satisfy 0 < lo <= hi, got {(lo, hi)}")
     if cfg.opacity.blend_mode == "linear" and lo == hi:
         raise ValueError("a zero-width blend window requires opacity.blend_mode='sharp'")
+    if cfg.opacity.fp_scale <= 0:
+        raise ValueError(f"opacity.fp_scale must be positive, got {cfg.opacity.fp_scale}")
     if cfg.numerics.solver not in {"LSODA", "Radau", "BDF", "RK45"}:
         raise ValueError(f"unsupported numerics.solver {cfg.numerics.solver!r}")
     if not all(t > 0 for t in cfg.irradiation.t_eq_k):
