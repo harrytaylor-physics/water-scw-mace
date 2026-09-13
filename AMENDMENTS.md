@@ -86,7 +86,10 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   track spanning [−8.35, 2.79] Gyr: `cumulative_simpson` of 1/L against E
   overshoots when L varies by ~4 decades across too few nodes (A24 already found
   the G6 residual needs n≈60 for 2e-3; the failure mode below ~20 is worse than
-  inaccurate, it is unphysical). No guard added inside `cooling_track` (that
+  inaccurate, it is unphysical). This is with the real composite/HITEMP opacity,
+  where L(T_int) is steepest; the existing constant-κ evolution gates on 12-node
+  grids are unaffected, which is why it had not surfaced before. No guard added
+  inside `cooling_track` (that
   would change existing gates' behaviour); instead every age-based gate uses
   E2's 44-node grid, and `figures/plot_s2_opacity_scaling._at_age` now **raises
   rather than extrapolating** — `np.interp` would silently clamp "the difference
@@ -154,8 +157,9 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   unchanged**: it is still the f_env scan at the middle T_eq of the config grid
   (700 K), and the default invocation computes exactly what it did before. SPEC
   §8 asks F3 over (f_env, T_eq), so `--t-eq-scan` walks the whole config T_eq
-  grid for the *printed* range only — opt-in, because it is ~4× the runtime
-  (~20 min) and the owner's figure should not silently change cost. Over
+  grid for the *printed* range only — opt-in, because it is ~2.6× the runtime
+  (13 min vs 5 min, measured) and the owner's figure should not silently change
+  cost. Over
   f_env ∈ [0.01, 0.1] × T_eq ∈ [500, 800] K at T_int,ref = 150 K:
 
   | ratio to HITEMP | min | max |
