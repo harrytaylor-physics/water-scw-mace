@@ -89,6 +89,24 @@ def main(argv=None):
     print(f"peak |ΔR_p/R_p| = {h.peak_radius_frac_diff*100:.2f}%; "
           f"ΔR_p at 100 Myr = {h.diff_at_age(ESCAPE_WINDOW_GYR)*100:+.3f}%; "
           f"FP-relevant epoch = {ep} Gyr")
+
+    # -- escape-window check and the FP-floor crossing ages (A40) --
+    esc = h.escape_window_extrema(ESCAPE_WINDOW_GYR)
+    cross = h.first_age_rcb_above(FP_GRID_FLOOR_SI)
+    print(f"\nE2 — escape window (first {ESCAPE_WINDOW_GYR*1000:.0f} Myr), "
+          f"composite − {line_list.upper()}, {esc['n_grid_points']} age-grid points "
+          f"from {esc['age_min_gyr']:.2e} Gyr:")
+    # These are null-level numbers, so print them with significant digits rather
+    # than fixed decimals (0.0001% hides whether it is 1e-4 or 1e-7).
+    print(f"  max |ΔR_p/R_p| = {esc['max_abs_radius_frac']*100:.3g}% "
+          f"(at {esc['age_at_max_radius_gyr']:.4g} Gyr)")
+    print(f"  max |Δs/s|     = {esc['max_abs_entropy_frac']*100:.3g}% "
+          f"(at {esc['age_at_max_entropy_gyr']:.4g} Gyr)")
+    print(f"  deepest RCB first reaches ρ ≥ {FP_GRID_FLOOR_SI:g} kg/m³: "
+          + ", ".join(
+              f"{name} at {('%.3f Gyr' % age) if age is not None else 'never (within the track)'}"
+              for name, age in ((h.source_a, cross[h.source_a]),
+                                (h.source_b, cross[h.source_b]))))
     return path
 
 

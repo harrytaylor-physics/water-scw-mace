@@ -72,6 +72,58 @@ class HistoryComparison:
         """Radius fractional difference at a given age (interpolated)."""
         return float(np.interp(age_gyr, self.age_gyr, self.radius_frac_diff))
 
+    def escape_window_extrema(self, window_gyr: float = 0.1) -> dict:
+        """Largest |ΔR_p/R_p| and |Δs/s| inside the first ``window_gyr`` (A40).
+
+        Atmospheric escape (not modelled in v1) sculpts planets early, so any
+        composite-vs-line-list difference inside this window would be an
+        irreversible imprint; the maxima are the numbers to quote. The window
+        edge is included by interpolation so a sparse age grid cannot miss it.
+        """
+        mask = self.age_gyr <= window_gyr
+        ages = np.concatenate([self.age_gyr[mask], [window_gyr]])
+        dr = np.abs(np.concatenate([
+            self.radius_frac_diff[mask], [self.diff_at_age(window_gyr)]]))
+        ds = np.abs(np.concatenate([
+            self.entropy_frac_diff[mask],
+            [float(np.interp(window_gyr, self.age_gyr, self.entropy_frac_diff))]]))
+        return {
+            "window_gyr": float(window_gyr),
+            "n_grid_points": int(mask.sum()),
+            "age_min_gyr": float(self.age_gyr.min()),
+            "max_abs_radius_frac": float(dr.max()),
+            "age_at_max_radius_gyr": float(ages[int(dr.argmax())]),
+            "max_abs_entropy_frac": float(ds.max()),
+            "age_at_max_entropy_gyr": float(ages[int(ds.argmax())]),
+        }
+
+    def first_age_rcb_above(self, rho_si: float = FP_GRID_FLOOR_SI) -> dict:
+        """First age at which each track's deepest RCB reaches ρ ≥ ``rho_si``.
+
+        The crossing is interpolated in log age across the bracketing grid points;
+        ``None`` means the track never gets there within its age range (A40).
+        """
+
+        def crossing(rcb_rho: np.ndarray) -> float | None:
+            above = rcb_rho >= rho_si
+            if not above.any():
+                return None
+            i = int(np.argmax(above))
+            if i == 0:
+                return float(self.age_gyr[0])
+            r0, r1 = rcb_rho[i - 1], rcb_rho[i]
+            a0, a1 = self.age_gyr[i - 1], self.age_gyr[i]
+            if r1 == r0:
+                return float(a1)
+            w = (rho_si - r0) / (r1 - r0)
+            return float(np.exp(np.log(a0) + w * (np.log(a1) - np.log(a0))))
+
+        return {
+            "rho_si": float(rho_si),
+            self.source_a: crossing(self.rcb_rho_a),
+            self.source_b: crossing(self.rcb_rho_b),
+        }
+
     def radiogenic_floor_age_gyr(self, mass_core_mearth: float) -> float | None:
         """Age at which T_int reaches the radiogenic floor (A30): beyond this the
         planet is radiogenically supported and cools no further, truncating the

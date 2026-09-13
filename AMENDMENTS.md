@@ -129,6 +129,47 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   FP-vs-line-list differential stays common-band (A21). Gate
   `validation/test_s3_band_truncation.py`.
 
+- **A40 — Escape-window null quantified; F3 range printed over its actual grid,
+  with the (f_env × T_eq) scan opt-in.** Two reporting additions, no default
+  changed.
+
+  *(a) Escape window and the FP-floor crossing (E2).* `HistoryComparison` gained
+  `escape_window_extrema(window_gyr)` and `first_age_rcb_above(rho_si)` — in the
+  module, not the figure, so they are gated (`test_history_diagnostics.py`); the
+  window edge is included by interpolation so a sparse age grid cannot miss it,
+  and the crossing age is interpolated in log age. At the fiducial (T_eq=500 K,
+  M_c=5 M⊕, f_env=5%, E2's 44-node T_int grid), over the first 100 Myr (39 age
+  nodes from 9.3e-6 Gyr): **max |ΔR_p/R_p| = 5.74e-5 %, max |Δs/s| = 1.34e-4 %**
+  — both *below* the shooting tolerance (`shoot_rtol` = 1e-6), i.e. numerically
+  indistinguishable from zero. The escape-window null (A29) is therefore not a
+  small difference but no difference. The deepest RCB first reaches ρ ≥ 108.796
+  kg/m³ at **1.626 Gyr (composite)** and **1.548 Gyr (HITEMP)**; peak
+  |ΔR_p/R_p| = 0.27%, FP-relevant epoch 1.87–12.68 Gyr. (`docs/
+  fp_validity_regime.md` still records A29's earlier run at T_eq=600 K — epoch
+  2.6–14 Gyr, peak 0.33%; the numbers here are the current E2 default, T_eq=500 K.
+  The doc is left as A29's record.)
+
+  *(b) F3 range.* F3's printed summary now reports min/max with the (T_eq, f_env)
+  each extreme came from, plus the grid extents. **The plotted figure is
+  unchanged**: it is still the f_env scan at the middle T_eq of the config grid
+  (700 K), and the default invocation computes exactly what it did before. SPEC
+  §8 asks F3 over (f_env, T_eq), so `--t-eq-scan` walks the whole config T_eq
+  grid for the *printed* range only — opt-in, because it is ~4× the runtime
+  (~20 min) and the owner's figure should not silently change cost. Over
+  f_env ∈ [0.01, 0.1] × T_eq ∈ [500, 800] K at T_int,ref = 150 K:
+
+  | ratio to HITEMP | min | max |
+  |---|---|---|
+  | composite | 0.9979 (T_eq=500, f_env=0.05) | 1.0021 (T_eq=500, f_env=0.10) |
+  | POKAZATEL | 1.3670 (T_eq=800, f_env=0.01) | 2.2420 (T_eq=500, f_env=0.01) |
+  | FP [extrapolated, unreliable] | 18.07 (T_eq=800, f_env=0.01) | 29.68 (T_eq=500, f_env=0.05) |
+
+  So the manuscript can quote: **composite ≡ HITEMP to ±0.2% across the whole
+  grid**, the reliable line-list systematic is **1.37–2.24×** (POKAZATEL vs
+  HITEMP), and the pure-FP 18–30× is the opacity-extrapolation artifact already
+  flagged in A33/F3's caption. A non-converged fixed-entropy cell is recorded as
+  NaN and reported rather than aborting the scan (none occurred).
+
 ## 2026-08-04 (deck prep)
 
 - **A32 — G5 anchor is the published Aguichine (2021) fit; coefficients are
