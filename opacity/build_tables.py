@@ -9,6 +9,15 @@ rel_floor, source-specific knobs, data_root).
 
 from __future__ import annotations
 
+if __name__ == "__main__":  # allow `python opacity/build_tables.py ...` as a CLI
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import csv
+from pathlib import Path
+
 import numpy as np
 
 from config import Config
@@ -236,3 +245,86 @@ def get_source(name: str, cfg: Config, band: tuple[float, float] | None = None) 
 def clear_cache() -> None:
     _cache.clear()
     _band_cache.clear()
+
+
+# --------------------------------------------------------------------------
+# Band studies + CLI (A39): full-band vs common-band means for a line list
+# --------------------------------------------------------------------------
+def resolve_band_spec(cfg: Config, name: str, spec: str) -> tuple[float, float]:
+    """Resolve a band spec for one source: ``common`` | ``full`` | ``lo,hi``.
+
+    ``common`` is the band the science runs use (config ``opacity.band_cm`` when
+    pinned, else the auto-detected common band). ``full`` is the source's own
+    computed wavenumber range, straight from its spectra files — never wider than
+    the data (SPEC §3's band-truncation quantification; A39).
+    """
+    if spec == "common":
+        return resolve_band(cfg, [name])
+    if spec == "full":
+        return detect_common_band(cfg, [name])
+    lo, hi = (float(x) for x in spec.split(","))
+    return (lo, hi)
+
+
+def write_point_means(
+    name: str, cfg: Config, band_cm: tuple[float, float], tag: str,
+    out_dir: Path | None = None, rel_floor: float | None = None,
+) -> tuple[Path, Path]:
+    """Compute and write per-grid-point means for one source/band (csv + npz)."""
+    out_dir = Path(out_dir) if out_dir is not None else cfg.output_path
+    out_dir.mkdir(parents=True, exist_ok=True)
+    floor = cfg.opacity.rel_floor if rel_floor is None else rel_floor
+    t, rho, kr, kp = compute_point_means(name, cfg, band_cm, rel_floor=floor)
+    order = np.lexsort((rho, t))
+    t, rho, kr, kp = t[order], rho[order], kr[order], kp[order]
+
+    csv_path = out_dir / f"{name}_means_{tag}.csv"
+    with csv_path.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["temperature_k", "rho_kg_m3", "kappa_R_cm2_g", "kappa_P_cm2_g",
+                    "kappa_R_si", "kappa_P_si", "band_lo_cm", "band_hi_cm", "rel_floor"])
+        for i in range(t.size):
+            w.writerow([f"{t[i]:g}", f"{rho[i]:g}", f"{kr[i]:.6e}", f"{kp[i]:.6e}",
+                        f"{kr[i] * CM2_PER_G_TO_SI:.6e}", f"{kp[i] * CM2_PER_G_TO_SI:.6e}",
+                        f"{band_cm[0]:.12g}", f"{band_cm[1]:.12g}", f"{floor:g}"])
+    npz_path = out_dir / f"{name}_means_{tag}.npz"
+    np.savez_compressed(npz_path, temperature_k=t, rho_si=rho, kappa_R_cm2_g=kr,
+                        kappa_P_cm2_g=kp, band_cm=np.array(band_cm), rel_floor=floor)
+    return csv_path, npz_path
+
+
+def _cli(argv=None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(
+        description="Build gridded opacity means for one source on a chosen band."
+    )
+    ap.add_argument("config", type=Path, help="run config YAML")
+    ap.add_argument("--source", default="hitemp", help="registered source name")
+    ap.add_argument("--band", default="common",
+                    help="common (science band) | full (the source's own computed "
+                         "range) | lo,hi in cm^-1")
+    ap.add_argument("--rel-floor", type=float, default=None,
+                    help="override opacity.rel_floor for these means")
+    ap.add_argument("--out-dir", type=Path, default=None)
+    args = ap.parse_args(argv)
+
+    from config import load_config
+
+    cfg = load_config(args.config)
+    band = resolve_band_spec(cfg, args.source, args.band)
+    tag = args.band if args.band in ("common", "full") else f"{band[0]:g}-{band[1]:g}"
+    csv_path, npz_path = write_point_means(args.source, cfg, band, tag,
+                                           out_dir=args.out_dir, rel_floor=args.rel_floor)
+    with np.load(npz_path) as d:
+        kr, kp, t = d["kappa_R_cm2_g"], d["kappa_P_cm2_g"], d["temperature_k"]
+    print(f"source={args.source}  band={args.band} = [{band[0]:.12g}, {band[1]:.12g}] cm^-1  "
+          f"rel_floor={cfg.opacity.rel_floor if args.rel_floor is None else args.rel_floor:g}")
+    print(f"{t.size} grid points; kappa_R {kr.min():.4g}-{kr.max():.4g} cm^2/g, "
+          f"kappa_P {kp.min():.4g}-{kp.max():.4g} cm^2/g")
+    print(f"wrote {csv_path}")
+    print(f"wrote {npz_path}")
+
+
+if __name__ == "__main__":
+    _cli()

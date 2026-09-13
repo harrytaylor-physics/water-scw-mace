@@ -92,6 +92,43 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   rather than extrapolating** — `np.interp` would silently clamp "the difference
   at 7 Gyr" to the end of a short track.
 
+- **A39 — Band truncation quantified for HITEMP; it is *not* the cause of the G5
+  low bias.** SPEC §3 defers the absolute band systematic to a full-band vs
+  common-band comparison for the line list. `opacity/build_tables.py` gained a
+  CLI — `python opacity/build_tables.py config/fiducial.yaml --source hitemp
+  --band full|common|lo,hi` — writing per-grid-point means (csv + npz);
+  `--band full` resolves to the source's **own computed range read from the
+  files**, [10, 11000] cm⁻¹ for HITEMP (76 of the 77 (T, ρ) points exist; T=500,
+  ρ=0.1 was never delivered), never wider. Results
+  (`figures/plot_s3_band_truncation.py`):
+
+  * κ_R(full)/κ_R(common): **min 0.018 (3000 K, 1000 kg/m³), median 0.343, max
+    0.994 (500 K, 10 kg/m³)** — i.e. the science band biases κ_R **high**, by
+    ~3× at the median and up to ~55× at 3000 K, exactly the direction
+    `docs/band_limitation.md` predicted (the harmonic Rosseland mean is
+    dominated by the near-IR/visible transparency windows the band excludes).
+    The effect is almost entirely a function of T (0.99 at 500 K → 0.02 at
+    3000 K), as the Planck peak marches out of the band.
+  * κ_P(full)/κ_P(common): min 0.273, median 0.850, max 1.002 — the arithmetic
+    mean is far less band-sensitive, which is why Planck is the trustworthy
+    headline (A22).
+  * `rel_floor` = 1e-6 leaves the **median** ratio unchanged to three digits but
+    does bind at individual points (max |Δratio| = 0.137, 30% relative), so the
+    floor-free ratio is reported alongside in `outputs/S3_band_truncation.csv`.
+  * **G5 median |ΔR_p/R_p| goes 0.1653 (common) → 0.1720 (full)**
+    (`outputs/g5_residuals_fullband.json`). The common-band column reproduces
+    the committed gate's 0.16530 exactly (same code path). The T_irr = 400 K
+    points do not move at all; the T_irr = 1000 K points get worse by 0.7–1.1
+    percentage points, since the less opaque full-band tables give a slightly
+    smaller radius and our radii were already low. **Conclusion for the
+    manuscript: band truncation cannot explain the G5 residual — removing it
+    makes agreement slightly worse**, leaving the pure-steam-envelope vs
+    full-water-phase model difference (A32) as the dominant cause.
+
+  Diagnostic only: `opacity.band_cm` stays [100, 4000] (A25) and the
+  FP-vs-line-list differential stays common-band (A21). Gate
+  `validation/test_s3_band_truncation.py`.
+
 ## 2026-08-04 (deck prep)
 
 - **A32 — G5 anchor is the published Aguichine (2021) fit; coefficients are
