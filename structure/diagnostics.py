@@ -102,6 +102,51 @@ def clamp_reasons(source, temperature_k, rho_si) -> dict:
     return out
 
 
+def aqua_coverage(eos: AquaEOS, pressure_pa, temperature_k) -> dict:
+    """Does a profile stay inside the AQUA table? (A47)
+
+    ``AquaEOS`` interpolates with ``np.interp`` and ``np.clip``, so a query
+    outside the table is silently *clamped* to its edge rather than raising. A
+    scan over planet space has to test for that explicitly, or a cell whose
+    envelope runs off the table is reported as though it were a model.
+
+    The temperature test is against the table's log T grid; the pressure test is
+    against the two bracketing T-columns' own log P ranges (the table is
+    (ρ, T)-indexed, so each column covers a different pressure range, A2).
+    """
+    t = np.atleast_1d(np.asarray(temperature_k, float))
+    p = np.atleast_1d(np.asarray(pressure_pa, float))
+    t_lo, t_hi = eos.T_range_k
+    below_t, above_t = t < t_lo, t > t_hi
+
+    tg = eos._t.logT_grid
+    lp = eos._t.logP_strict  # (n_rho, n_T), increasing down each column
+    log_t = np.log10(np.clip(t, t_lo, t_hi))
+    jt = np.clip(np.searchsorted(tg, log_t), 1, tg.size - 1)
+    j0 = jt - 1
+    p_lo = 10.0 ** np.maximum(lp[0, j0], lp[0, jt])
+    p_hi = 10.0 ** np.minimum(lp[-1, j0], lp[-1, jt])
+    below_p, above_p = p < p_lo, p > p_hi
+
+    parts = []
+    if below_t.any():
+        parts.append(f"T down to {t.min():.1f} K below the table floor {t_lo:.1f} K")
+    if above_t.any():
+        parts.append(f"T up to {t.max():.1f} K above the table ceiling {t_hi:.1f} K")
+    if below_p.any():
+        parts.append(f"P below the column floor at {int(below_p.sum())} point(s)")
+    if above_p.any():
+        parts.append(f"P above the column ceiling at {int(above_p.sum())} point(s)")
+    return {
+        "inside": not (below_t.any() or above_t.any() or below_p.any() or above_p.any()),
+        "n_below_t": int(below_t.sum()), "n_above_t": int(above_t.sum()),
+        "n_below_p": int(below_p.sum()), "n_above_p": int(above_p.sum()),
+        "t_range_k": (float(t.min()), float(t.max())),
+        "table_t_range_k": (t_lo, t_hi),
+        "summary": "; ".join(parts) or "inside the table",
+    }
+
+
 def _sample_mass_weights(mass_kg: np.ndarray) -> np.ndarray:
     """Per-sample mass weights (central differences) summing to the envelope mass."""
     m = np.asarray(mass_kg, float)

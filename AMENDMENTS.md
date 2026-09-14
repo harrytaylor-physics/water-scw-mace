@@ -220,6 +220,56 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   edited:** `docs/band_limitation.md`'s G5 row still quotes the pre-A46 0.165 →
   0.172.
 
+- **A47 — Extended scan, 108 cells: NO planet in it puts a line-list radiative
+  layer inside the FP data box, and no composite run is clamp-free.**
+  `figures/plot_s4_domain_scan.py --extended` opens the A42 grid in every
+  direction that could plausibly help — T_eq ∈ {300, 500, 700, 900, 1100, 1300} K
+  × T_int ∈ {30, 50} K × M_c ∈ {5, 10, 15} M⊕ × wmf ∈ {0.05, 0.20, 0.50}, both
+  sources, n_sample = 1500 (5m08s). **All 108 cells converged inside the AQUA
+  table; none was skipped.**
+
+  *Mass convention.* `envelope.f_env` is already the envelope's share of the
+  *whole* planet (the model sets M_p = M_c/(1−f_env)), so the requested `wmf` and
+  the existing `f_env` are the same number. Both are recorded, equal by
+  construction, next to the implied M_p — up to 30 M⊕ at M_c = 15, wmf = 0.5.
+
+  | | result |
+  |---|---|
+  | cells with **any** HITEMP radiative mass inside the FP box | **0 of 108** |
+  | same for the composite | 0 of 108 |
+  | cells with composite `clamp_fraction_all` < 1% | **0 of 108** (range 0.011–1.000) |
+  | HITEMP `clamp_fraction_all` | 0.279–1.000 |
+
+  **Why: the two requirements move in opposite directions across the whole
+  space.** Taking the densest radiative zone at each T_eq (M_c = 15 M⊕,
+  wmf = 0.05, T_int = 30 K):
+
+  | T_eq | radiative layer T | max radiative ρ | in the FP box? |
+  |---|---|---|---|
+  | 300 K | 363–364 K | **357** | no — 640 K too cold |
+  | 500 K | 606–732 K | **122** | no — 270 K too cold |
+  | 700 K | 848–1007 K | 45.8 | no — 2.4× too dilute |
+  | 900 K | 1090–1285 K | 32.3 | no — 3.4× too dilute |
+  | 1100 K | 1333–1574 K | 27.8 | no — 3.9× too dilute |
+  | 1300 K | 1575–1850 K | 26.4 | no — 4.1× too dilute |
+
+  Irradiation heats the radiative zone and thins it at the same rate: by the time
+  the layer is hot enough for the FP grid (T ≥ 1000 K, reached at T_eq ≳ 900 K) it
+  sits at ρ ≈ 30, a factor 3–4 below the grid's 108.796 floor; where it *is* dense
+  enough (T_eq ≤ 500 K) it is 270–640 K too cold. The A42 exceptions were both at
+  **T_int = 20 K**, which this grid does not contain: the in-box window is already
+  shut at T_int = 30 K everywhere in the extended space, which is consistent with
+  A42 and narrows the in-domain demonstration to an even smaller corner than A42
+  suggested — one that A45 shows is radiogenically unreachable anyway.
+
+  Mechanics worth keeping: `structure.diagnostics.aqua_coverage` (AQUA *clips*
+  out-of-table queries rather than raising, A2, so a scan has to test for it
+  explicitly), per-cell skip logging for non-convergence, and the new columns
+  (total radiative mass fraction, the envelope's hottest/densest point, and
+  `clamp_fraction_all` for **both** sources). Three figures, one per core mass —
+  the one-figure-per-script convention is overridden here on request. Gate
+  `validation/test_s4_extended_scan.py`.
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep

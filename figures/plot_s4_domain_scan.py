@@ -1,24 +1,37 @@
-"""S4: where does a line-list radiative zone sit INSIDE the FP domain? (A42)
+"""S4: where does a line-list radiative zone sit INSIDE the FP domain? (A42, A47)
 
-    python figures/plot_s4_domain_scan.py config/fiducial.yaml
+    python figures/plot_s4_domain_scan.py config/fiducial.yaml              # A42 grid
+    python figures/plot_s4_domain_scan.py config/fiducial.yaml --extended   # A47 grid
 
 A41 showed the fiducial's deep closure is decided by FP opacity clamped below
 the FP grid's 1000 K floor, so the demonstration has to move to a case whose
 line-list radiative zone lies inside the FP data box (T ≥ 1000 K and
-ρ ≥ 108.796 kg/m³). This scans
+ρ ≥ 108.796 kg/m³). The default grid is A42's:
 
     M_c = 5 M⊕ × T_eq ∈ {500, 600, 700, 800} K × T_int ∈ {20, 30, 40, 50, 75} K
-        × f_env ∈ {0.05, 0.10}
+        × wmf ∈ {0.05, 0.10}
 
-building both the HITEMP and the composite structure at every cell and recording
-each radiative layer's (T, ρ) extent and mass share, the in-box radiative mass
-fraction, R_p, and the composite's clamp_fraction_all (A41).
+and ``--extended`` is A47's, which opens the planet space in every direction
+that could plausibly push a radiative zone into the box — hotter and colder
+irradiation, heavier cores, and water-world envelope fractions:
 
-The candidate fiducial is the cell with the largest HITEMP in-box radiative mass
-fraction that the composite closes while staying honest — composite
-clamp_fraction_all < 1%.
+    T_eq ∈ {300, 500, 700, 900, 1100, 1300} K × T_int ∈ {30, 50} K
+        × M_c ∈ {5, 10, 15} M⊕ × wmf ∈ {0.05, 0.20, 0.50}
 
-Outputs ``outputs/S4_domain_scan.csv`` and ``outputs/S4_domain_scan.png``.
+``wmf`` is the envelope (water) mass fraction of the *whole* planet. In this
+repository ``envelope.f_env`` is already defined that way — the model sets
+M_p = M_c/(1−f_env), so f_env = M_env/M_p — hence wmf ≡ f_env and both are
+recorded, equal by construction, alongside the implied M_p (A47).
+
+Both sources are built at every cell and we record each radiative layer's (T, ρ)
+extent and mass share, the radiative mass fraction inside the FP box, the total
+(any-T) radiative mass fraction, the deepest/hottest envelope point, R_p, and
+``clamp_fraction_all`` (A41) for *both* sources.
+
+Cells whose structure fails to converge, or whose profile leaves the AQUA table,
+are skipped with a logged reason and excluded from the rankings and the figures.
+
+Outputs ``outputs/S4_domain_scan{,_extended}.csv`` and one figure per core mass.
 """
 
 from __future__ import annotations
@@ -37,14 +50,26 @@ from matplotlib.patches import Rectangle
 from eos import AquaEOS
 from figures._common import band_caption, comparison_band, load_cfg, save, set_style
 from structure import FP_GRID_FLOOR_SI, build_structure
-from structure.diagnostics import in_box_radiative_mass_fraction, radiative_layers
+from structure.diagnostics import (
+    aqua_coverage,
+    in_box_radiative_mass_fraction,
+    radiative_layers,
+)
 
+# --- A42 default grid -------------------------------------------------------
 T_EQ_GRID = (500.0, 600.0, 700.0, 800.0)
 T_INT_GRID = (20.0, 30.0, 40.0, 50.0, 75.0)
-F_ENV_GRID = (0.05, 0.10)
+WMF_GRID = (0.05, 0.10)
+# --- A47 extended grid ------------------------------------------------------
+EXT_T_EQ_GRID = (300.0, 500.0, 700.0, 900.0, 1100.0, 1300.0)
+EXT_T_INT_GRID = (30.0, 50.0)
+EXT_M_CORE_GRID = (5.0, 10.0, 15.0)
+EXT_WMF_GRID = (0.05, 0.20, 0.50)
+
 N_SAMPLE = 1500
 FP_T_FLOOR_K = 1000.0  # FP grid's coldest point; with FP_GRID_FLOOR_SI it is the box
 CLAMP_LIMIT = 0.01  # "honest" composite: <1% of profile samples clamped
+SOURCES = ("hitemp", "composite")
 
 
 def _layers_text(layers) -> str:
@@ -55,69 +80,122 @@ def _layers_text(layers) -> str:
     )
 
 
+def _source_columns(name: str, res) -> dict:
+    """Everything the scan records about one converged structure."""
+    layers = radiative_layers(res)
+    in_box = radiative_layers(res, FP_T_FLOOR_K, FP_GRID_FLOOR_SI)
+    prof = res.profile
+    return {
+        f"{name}_radius_rearth": f"{res.radius_p_rearth:.5f}",
+        f"{name}_n_radiative_layers": len(layers),
+        f"{name}_radiative_layers": _layers_text(layers),
+        f"{name}_n_rcb": len(res.rcb_densities_si),
+        f"{name}_max_radiative_rho": f"{res.max_radiative_rho_si:.1f}",
+        f"{name}_in_box_radiative_mass_fraction":
+            f"{in_box_radiative_mass_fraction(res, FP_T_FLOOR_K, FP_GRID_FLOOR_SI):.6f}",
+        f"{name}_total_radiative_mass_fraction":
+            f"{sum(x['mass_fraction'] for x in layers):.6f}",
+        f"{name}_n_in_box_layers": len(in_box),
+        f"{name}_in_box_layers": _layers_text(in_box),
+        f"{name}_layer_entirely_in_box": any(
+            x["t_min_k"] >= FP_T_FLOOR_K and x["rho_min_si"] >= FP_GRID_FLOOR_SI
+            for x in layers
+        ),
+        # deepest/hottest point the envelope reaches (A47)
+        f"{name}_t_max_k": f"{float(np.max(prof['temperature_k'])):.1f}",
+        f"{name}_rho_max_si": f"{float(np.max(prof['rho_si'])):.1f}",
+        f"{name}_clamp_fraction_all": f"{res.clamp_fraction_all:.4f}",
+        f"{name}_clamp_fraction_radiative": f"{res.clamp_fraction_radiative:.4f}",
+    }
+
+
+def _empty_source_columns(name: str) -> dict:
+    """Placeholder columns for a skipped cell, so the CSV stays rectangular."""
+    return {
+        f"{name}_radius_rearth": "", f"{name}_n_radiative_layers": 0,
+        f"{name}_radiative_layers": "", f"{name}_n_rcb": 0,
+        f"{name}_max_radiative_rho": "", f"{name}_in_box_radiative_mass_fraction": "",
+        f"{name}_total_radiative_mass_fraction": "", f"{name}_n_in_box_layers": 0,
+        f"{name}_in_box_layers": "", f"{name}_layer_entirely_in_box": False,
+        f"{name}_t_max_k": "", f"{name}_rho_max_si": "",
+        f"{name}_clamp_fraction_all": "", f"{name}_clamp_fraction_radiative": "",
+    }
+
+
 def run_scan(cfg, eos=None, t_eq_grid=T_EQ_GRID, t_int_grid=T_INT_GRID,
-             f_env_grid=F_ENV_GRID, n_sample: int = N_SAMPLE) -> list[dict]:
-    """Build HITEMP + composite over the (T_eq, T_int, f_env) grid."""
+             wmf_grid=WMF_GRID, m_core_grid=None, n_sample: int = N_SAMPLE,
+             verbose: bool = True) -> list[dict]:
+    """Build both sources over the (M_c, wmf, T_eq, T_int) grid.
+
+    A cell whose structure fails to converge, or whose converged profile leaves
+    the AQUA table, is recorded with ``skipped = True`` and a ``skip_reason``;
+    its source columns are left blank.
+    """
     eos = eos or AquaEOS.from_config(cfg)
-    band = comparison_band(cfg, ["composite", "hitemp"])
+    band = comparison_band(cfg, list(SOURCES))
+    m_core_grid = m_core_grid or (cfg.core.mass_mearth,)
     rows = []
-    for f_env in f_env_grid:
-        cfg_f = replace(cfg, envelope=replace(cfg.envelope, f_env=f_env))
-        for t_eq in t_eq_grid:
-            guess = {"hitemp": None, "composite": None}
-            for t_int in sorted(t_int_grid):  # ascending: R_p rises smoothly
-                res = {}
-                for name in ("hitemp", "composite"):
-                    res[name] = build_structure(
-                        cfg_f, t_eq, t_int, name, eos=eos, n_sample=n_sample, band=band,
-                        rp_guess_rearth=guess[name],
-                    )
-                    guess[name] = res[name].radius_p_rearth
-                row = {
-                    "f_env": f_env, "t_eq_k": t_eq, "t_int_k": t_int,
-                    "mass_core_mearth": cfg.core.mass_mearth, "n_sample": n_sample,
-                }
-                for name in ("hitemp", "composite"):
-                    r = res[name]
-                    layers = radiative_layers(r)
-                    in_box = radiative_layers(r, FP_T_FLOOR_K, FP_GRID_FLOOR_SI)
-                    row.update({
-                        f"{name}_radius_rearth": f"{r.radius_p_rearth:.5f}",
-                        f"{name}_n_radiative_layers": len(layers),
-                        f"{name}_radiative_layers": _layers_text(layers),
-                        f"{name}_n_rcb": len(r.rcb_densities_si),
-                        f"{name}_max_radiative_rho": f"{r.max_radiative_rho_si:.1f}",
-                        f"{name}_in_box_radiative_mass_fraction":
-                            f"{in_box_radiative_mass_fraction(r, FP_T_FLOOR_K, FP_GRID_FLOOR_SI):.6f}",
-                        f"{name}_n_in_box_layers": len(in_box),
-                        f"{name}_in_box_layers": _layers_text(in_box),
-                        f"{name}_layer_entirely_in_box": any(
-                            x["t_min_k"] >= FP_T_FLOOR_K and x["rho_min_si"] >= FP_GRID_FLOOR_SI
-                            for x in layers
-                        ),
-                    })
-                row["composite_clamp_fraction_all"] = f"{res['composite'].clamp_fraction_all:.4f}"
-                row["composite_clamp_fraction_radiative"] = (
-                    f"{res['composite'].clamp_fraction_radiative:.4f}")
-                row["hitemp_clamp_fraction_all"] = f"{res['hitemp'].clamp_fraction_all:.4f}"
-                rows.append(row)
+    for m_core in m_core_grid:
+        for wmf in wmf_grid:
+            cfg_c = replace(
+                cfg,
+                core=replace(cfg.core, mass_mearth=float(m_core)),
+                envelope=replace(cfg.envelope, f_env=float(wmf)),
+            )
+            for t_eq in t_eq_grid:
+                guess = dict.fromkeys(SOURCES)  # warm start resets per (M_c, wmf, T_eq)
+                for t_int in sorted(t_int_grid):  # ascending: R_p rises smoothly
+                    row = {
+                        "mass_core_mearth": float(m_core), "wmf": float(wmf),
+                        "f_env": float(wmf),  # identical by construction (A47)
+                        "mass_p_mearth": f"{float(m_core) / (1.0 - float(wmf)):.4f}",
+                        "t_eq_k": float(t_eq), "t_int_k": float(t_int),
+                        "n_sample": n_sample, "skipped": False, "skip_reason": "",
+                    }
+                    res, reason = {}, ""
+                    for name in SOURCES:
+                        try:
+                            res[name] = build_structure(
+                                cfg_c, t_eq, t_int, name, eos=eos, n_sample=n_sample,
+                                band=band, rp_guess_rearth=guess[name],
+                            )
+                            guess[name] = res[name].radius_p_rearth
+                        except (RuntimeError, ValueError) as exc:
+                            reason = f"{name}: did not converge ({type(exc).__name__}: {exc})"
+                            break
+                        cov = aqua_coverage(eos, res[name].profile["pressure_pa"],
+                                            res[name].profile["temperature_k"])
+                        if not cov["inside"]:
+                            reason = f"{name}: outside the AQUA table ({cov['summary']})"
+                            break
+                    if reason:
+                        row.update({"skipped": True, "skip_reason": reason})
+                        for name in SOURCES:
+                            row.update(_empty_source_columns(name))
+                        if verbose:
+                            print(f"  SKIP M_c={m_core:g} wmf={wmf:.2f} T_eq={t_eq:g} "
+                                  f"T_int={t_int:g}: {reason}")
+                    else:
+                        for name in SOURCES:
+                            row.update(_source_columns(name, res[name]))
+                    rows.append(row)
     return rows
 
 
-_INT_FIELDS = ("hitemp_n_radiative_layers", "composite_n_radiative_layers",
-               "hitemp_n_rcb", "composite_n_rcb", "hitemp_n_in_box_layers",
-               "composite_n_in_box_layers", "n_sample")
-_FLOAT_FIELDS = ("f_env", "t_eq_k", "t_int_k", "mass_core_mearth")
-_BOOL_FIELDS = ("hitemp_layer_entirely_in_box", "composite_layer_entirely_in_box")
+_INT_FIELDS = ("n_sample",) + tuple(
+    f"{s}_{k}" for s in SOURCES
+    for k in ("n_radiative_layers", "n_rcb", "n_in_box_layers"))
+_FLOAT_FIELDS = ("wmf", "f_env", "t_eq_k", "t_int_k", "mass_core_mearth")
+_BOOL_FIELDS = ("skipped",) + tuple(f"{s}_layer_entirely_in_box" for s in SOURCES)
 
 
 def load_rows(csv_path: Path) -> list[dict]:
-    """Re-read a previous scan's CSV (the scan itself costs ~12 min)."""
+    """Re-read a previous scan's CSV (the extended scan itself costs ~35 min)."""
     with Path(csv_path).open() as fh:
         rows = list(csv.DictReader(fh))
     for r in rows:
         for k in _INT_FIELDS:
-            r[k] = int(r[k])
+            r[k] = int(r[k] or 0)
         for k in _FLOAT_FIELDS:
             r[k] = float(r[k])
         for k in _BOOL_FIELDS:
@@ -125,65 +203,58 @@ def load_rows(csv_path: Path) -> list[dict]:
     return rows
 
 
-def _grid_of(rows, f_env, key, cast=float):
-    out = np.full((len(T_INT_GRID), len(T_EQ_GRID)), np.nan)
+def _num(row, key, default=np.nan) -> float:
+    """A numeric cell, tolerating the blanks a skipped row leaves."""
+    v = row[key]
+    if v == "" or v is None:
+        return default
+    return float(v)
+
+
+def _grid_of(rows, sel, key, t_eq_grid, t_int_grid, cast=float):
+    """(T_int × T_eq) array of ``key`` over the rows matching ``sel`` (a dict)."""
+    out = np.full((len(t_int_grid), len(t_eq_grid)), np.nan)
+    t_ints, t_eqs = sorted(t_int_grid), list(t_eq_grid)
     for r in rows:
-        if r["f_env"] != f_env:
+        if any(r[k] != v for k, v in sel.items()):
             continue
-        i = sorted(T_INT_GRID).index(r["t_int_k"])
-        j = list(T_EQ_GRID).index(r["t_eq_k"])
-        out[i, j] = cast(r[key])
+        i, j = t_ints.index(r["t_int_k"]), t_eqs.index(r["t_eq_k"])
+        out[i, j] = np.nan if r["skipped"] else cast(_num(r, key))
     return out
 
 
-def main(argv=None):
-    import argparse
-
-    argv = sys.argv[1:] if argv is None else argv
-    ap = argparse.ArgumentParser()
-    ap.add_argument("config", type=Path, help="run config YAML")
-    ap.add_argument("--from-csv", action="store_true",
-                    help="re-plot from a previous outputs/S4_domain_scan.csv instead of "
-                         "rebuilding 80 structures")
-    args = ap.parse_args(argv)
-    cfg = load_cfg([str(args.config)])
-    set_style()
-    eos = AquaEOS.from_config(cfg)
-    band = comparison_band(cfg, ["composite", "hitemp"])
-
-    out_dir = cfg.output_path
-    out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / "S4_domain_scan.csv"
-    if args.from_csv:
-        rows = load_rows(csv_path)
-        print(f"re-plotting from {csv_path} ({len(rows)} cells)")
-    else:
-        rows = run_scan(cfg, eos=eos)
-        with csv_path.open("w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=list(rows[0]))
-            w.writeheader()
-            w.writerows(rows)
-
-    # ---------------- figure ----------------
-    t_ints = sorted(T_INT_GRID)
-    fig, axes = plt.subplots(1, len(F_ENV_GRID), figsize=(6.2 * len(F_ENV_GRID), 5.4),
+def plot_grid(cfg, rows, m_core, wmf_grid, t_eq_grid, t_int_grid, band, tag):
+    """One figure for a core mass: a (T_eq × T_int) panel per wmf."""
+    t_ints = sorted(t_int_grid)
+    fig, axes = plt.subplots(1, len(wmf_grid),
+                             figsize=(5.6 * len(wmf_grid), 5.2),
                              constrained_layout=True)
     axes = np.atleast_1d(axes)
-    # The in-box fractions are parts per million of the envelope mass, so annotate
-    # and scale in ppm — three decimals of a raw fraction would print 0.000.
-    frac_all = np.array([float(r["hitemp_in_box_radiative_mass_fraction"]) * 1e6
-                         for r in rows])
-    vmax = max(frac_all.max(), 1.0)
+    # In-box fractions are parts per million of the envelope mass: a raw fraction
+    # would annotate every cell "0.000".
+    ppm = np.array([_num(r, "hitemp_in_box_radiative_mass_fraction", 0.0) * 1e6
+                    for r in rows if r["mass_core_mearth"] == m_core and not r["skipped"]])
+    vmax = max(ppm.max() if ppm.size else 0.0, 1.0)
     mesh = None
-    for ax, f_env in zip(axes, F_ENV_GRID):
-        grid = _grid_of(rows, f_env, "hitemp_in_box_radiative_mass_fraction") * 1e6
-        comp_box = _grid_of(rows, f_env, "composite_n_in_box_layers", int)
-        comp_clamp = _grid_of(rows, f_env, "composite_clamp_fraction_all")
-        mesh = ax.pcolormesh(np.arange(len(T_EQ_GRID) + 1), np.arange(len(t_ints) + 1),
+    for ax, wmf in zip(axes, wmf_grid):
+        sel = {"mass_core_mearth": m_core, "wmf": wmf}
+        grid = _grid_of(rows, sel, "hitemp_in_box_radiative_mass_fraction",
+                        t_eq_grid, t_int_grid) * 1e6
+        comp_box = _grid_of(rows, sel, "composite_n_in_box_layers", t_eq_grid,
+                            t_int_grid, int)
+        comp_clamp = _grid_of(rows, sel, "composite_clamp_fraction_all", t_eq_grid,
+                              t_int_grid)
+        mesh = ax.pcolormesh(np.arange(len(t_eq_grid) + 1), np.arange(len(t_ints) + 1),
                              grid, cmap="viridis", vmin=0.0, vmax=vmax,
                              edgecolors="white", linewidth=0.6)
         for i in range(len(t_ints)):
-            for j in range(len(T_EQ_GRID)):
+            for j in range(len(t_eq_grid)):
+                if np.isnan(grid[i, j]):  # skipped cell
+                    ax.add_patch(Rectangle((j, i), 1, 1, facecolor="#BBBBBB",
+                                           edgecolor="white"))
+                    ax.text(j + 0.5, i + 0.5, "skip", ha="center", va="center",
+                            fontsize=7.5, color="#333333")
+                    continue
                 ax.text(j + 0.5, i + 0.62, f"{grid[i, j]:.0f}", ha="center", va="center",
                         fontsize=8.5,
                         color="white" if grid[i, j] < 0.6 * vmax else "black")
@@ -192,73 +263,174 @@ def main(argv=None):
                                            edgecolor="#D55E00", lw=0.0))
                 if comp_clamp[i, j] > CLAMP_LIMIT:
                     ax.plot(j + 0.5, i + 0.25, marker="x", ms=7, color="#D55E00", mew=1.8)
-        ax.set_xticks(np.arange(len(T_EQ_GRID)) + 0.5, [f"{t:.0f}" for t in T_EQ_GRID])
+        ax.set_xticks(np.arange(len(t_eq_grid)) + 0.5, [f"{t:.0f}" for t in t_eq_grid])
         ax.set_yticks(np.arange(len(t_ints)) + 0.5, [f"{t:.0f}" for t in t_ints])
         ax.set_xlabel("$T_{eq}$ [K]")
         ax.set_ylabel("$T_{int}$ [K]")
         ax.grid(False)
-        ax.set_title(f"$f_{{env}}$ = {f_env:.0%}", fontsize=10)
+        ax.set_title(f"wmf = {wmf:.0%}  ($M_p$ = {m_core / (1 - wmf):.1f} $M_⊕$)",
+                     fontsize=10)
     fig.colorbar(mesh, ax=list(axes),
                  label="HITEMP radiative mass inside the FP box [ppm of envelope]")
     fig.suptitle(
         f"S4 — line-list radiative structure inside the FP data box "
         f"(T ≥ {FP_T_FLOOR_K:.0f} K, ρ ≥ {FP_GRID_FLOOR_SI:g} kg m⁻³): "
-        f"$M_c$={cfg.core.mass_mearth:.0f} $M_⊕$, {band_caption(band)}\n"
+        f"$M_c$ = {m_core:g} $M_⊕$, {band_caption(band)}\n"
         f"hatched: the composite still has an in-box radiative layer;  "
-        f"×: composite clamp_fraction_all > {CLAMP_LIMIT:.0%} (almost everywhere — "
-        f"the composite extrapolates FP unless the deep envelope is hot)", fontsize=10)
-    path = save(fig, cfg, "S4_domain_scan")
+        f"×: composite clamp_fraction_all > {CLAMP_LIMIT:.0%};  grey: skipped cell",
+        fontsize=10)
+    return save(fig, cfg, tag)
+
+
+def _rank(rows, key, n=10):
+    """The ``n`` converged rows with the largest ``key``, descending."""
+    live = [r for r in rows if not r["skipped"]]
+    return sorted(live, key=lambda r: _num(r, key, 0.0), reverse=True)[:n]
+
+
+def _cell_label(r) -> str:
+    return (f"M_c={r['mass_core_mearth']:>4.1f} wmf={r['wmf']:.2f} "
+            f"T_eq={r['t_eq_k']:>6.0f} T_int={r['t_int_k']:>4.0f}")
+
+
+def print_rankings(rows, n=10) -> None:
+    """The two top-ten tables the extended scan is for (A47)."""
+    print(f"\ntop {n} cells by HITEMP radiative mass fraction INSIDE the FP box "
+          f"(T ≥ {FP_T_FLOOR_K:.0f} K, ρ ≥ {FP_GRID_FLOOR_SI:g} kg/m³):")
+    head = (f"  {'cell':<44s} {'HT in-box':>10s} {'C in-box':>9s} {'C clamp_all':>11s} "
+            f"{'composite closes it?':<22s}")
+    print(head)
+    print("  " + "-" * (len(head) - 2))
+    for r in _rank(rows, "hitemp_in_box_radiative_mass_fraction", n):
+        ht = _num(r, "hitemp_in_box_radiative_mass_fraction", 0.0)
+        cb = r["composite_n_in_box_layers"]
+        cl = _num(r, "composite_clamp_fraction_all", np.nan)
+        if ht <= 0.0:
+            verdict = "n/a (nothing in box)"
+        elif cb == 0 and cl < CLAMP_LIMIT:
+            verdict = "YES, on FP data"
+        elif cb == 0:
+            verdict = f"yes, but clamped {cl:.0%}"
+        else:
+            verdict = f"no ({cb} layer(s) left)"
+        print(f"  {_cell_label(r):<44s} {ht:>10.6f} {cb:>9d} {cl:>11.4f} {verdict:<22s}")
+
+    print(f"\ntop {n} cells by TOTAL (any-T) HITEMP radiative mass fraction, with each "
+          f"layer's extent — where the radiative layers live relative to the FP box:")
+    for r in _rank(rows, "hitemp_total_radiative_mass_fraction", n):
+        print(f"  {_cell_label(r)}  total radiative m = "
+              f"{_num(r, 'hitemp_total_radiative_mass_fraction', 0.0):.4f}, "
+              f"max radiative ρ = {r['hitemp_max_radiative_rho']}, "
+              f"envelope reaches T = {r['hitemp_t_max_k']} K, ρ = {r['hitemp_rho_max_si']}")
+        for layer in (r["hitemp_radiative_layers"] or "none").split(" | "):
+            print(f"      {layer}")
+
+
+def main(argv=None):
+    import argparse
+
+    argv = sys.argv[1:] if argv is None else argv
+    ap = argparse.ArgumentParser()
+    ap.add_argument("config", type=Path, help="run config YAML")
+    ap.add_argument("--extended", action="store_true",
+                    help="A47 grid: T_eq 300-1300 K x T_int {30,50} x M_c {5,10,15} "
+                         "x wmf {0.05,0.20,0.50} (108 cells, ~35 min)")
+    ap.add_argument("--from-csv", action="store_true",
+                    help="re-plot and re-rank from a previous CSV instead of rebuilding")
+    args = ap.parse_args(argv)
+    cfg = load_cfg([str(args.config)])
+    set_style()
+    eos = AquaEOS.from_config(cfg)
+    band = comparison_band(cfg, list(SOURCES))
+
+    if args.extended:
+        t_eq_grid, t_int_grid = EXT_T_EQ_GRID, EXT_T_INT_GRID
+        wmf_grid, m_core_grid = EXT_WMF_GRID, EXT_M_CORE_GRID
+        stem = "S4_domain_scan_extended"
+    else:
+        t_eq_grid, t_int_grid = T_EQ_GRID, T_INT_GRID
+        wmf_grid, m_core_grid = WMF_GRID, (cfg.core.mass_mearth,)
+        stem = "S4_domain_scan"
+
+    out_dir = cfg.output_path
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / f"{stem}.csv"
+    if args.from_csv:
+        rows = load_rows(csv_path)
+        print(f"re-plotting from {csv_path} ({len(rows)} cells)")
+    else:
+        print(f"scanning {len(m_core_grid) * len(wmf_grid) * len(t_eq_grid) * len(t_int_grid)}"
+              f" cells x {len(SOURCES)} sources, n_sample={N_SAMPLE} ...")
+        rows = run_scan(cfg, eos=eos, t_eq_grid=t_eq_grid, t_int_grid=t_int_grid,
+                        wmf_grid=wmf_grid, m_core_grid=m_core_grid)
+        with csv_path.open("w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+
+    # ---------------- figures: one per core mass (A47) ----------------
+    paths = [plot_grid(cfg, rows, m_core, wmf_grid, t_eq_grid, t_int_grid, band,
+                       f"{stem}_Mc{m_core:g}" if args.extended else stem)
+             for m_core in m_core_grid]
 
     # ---------------- printed summary ----------------
-    print(f"wrote {path}")
+    for p in paths:
+        print(f"wrote {p}")
     print(f"wrote {csv_path}")
-    print(f"\nS4 — domain scan, M_c={cfg.core.mass_mearth:g} M_earth, n_sample={N_SAMPLE}, "
-          f"{band_caption(band)}")
-    head = (f"{'f_env':>6s} {'T_eq':>5s} {'T_int':>6s} | {'HT in-box frac':>14s} "
-            f"{'HT layers':>9s} {'HT max rad rho':>14s} | {'C in-box layers':>15s} "
-            f"{'C clamp_all':>11s} | {'R_p HT':>8s} {'R_p C':>8s}")
-    print(head)
-    print("-" * len(head))
+    live = [r for r in rows if not r["skipped"]]
+    skipped = [r for r in rows if r["skipped"]]
+    print(f"\nS4 — domain scan ({'A47 extended' if args.extended else 'A42 default'} grid), "
+          f"n_sample={N_SAMPLE}, {band_caption(band)}")
+    print(f"  {len(live)} of {len(rows)} cells converged inside the AQUA table; "
+          f"{len(skipped)} skipped")
+    for r in skipped:
+        print(f"    SKIPPED {_cell_label(r)}: {r['skip_reason']}")
+
+    head = (f"  {'M_c':>4s} {'wmf':>5s} {'T_eq':>5s} {'T_int':>5s} | {'HT in-box':>10s} "
+            f"{'HT tot rad':>10s} {'HT max rho':>10s} {'HT Tmax':>8s} | "
+            f"{'C in-box':>8s} {'C clamp':>8s} {'HT clamp':>8s} | {'R_p HT':>8s} {'R_p C':>8s}")
+    print("\n" + head)
+    print("  " + "-" * (len(head) - 2))
     for r in rows:
-        print(f"{r['f_env']:>6.2f} {r['t_eq_k']:>5.0f} {r['t_int_k']:>6.0f} | "
-              f"{float(r['hitemp_in_box_radiative_mass_fraction']):>14.5f} "
-              f"{r['hitemp_n_radiative_layers']:>9d} {r['hitemp_max_radiative_rho']:>14s} | "
-              f"{r['composite_n_in_box_layers']:>15d} "
-              f"{float(r['composite_clamp_fraction_all']):>11.4f} | "
+        if r["skipped"]:
+            print(f"  {r['mass_core_mearth']:>4.1f} {r['wmf']:>5.2f} {r['t_eq_k']:>5.0f} "
+                  f"{r['t_int_k']:>5.0f} |  --- skipped ---")
+            continue
+        print(f"  {r['mass_core_mearth']:>4.1f} {r['wmf']:>5.2f} {r['t_eq_k']:>5.0f} "
+              f"{r['t_int_k']:>5.0f} | "
+              f"{_num(r, 'hitemp_in_box_radiative_mass_fraction'):>10.6f} "
+              f"{_num(r, 'hitemp_total_radiative_mass_fraction'):>10.4f} "
+              f"{r['hitemp_max_radiative_rho']:>10s} {r['hitemp_t_max_k']:>8s} | "
+              f"{r['composite_n_in_box_layers']:>8d} "
+              f"{_num(r, 'composite_clamp_fraction_all'):>8.4f} "
+              f"{_num(r, 'hitemp_clamp_fraction_all'):>8.4f} | "
               f"{r['hitemp_radius_rearth']:>8s} {r['composite_radius_rearth']:>8s}")
 
-    closed = [r for r in rows
-              if r["composite_n_in_box_layers"] == 0
-              and float(r["composite_clamp_fraction_all"]) < CLAMP_LIMIT
-              and float(r["hitemp_in_box_radiative_mass_fraction"]) > 0.0]
-    print(f"\ncells where the composite closes every in-box radiative layer with "
-          f"clamp_fraction_all < {CLAMP_LIMIT:.0%}: {len(closed)} of {len(rows)}")
-    if closed:
-        cand = max(closed, key=lambda r: float(r["hitemp_in_box_radiative_mass_fraction"]))
-        print(f"CANDIDATE FIDUCIAL: T_eq={cand['t_eq_k']:.0f} K, T_int={cand['t_int_k']:.0f} K, "
-              f"f_env={cand['f_env']:.2f}, M_c={cand['mass_core_mearth']:.0f} M_earth")
-        print(f"  HITEMP in-box radiative mass fraction = "
-              f"{float(cand['hitemp_in_box_radiative_mass_fraction']):.5f}; "
-              f"in-box layers: {cand['hitemp_in_box_layers'] or 'none'}")
-        print(f"  HITEMP radiative layers: {cand['hitemp_radiative_layers']}")
-        print(f"  composite: {cand['composite_n_in_box_layers']} in-box radiative layers, "
-              f"clamp_fraction_all = {cand['composite_clamp_fraction_all']}, "
-              f"clamp_fraction_radiative = {cand['composite_clamp_fraction_radiative']}")
-        print(f"  R_p: HITEMP {cand['hitemp_radius_rearth']}, "
-              f"composite {cand['composite_radius_rearth']} R_earth")
-    else:
-        print("CANDIDATE FIDUCIAL: none — no cell has an in-box line-list radiative zone "
-              "that the composite closes with clamp_fraction_all < "
-              f"{CLAMP_LIMIT:.0%}.")
+    print_rankings(rows)
 
-    entirely = [r for r in rows if r["hitemp_layer_entirely_in_box"]]
+    closed = [r for r in live
+              if r["composite_n_in_box_layers"] == 0
+              and _num(r, "composite_clamp_fraction_all", 1.0) < CLAMP_LIMIT
+              and _num(r, "hitemp_in_box_radiative_mass_fraction", 0.0) > 0.0]
+    print(f"\ncells where the composite closes every in-box radiative layer with "
+          f"clamp_fraction_all < {CLAMP_LIMIT:.0%}: {len(closed)} of {len(live)} converged")
+    for r in closed:
+        print(f"  {_cell_label(r)}: HITEMP in-box "
+              f"{_num(r, 'hitemp_in_box_radiative_mass_fraction'):.6f} of envelope mass, "
+              f"in-box layers {r['hitemp_in_box_layers'] or 'none'}; "
+              f"R_p {r['hitemp_radius_rearth']} -> {r['composite_radius_rearth']} R_earth")
+    substantial = [r for r in closed
+                   if _num(r, "hitemp_in_box_radiative_mass_fraction", 0.0) > 0.01]
+    print(f"  of those, with a SUBSTANTIAL in-box layer (> 1% of envelope mass): "
+          f"{len(substantial)}")
+
+    entirely = [r for r in live if r["hitemp_layer_entirely_in_box"]]
     print(f"\ncells with a HITEMP radiative layer lying ENTIRELY inside the FP box "
           f"(no part below {FP_T_FLOOR_K:.0f} K or below ρ = {FP_GRID_FLOOR_SI:g}): "
-          f"{len(entirely)} of {len(rows)}")
+          f"{len(entirely)} of {len(live)} converged")
     for r in entirely:
-        print(f"  T_eq={r['t_eq_k']:.0f}, T_int={r['t_int_k']:.0f}, f_env={r['f_env']:.2f}: "
-              f"{r['hitemp_radiative_layers']}")
-    return path
+        print(f"  {_cell_label(r)}: {r['hitemp_radiative_layers']}")
+    return paths[0]
 
 
 if __name__ == "__main__":
