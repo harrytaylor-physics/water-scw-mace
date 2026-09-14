@@ -63,8 +63,9 @@ class StructureResult:
     photosphere_pressure_pa: float
     photosphere_temperature_k: float
 
-    clamp_fraction: float  # raw fraction of all opacity evals clamped
+    clamp_fraction: float  # raw fraction of opacity evals clamped over the ODE steps
     clamp_fraction_radiative: float  # clamped fraction in the radiative zone (A26)
+    clamp_fraction_all: float  # clamped fraction over ALL profile samples (A41)
     clamp_reliable: bool  # radiative clamp fraction <= threshold
     flat_rho_fraction: float  # dilute-limit ρ-floored fraction (justified; A26)
     two_phase_fraction: float
@@ -267,6 +268,12 @@ def build_structure(
         clamp_fraction_radiative = float(np.mean(rad_clamped))
     else:
         clamp_fraction_radiative = 0.0
+    # Same measure over every sampled point, convective ones included (A41): a
+    # convective layer's κ does not shape the structure, but if the composite is
+    # *closing* a radiative window there, the reader needs to know whether that κ
+    # was interpolated or clamped. Distinct from ``clamp_fraction``, which counts
+    # the integrator's own steps rather than profile samples.
+    clamp_fraction_all = float(np.mean(opacity.clamped_mask(t, rho)))
 
     # Composite: log the FP/line-list κ ratio at the seam over the radiative
     # zone (the quantified systematic, A12).
@@ -306,6 +313,7 @@ def build_structure(
         photosphere_temperature_k=t_phot,
         clamp_fraction=clamp_fraction,
         clamp_fraction_radiative=clamp_fraction_radiative,
+        clamp_fraction_all=clamp_fraction_all,
         clamp_reliable=clamp_fraction_radiative <= threshold,
         flat_rho_fraction=flat_rho_fraction,
         two_phase_fraction=float(two_phase.mean()),

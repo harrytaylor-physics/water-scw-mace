@@ -4,6 +4,38 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-14 (relocating the structural demonstration)
+
+- **A41 — At the current fiducial the deep closure is decided by CLAMPED FP
+  opacity, not by FP data.** `clamp_fraction_radiative` (A26) judges reliability
+  in the radiative zone, which is the right measure for a radiative zone — but
+  the headline claim is that the composite *closes* a window the line list opens,
+  i.e. it is about a layer the composite has made **convective**, where that
+  metric is blind by construction. Added `StructureResult.clamp_fraction_all`
+  (clamped fraction over every sampled profile point; the pre-existing
+  `clamp_fraction`, which counts the integrator's own steps, is unchanged) and
+  `structure/diagnostics.py` (`clamp_audit`, `clamp_reasons`, CLI) which splits
+  evaluations by the sub-source actually used and by reason. At the fiducial
+  (M_c=5 M⊕, f_env=5%, T_eq=500 K, T_int=20 K, default blend, n_sample=1500):
+
+  | | composite | HITEMP |
+  |---|---|---|
+  | samples with ρ ∈ [400, 550] | 46 (T = 633–763 K) | 7 (T = 630–637 K) |
+  | of those, clamped | **46 / 46, all below FP's 1000 K grid floor** | 0 / 7 |
+  | clamp_fraction_all | 0.4855 | 0.3791 |
+  | clamp_fraction_radiative | 0.0000 | 0.0000 |
+  | whole-profile clamps, by reason | 277 below FP T floor + 1179 in-box-but-outside the scattered hull (A6) | 1137 above HITEMP's ρ ceiling (1000 kg/m³), deep convective interior only |
+
+  **Plainly: the closure of the deep line-list radiative zone at this case rests
+  on nearest-neighbour extrapolated FP opacity.** The FP grid starts at 1000 K;
+  the envelope there is 630–760 K. The line-list side of the comparison is fully
+  in-grid (its 7 samples interpolate; its clamps are all in the deep convective
+  interior above ρ = 1000 kg/m³, where opacity is irrelevant). So A28/A35's
+  closure is not evidence *from* first-principles data at this case — it is the
+  nearest FP grid point (1000 K) applied 300 K too cold. The structural
+  demonstration has to move to a case whose line-list radiative zone lies inside
+  the FP domain (T ≥ 1000 K, ρ ≥ 108.796), which is the A42 scan.
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep
