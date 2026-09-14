@@ -11,7 +11,8 @@ digitized from their Figure 8 (Ma19+, no metallic core), stored in
 `validation/data/aguichine2021_fig8_points.csv`.
 
 We match (M, WMF, T_irr): WMF → f_env (pure-steam envelope), T_irr → T_eq via
-T_irr = √2·T_eq, a pure-rock core (cmf=0) to match their no-metallic-core case,
+T_irr = √2·T_eq (the default; see A43 and `anchor.t_irr_to_t_eq`), a pure-rock
+core (cmf=0) to match their no-metallic-core case,
 and a cool mature interior (T_int=30 K). Per SPEC §7 G5 we DOCUMENT residuals and
 their causes rather than tuning to match: the residuals grow with WMF because our
 pure-steam envelope differs from their full water-phase (ice/liquid/supercritical)
@@ -47,15 +48,34 @@ def _load_points():
     return rows
 
 
+def anchor_t_eq(cfg, t_irr_k: float) -> float:
+    """The anchor's T_irr expressed as our T_eq, per ``cfg.anchor`` (A43).
+
+    ``sqrt2`` (default, unchanged) treats their T_irr as Guillot's irradiation
+    temperature; ``identity`` uses their Equation (9) definition,
+    T_irr = T_eff·√(R⋆/2a), which *is* the full-redistribution equilibrium
+    temperature our T_eq means.
+    """
+    return float(t_irr_k) if cfg.anchor.t_irr_to_t_eq == "identity" else float(t_irr_k) / np.sqrt(2.0)
+
+
 def our_radius(cfg, m_earth, wmf, t_irr_k, t_int_k, source, eos):
-    """R_p [R⊕] for a steam envelope (f_env=WMF) on a pure-rock core, matched to
-    Aguichine (M, WMF, T_irr): T_eq = T_irr/√2, cmf=0 (no metallic core)."""
+    """R_p [R⊕] for a steam envelope (f_env=WMF) on a rocky core, matched to
+    Aguichine (M, WMF, T_irr) under the ``cfg.anchor`` conventions (A43).
+
+    Defaults: T_eq = T_irr/√2, cmf = 0 (no metallic core), radius at the config's
+    own top-of-atmosphere pressure.
+    """
+    boundary = cfg.boundary
+    if cfg.anchor.radius_pressure_bar is not None:
+        boundary = replace(boundary, p_top_bar=cfg.anchor.radius_pressure_bar)
     cfg2 = replace(
         cfg,
-        core=replace(cfg.core, mass_mearth=(1.0 - wmf) * m_earth, cmf=0.0),
+        core=replace(cfg.core, mass_mearth=(1.0 - wmf) * m_earth, cmf=cfg.anchor.cmf),
         envelope=replace(cfg.envelope, f_env=wmf),
+        boundary=boundary,
     )
-    return build_structure(cfg2, t_irr_k / np.sqrt(2.0), t_int_k, source, eos=eos,
+    return build_structure(cfg2, anchor_t_eq(cfg, t_irr_k), t_int_k, source, eos=eos,
                            n_sample=400).radius_p_rearth
 
 

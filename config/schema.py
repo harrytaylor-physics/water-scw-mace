@@ -122,6 +122,31 @@ class Boundary:
 
 
 @dataclass(frozen=True)
+class Anchor:
+    """Conventions for matching the published literature anchor, gate G5 (A43).
+
+    These are *definition* choices, not physics knobs: how the anchor paper's
+    reported quantities map onto ours. Defaults reproduce the numbers already in
+    `outputs/g5_residuals.json`; the corrected mappings are opt-in so the change
+    in each residual is attributable one at a time.
+    """
+
+    # How Aguichine et al. (2021) T_irr maps to our T_eq. "sqrt2" divides by √2
+    # (treats their T_irr as Guillot's irradiation temperature — the original
+    # assumption); "identity" passes it through, which is what their Equation (9)
+    # actually defines, T_irr = T_eff·√(R⋆/2a) — verified against their own
+    # Table 3 (A43).
+    t_irr_to_t_eq: str = "sqrt2"
+    # Pressure level the anchor's reported (transiting) radius refers to. Their
+    # atmospheric grid reports the thickness at 0.1 Pa = 1e-6 bar; ours stops at
+    # boundary.p_top_bar (1e-5 bar). None -> use boundary.p_top_bar unchanged.
+    radius_pressure_bar: float | None = None
+    # Their x_core = CMF/(1−WMF) is the core fraction of the *refractory* part;
+    # Figure 8 is computed with no metallic core, i.e. x_core = 0 -> cmf = 0.
+    cmf: float = 0.0
+
+
+@dataclass(frozen=True)
 class Numerics:
     """Integrator + shooting tolerances (SPEC §5). All in config, not code."""
 
@@ -146,6 +171,7 @@ class Config:
     interior: Interior = field(default_factory=Interior)
     opacity: Opacity = field(default_factory=Opacity)
     boundary: Boundary = field(default_factory=Boundary)
+    anchor: Anchor = field(default_factory=Anchor)
     numerics: Numerics = field(default_factory=Numerics)
 
     # -- resolved absolute paths (convenience) --
@@ -245,6 +271,14 @@ def _validate(cfg: Config) -> None:
         raise ValueError("a zero-width blend window requires opacity.blend_mode='sharp'")
     if cfg.opacity.fp_scale <= 0:
         raise ValueError(f"opacity.fp_scale must be positive, got {cfg.opacity.fp_scale}")
+    if cfg.anchor.t_irr_to_t_eq not in {"sqrt2", "identity"}:
+        raise ValueError(
+            f"anchor.t_irr_to_t_eq must be sqrt2|identity, got {cfg.anchor.t_irr_to_t_eq!r}"
+        )
+    if cfg.anchor.radius_pressure_bar is not None and cfg.anchor.radius_pressure_bar <= 0:
+        raise ValueError("anchor.radius_pressure_bar must be positive or null")
+    if not 0.0 <= cfg.anchor.cmf < 1.0:
+        raise ValueError(f"anchor.cmf must be in [0,1), got {cfg.anchor.cmf}")
     if cfg.numerics.solver not in {"LSODA", "Radau", "BDF", "RK45"}:
         raise ValueError(f"unsupported numerics.solver {cfg.numerics.solver!r}")
     if not all(t > 0 for t in cfg.irradiation.t_eq_k):

@@ -1,6 +1,7 @@
 """Run configuration package (SPEC §1)."""
 
 from config.schema import (
+    Anchor,
     Boundary,
     Config,
     Core,
@@ -15,6 +16,7 @@ from config.schema import (
 )
 
 __all__ = [
+    "Anchor",
     "Boundary",
     "Config",
     "Core",

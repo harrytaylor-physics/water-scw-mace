@@ -70,6 +70,53 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   (**+0.023%**). The demonstration is real but thin: it rests on ~4×10⁻⁴ of the
   envelope mass and an 8 kg/m³ slice of density.
 
+- **A43 — G5 was not like-for-like: their T_irr IS our T_eq. Fixing the two
+  definition mismatches takes the median residual 16.5% → 8.4%.** Before
+  attributing anything to physics, the three matching definitions were checked
+  against Aguichine et al. (2021) itself:
+
+  1. **Irradiation (was wrong).** Their Equation (9) defines the irradiance
+     temperature T_irr = T_eff·√(R⋆/2a) — the factor 2 is in it, so T_irr *is*
+     the zero-albedo, full-redistribution equilibrium temperature our `t_eq_k`
+     means. Verified against their own Table 3 (GJ 9827, T_eff = 4340 K,
+     R⋆ = 0.602 R_☉): the formula gives 1181/818/686 K for b/c/d against their
+     tabulated **1184/820/686 K** (≤0.3%); dropping the factor 2 gives
+     1671/1157/969 K, 41% high. A32 had applied T_eq = T_irr/√2, i.e. modelled
+     every anchor planet one √2 *too cold*.
+  2. **Radius (was slightly wrong).** Their reported radius is the transiting
+     radius: interior boundary plus the atmosphere thickness taken at **0.1 Pa**
+     (their atmospheric grid's output). Ours is the top-of-atmosphere radius at
+     `boundary.p_top_bar` = 1e-5 bar = 1 Pa — one decade deeper, so slightly
+     small. (It is *not* the 10-bar matching radius: matching pressure sets where
+     the interior integration starts, not where R_p is measured.)
+  3. **Core (already right).** Their x_core = CMF/(1−WMF) is the core fraction of
+     the refractory part only and Figure 8 has no metallic core, so x_core = 0 ⇒
+     our `cmf = 0` with M_c = (1−WMF)·M_p. No correction.
+
+  Corrections are opt-in `anchor.*` config flags (`t_irr_to_t_eq`,
+  `radius_pressure_bar`, `cmf`), **defaults unchanged**, so
+  `outputs/g5_residuals.json` still reproduces exactly. Median |ΔR_p/R_p| over
+  the eight anchor points (`figures/plot_s5_g5_audit.py`,
+  `outputs/g5_residuals_conventions.json`):
+
+  | conventions | median |rel| | vs baseline |
+  |---|---|---|
+  | baseline (A32) | 0.1653 | — |
+  | + irradiation (T_eq = T_irr) | **0.0997** | −0.0656 |
+  | + radius level (0.1 Pa) | 0.1534 | −0.0119 |
+  | + both | **0.0844** | −0.0809 |
+
+  So **about half of the published G5 residual was a definition mismatch, not
+  physics**, and with both corrections the anchor sits at 8.4%, inside SPEC §7's
+  5–10% aim. Every corrected residual is still negative (our radii remain small),
+  and the WMF trend survives (−3.9 to −9.9% at WMF = 0.2, −6.9 to −17.9% at
+  0.5), so the pure-steam-envelope vs layered-water-structure difference (A32)
+  remains the residual physics. For the attribution sentence: the 1–100 bar
+  matching-pressure scan moves R_p by only **0.349%** at the fiducial
+  (1.73943 / 1.73887 / 1.73338 R⊕ at 1 / 10 / 100 bar), so the boundary choice
+  cannot account for it either. **Recommendation (owner's call): make
+  `anchor.t_irr_to_t_eq = "identity"` the default and re-report G5.**
+
 - **A44 — At the candidate the evolution signal is ~30× smaller than at the old
   fiducial, and the cooling-time ratio is 1.000 ± 0.002.** `config/candidate.yaml`
   fixes the A42 case (M_c = 5 M⊕, f_env = 5%, T_eq = 700 K; structural case
