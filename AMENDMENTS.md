@@ -36,6 +36,40 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   demonstration has to move to a case whose line-list radiative zone lies inside
   the FP domain (T ≥ 1000 K, ρ ≥ 108.796), which is the A42 scan.
 
+- **A42 — Scan result: the line-list radiative zone essentially never reaches
+  inside the FP data box. One usable cell in 40.** `figures/plot_s4_domain_scan.py`
+  builds HITEMP and composite structures over M_c = 5 M⊕ × T_eq ∈ {500, 600,
+  700, 800} K × T_int ∈ {20, 30, 40, 50, 75} K × f_env ∈ {5%, 10%} (n_sample =
+  1500) and measures each radiative layer's (T, ρ) extent and mass share, the
+  radiative mass fraction inside the FP box (T ≥ 1000 K **and** ρ ≥ 108.796
+  kg/m³), and the composite's `clamp_fraction_all` (A41). New diagnostics
+  `structure.diagnostics.radiative_layers` / `in_box_radiative_mass_fraction`.
+
+  The two requirements pull against each other: a *deep* radiative zone needs a
+  cold interior (T_int = 20 K gives max radiative ρ ≈ 100–500) and a *hot* one
+  needs strong irradiation, which drives the RCB shallow (T_int ≥ 30 K gives
+  ρ ≤ 60; T_int = 75 K gives ρ ≈ 1–2). Results:
+
+  * **38 of 40 cells have exactly zero radiative mass inside the FP box.**
+  * The two exceptions are T_eq = 700 K, T_int = 20 K: f_env = 5% (**365 ppm** of
+    the envelope mass, layer T 1004–1023 K, ρ 127–130) and f_env = 10% (212 ppm,
+    T 1002–1021 K, ρ 119–123). At f_env = 10% the composite still leaves an
+    in-box radiative layer and clamps 3.2% of its samples.
+  * **No cell has a line-list radiative layer lying entirely inside the box** —
+    in every case the zone starts in the dilute, sub-1000 K atmosphere and only
+    its base dips in.
+  * `clamp_fraction_all` > 1% in 38 of 40 composite runs: unless the deep
+    envelope is hot, the composite is extrapolating FP.
+
+  **Candidate fiducial: T_eq = 700 K, T_int = 20 K, f_env = 5%, M_c = 5 M⊕** —
+  the only cell where an in-box line-list radiative layer exists *and* the
+  composite closes it with `clamp_fraction_all = 0.0000` (every FP evaluation in
+  the whole profile interpolated). There: HITEMP radiative T 848–1023 K, ρ up to
+  130.5, mass fraction 0.0032, of which 365 ppm in-box; composite radiative
+  T 848–1000 K, ρ up to 122.3, zero in-box; R_p 1.75904 → 1.75944 R⊕
+  (**+0.023%**). The demonstration is real but thin: it rests on ~4×10⁻⁴ of the
+  envelope mass and an 8 kg/m³ slice of density.
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep

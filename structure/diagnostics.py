@@ -102,6 +102,56 @@ def clamp_reasons(source, temperature_k, rho_si) -> dict:
     return out
 
 
+def _sample_mass_weights(mass_kg: np.ndarray) -> np.ndarray:
+    """Per-sample mass weights (central differences) summing to the envelope mass."""
+    m = np.asarray(mass_kg, float)
+    edges = np.empty(m.size + 1)
+    edges[1:-1] = 0.5 * (m[:-1] + m[1:])
+    edges[0], edges[-1] = m[0], m[-1]
+    return np.abs(np.diff(edges))
+
+
+def radiative_layers(result, t_min_k: float = 0.0, rho_min_si: float = 0.0) -> list[dict]:
+    """Contiguous radiative layers of a profile, with their extents and mass share.
+
+    ``t_min_k``/``rho_min_si`` restrict the layers to a (T, ρ) box — with the FP
+    grid's corner (1000 K, 108.796 kg/m³) this is the "in-box" radiative structure
+    the first-principles data can actually speak to (A42).
+    """
+    prof = result.profile
+    rho = np.asarray(prof["rho_si"], float)
+    t = np.asarray(prof["temperature_k"], float)
+    w = _sample_mass_weights(prof["mass_kg"])
+    total = w.sum()
+    mask = (~np.asarray(prof["is_convective"], bool)) & (t >= t_min_k) & (rho >= rho_min_si)
+
+    layers: list[dict] = []
+    idx = np.flatnonzero(mask)
+    if idx.size == 0:
+        return layers
+    for run in np.split(idx, np.flatnonzero(np.diff(idx) > 1) + 1):
+        layers.append({
+            "t_min_k": float(t[run].min()), "t_max_k": float(t[run].max()),
+            "rho_min_si": float(rho[run].min()), "rho_max_si": float(rho[run].max()),
+            "mass_fraction": float(w[run].sum() / total),
+            "n_samples": int(run.size),
+        })
+    return layers
+
+
+def in_box_radiative_mass_fraction(result, t_min_k: float = 1000.0,
+                                   rho_min_si: float = 108.796) -> float:
+    """Envelope mass fraction that is radiative *and* inside the FP grid's corner."""
+    prof = result.profile
+    w = _sample_mass_weights(prof["mass_kg"])
+    mask = (
+        (~np.asarray(prof["is_convective"], bool))
+        & (np.asarray(prof["temperature_k"], float) >= t_min_k)
+        & (np.asarray(prof["rho_si"], float) >= rho_min_si)
+    )
+    return float(w[mask].sum() / w.sum())
+
+
 def clamp_audit(
     cfg: Config,
     t_eq_k: float,
