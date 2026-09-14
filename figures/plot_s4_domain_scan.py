@@ -91,6 +91,8 @@ def _source_columns(name: str, res) -> dict:
         f"{name}_radiative_layers": _layers_text(layers),
         f"{name}_n_rcb": len(res.rcb_densities_si),
         f"{name}_max_radiative_rho": f"{res.max_radiative_rho_si:.1f}",
+        f"{name}_max_radiative_t_k":
+            f"{max((x['t_max_k'] for x in layers), default=0.0):.1f}",
         f"{name}_in_box_radiative_mass_fraction":
             f"{in_box_radiative_mass_fraction(res, FP_T_FLOOR_K, FP_GRID_FLOOR_SI):.6f}",
         f"{name}_total_radiative_mass_fraction":
@@ -114,7 +116,8 @@ def _empty_source_columns(name: str) -> dict:
     return {
         f"{name}_radius_rearth": "", f"{name}_n_radiative_layers": 0,
         f"{name}_radiative_layers": "", f"{name}_n_rcb": 0,
-        f"{name}_max_radiative_rho": "", f"{name}_in_box_radiative_mass_fraction": "",
+        f"{name}_max_radiative_rho": "", f"{name}_max_radiative_t_k": "",
+        f"{name}_in_box_radiative_mass_fraction": "",
         f"{name}_total_radiative_mass_fraction": "", f"{name}_n_in_box_layers": 0,
         f"{name}_in_box_layers": "", f"{name}_layer_entirely_in_box": False,
         f"{name}_t_max_k": "", f"{name}_rho_max_si": "",
@@ -249,6 +252,8 @@ def plot_grid(cfg, rows, m_core, wmf_grid, t_eq_grid, t_int_grid, band, tag):
                             t_int_grid, int)
         comp_clamp = _grid_of(rows, sel, "composite_clamp_fraction_all", t_eq_grid,
                               t_int_grid)
+        rad_rho = _grid_of(rows, sel, "hitemp_max_radiative_rho", t_eq_grid, t_int_grid)
+        rad_t = _grid_of(rows, sel, "hitemp_max_radiative_t_k", t_eq_grid, t_int_grid)
         mesh = ax.pcolormesh(np.arange(len(t_eq_grid) + 1), np.arange(len(t_ints) + 1),
                              grid, cmap="viridis", vmin=0.0, vmax=vmax,
                              edgecolors="white", linewidth=0.6)
@@ -260,9 +265,14 @@ def plot_grid(cfg, rows, m_core, wmf_grid, t_eq_grid, t_int_grid, band, tag):
                     ax.text(j + 0.5, i + 0.5, "skip", ha="center", va="center",
                             fontsize=7.5, color="#333333")
                     continue
-                ax.text(j + 0.5, i + 0.62, f"{grid[i, j]:.0f}", ha="center", va="center",
-                        fontsize=8.5,
-                        color="white" if grid[i, j] < 0.6 * vmax else "black")
+                color = "white" if grid[i, j] < 0.6 * vmax else "black"
+                ax.text(j + 0.5, i + 0.68, f"{grid[i, j]:.0f}", ha="center", va="center",
+                        fontsize=8.5, color=color)
+                # How close this cell gets to the box on each axis: without it a
+                # grid of honest zeros would say nothing at all (A47).
+                ax.text(j + 0.5, i + 0.44,
+                        f"ρ≤{rad_rho[i, j]:.0f}\nT≤{rad_t[i, j]:.0f}", ha="center",
+                        va="center", fontsize=6.5, color=color, alpha=0.85)
                 if comp_box[i, j] > 0:  # composite still radiative inside the FP box
                     ax.add_patch(Rectangle((j, i), 1, 1, fill=False, hatch="//",
                                            edgecolor="#D55E00", lw=0.0))
@@ -281,9 +291,10 @@ def plot_grid(cfg, rows, m_core, wmf_grid, t_eq_grid, t_int_grid, band, tag):
         f"S4 — line-list radiative structure inside the FP data box "
         f"(T ≥ {FP_T_FLOOR_K:.0f} K, ρ ≥ {FP_GRID_FLOOR_SI:g} kg m⁻³): "
         f"$M_c$ = {m_core:g} $M_⊕$, {band_caption(band)}\n"
-        f"hatched: the composite still has an in-box radiative layer;  "
-        f"×: composite clamp_fraction_all > {CLAMP_LIMIT:.0%};  grey: skipped cell",
-        fontsize=10)
+        f"cell: in-box ppm (top), then how close the line-list radiative zone gets — "
+        f"max radiative ρ and its max T;  hatched: the composite still has an in-box "
+        f"radiative layer;\n×: composite clamp_fraction_all > {CLAMP_LIMIT:.0%};  "
+        f"grey: skipped cell", fontsize=10)
     return save(fig, cfg, tag)
 
 

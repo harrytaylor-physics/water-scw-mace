@@ -262,6 +262,12 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   A42 and narrows the in-domain demonstration to an even smaller corner than A42
   suggested — one that A45 shows is radiogenically unreachable anyway.
 
+  Because the colour scale (in-box ppm) is zero in all 108 cells, each cell is
+  also annotated with how close its line-list radiative zone gets on *both* axes
+  (max radiative ρ and that zone's max T, new column
+  `{source}_max_radiative_t_k`) — otherwise the figure would be a grid of honest
+  zeros saying nothing, and the anti-correlation above is the actual result.
+
   Mechanics worth keeping: `structure.diagnostics.aqua_coverage` (AQUA *clips*
   out-of-table queries rather than raising, A2, so a scan has to test for it
   explicitly), per-cell skip logging for non-convergence, and the new columns
