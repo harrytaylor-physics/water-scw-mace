@@ -197,6 +197,164 @@ def in_box_radiative_mass_fraction(result, t_min_k: float = 1000.0,
     return float(w[mask].sum() / w.sum())
 
 
+CATEGORIES = ("interpolated", "in_box_out_of_hull", "clamped_t", "clamped_rho",
+              "dilute_flat")
+
+
+def classify_evaluations(source, temperature_k, rho_si) -> np.ndarray:
+    """Label every opacity evaluation by what the call actually was (A48).
+
+    One of :data:`CATEGORIES`, per point, judged against the sub-source the
+    composite actually uses there (A12):
+
+    ``dilute_flat``
+        line-list-dominated below its ρ floor: κ held flat in ρ (A26), a
+        justified dilute-limit extrapolation rather than a clamp — tested first,
+        because such a point is also formally "below the grid's ρ floor".
+    ``interpolated``
+        inside the used sub-source's hull: real data.
+    ``clamped_t`` / ``clamped_rho``
+        clamped, and outside the grid's T / ρ range: the grid would have to be
+        *extended* to cover it.
+    ``in_box_out_of_hull``
+        clamped, but inside the grid's (T, ρ) box — the scattered FP grid's own
+        gaps (A6), which a campaign can fill without extending its range.
+    """
+    t = np.atleast_1d(np.asarray(temperature_k, float))
+    r = np.atleast_1d(np.asarray(rho_si, float))
+    t, r = np.broadcast_arrays(t, r)
+    t, r = t.ravel(), r.ravel()
+    clamped = np.asarray(source.clamped_mask(t, r)).ravel()
+    names, subs = used_subsource(source, r)
+    names = np.asarray(names).ravel()
+
+    out = np.full(t.size, "interpolated", dtype=object)
+    for name, sub in subs.items():
+        sel = names == name
+        if not sel.any():
+            continue
+        bounds = _grid_bounds(sub)
+        if bounds is None:
+            continue
+        (t_lo, t_hi), (r_lo, r_hi) = bounds
+        flat = bool(getattr(getattr(sub, "table", None), "dilute_flat", False))
+        out_t = sel & ((t < t_lo) | (t > t_hi))
+        out_r = sel & ((r < r_lo) | (r > r_hi))
+        out[sel & clamped & ~out_t & ~out_r] = "in_box_out_of_hull"
+        out[sel & clamped & out_r] = "clamped_rho"
+        out[sel & clamped & out_t] = "clamped_t"  # T range is the FP grid's binding limit
+        if flat:
+            out[sel & (r < r_lo)] = "dilute_flat"
+    return out
+
+
+def category_mass_fractions(result, categories) -> dict:
+    """Envelope mass fraction in each of :data:`CATEGORIES` (A48)."""
+    w = _sample_mass_weights(result.profile["mass_kg"])
+    cats = np.asarray(categories, dtype=object)
+    total = w.sum()
+    return {c: float(w[cats == c].sum() / total) for c in CATEGORIES}
+
+
+def clamped_t_split(result, categories, table) -> dict:
+    """Split the ``clamped_t`` mass into "too cold" and "too hot" (A48).
+
+    Both are clamps in temperature, but they are different problems: below the
+    grid's floor the FP data would have to be *extended downwards* (the old
+    fiducial), while above its ceiling the deep convective interior is simply
+    hotter than the table goes — where opacity does not shape the structure
+    anyway.
+    """
+    w = _sample_mass_weights(result.profile["mass_kg"])
+    t = np.asarray(result.profile["temperature_k"], float)
+    cats = np.asarray(categories, dtype=object)
+    sel = cats == "clamped_t"
+    t_lo = float(np.min(table.temperature_k))
+    t_hi = float(np.max(table.temperature_k))
+    total = w.sum()
+    return {
+        "too_cold": float(w[sel & (t < t_lo)].sum() / total),
+        "too_hot": float(w[sel & (t > t_hi)].sum() / total),
+    }
+
+
+def campaign_nodes(cases, table, t_step_k: float = 100.0, log_rho_step: float = 0.25,
+                   t_floor_k: float = 1000.0, rho_floor_si: float = 108.796) -> dict:
+    """(T, ρ) lattice nodes that would close the FP grid's gaps (A48).
+
+    ``cases`` are ``(StructureResult, categories)`` pairs. A trajectory sample
+    needs new FP data if it lies inside the FP grid's own (T, ρ) box yet outside
+    its interpolation hull. Every such sample sits inside one cell of the
+    ``t_step_k`` × ``log_rho_step`` lattice, so adding that cell's **four
+    corners** puts the sample inside the convex hull of the enlarged grid — which
+    is then verified, not assumed, with the same interpolator the model uses.
+
+    ``extend_nodes`` is the separate, larger ask: the same lattice over the
+    dense-but-cold segments (ρ inside the grid's range, T below its floor) where
+    the composite currently clamps in T. Those need the grid *extended*, not
+    filled, so they are reported apart from the in-box specification.
+
+    Because the nodes are the *bracketing* corners of each sample's lattice cell,
+    a node may sit up to one lattice step outside the grid's present (T, ρ)
+    range: that is what enclosing a sample near the edge requires.
+    """
+    from scipy.interpolate import LinearNDInterpolator
+
+    t_grid = np.asarray(table.temperature_k, float)
+    r_grid = np.asarray(table.rho_si, float)
+    t_lo, t_hi = float(t_grid.min()), float(t_grid.max())
+    r_lo, r_hi = float(r_grid.min()), float(r_grid.max())
+    pts = np.column_stack([t_grid, np.log10(r_grid)])
+    lin = LinearNDInterpolator(pts, np.zeros(pts.shape[0]), rescale=True)
+
+    need_fill, need_extend = [], []
+    for result, _categories in cases:
+        t = np.asarray(result.profile["temperature_k"], float)
+        r = np.asarray(result.profile["rho_si"], float)
+        in_box = (t >= max(t_lo, t_floor_k)) & (t <= t_hi) & (r >= max(r_lo, rho_floor_si)) & (r <= r_hi)
+        outside_hull = np.isnan(lin(np.column_stack([t, np.log10(r)])))
+        sel = in_box & outside_hull
+        if sel.any():
+            need_fill.append(np.column_stack([t[sel], r[sel]]))
+        cold = (t < t_lo) & (r >= max(r_lo, rho_floor_si)) & (r <= r_hi)
+        if cold.any():
+            need_extend.append(np.column_stack([t[cold], r[cold]]))
+
+    def corners(points):
+        """The four lattice corners bracketing each point, deduplicated."""
+        if not len(points):
+            return []
+        p = np.vstack(points)
+        t_f = np.floor(p[:, 0] / t_step_k) * t_step_k
+        lr_f = np.floor(np.log10(p[:, 1]) / log_rho_step) * log_rho_step
+        nodes = set()
+        for dt in (0.0, t_step_k):
+            for dr in (0.0, log_rho_step):
+                for tt, rr in zip(t_f + dt, lr_f + dr):
+                    nodes.add((round(float(tt), 6), round(float(rr), 6)))
+        return sorted((t, float(10.0**lr)) for t, lr in nodes)
+
+    fill_nodes = corners(need_fill)
+    extend_nodes = corners(need_extend)
+
+    encloses = True
+    if fill_nodes and need_fill:
+        new = np.vstack([pts, np.column_stack([[t for t, _ in fill_nodes],
+                                               np.log10([r for _, r in fill_nodes])])])
+        lin2 = LinearNDInterpolator(new, np.zeros(new.shape[0]), rescale=True)
+        probe = np.vstack(need_fill)
+        encloses = bool(np.all(~np.isnan(
+            lin2(np.column_stack([probe[:, 0], np.log10(probe[:, 1])])))))
+    return {
+        "fill_nodes": fill_nodes,
+        "extend_nodes": extend_nodes,
+        "n_in_box_needed": int(sum(len(x) for x in need_fill)),
+        "n_extend_needed": int(sum(len(x) for x in need_extend)),
+        "fill_encloses": encloses,
+        "lattice": (t_step_k, log_rho_step),
+    }
+
+
 def clamp_audit(
     cfg: Config,
     t_eq_k: float,

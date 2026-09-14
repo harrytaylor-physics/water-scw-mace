@@ -270,6 +270,54 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   the one-figure-per-script convention is overridden here on request. Gate
   `validation/test_s4_extended_scan.py`.
 
+- **A48 — Coverage, trajectory by trajectory: at the old fiducial 0.09% of the
+  envelope mass is FP data; at the candidate 99.9998% is.**
+  `figures/plot_s5_grid_coverage.py` draws the 27 FP grid points and their
+  interpolation hull on the (T, log ρ) plane with six envelope trajectories over
+  it, every sample coloured by what the composite opacity call there actually
+  was. `structure.diagnostics.classify_evaluations` assigns one of five
+  categories per evaluation and `category_mass_fractions` weights them by
+  envelope mass. The fifth category is the one the clamp counters never
+  separated: **in-box but outside the hull** — inside the FP grid's (T, ρ) box
+  yet outside its scattered convex hull (A6) — which is a gap that can be filled
+  without extending the grid's range at all, and it dominates.
+
+  | trajectory (T_eq, T_int, wmf, M_c) | interpolated | in-box, out-of-hull | clamped in T | clamped in ρ |
+  |---|---|---|---|---|
+  | (a) old fiducial 500/20/0.05/5 | **0.000892** | **0.954237** | 0.044870 (all too cold) | 0 |
+  | (b) candidate 700/20/0.05/5 | **0.999998** | 0 | 0 | 0 |
+  | (c1) 300/30/0.05/15 | 0.000000 | 0 | 0.734286 (all too cold) | 0.265714 |
+  | (c2) 500/30/0.05/15 | 0.193364 | 0.539580 | 0.001346 (too cold) | 0.265709 |
+  | (c3) 700/30/0.05/15 | 0.254032 | 0 | 0.745967 (all too **hot**) | 0 |
+  | (d) hot 1100/30/0.20/5 | 0.011916 | 0 | 0.988083 (all too **hot**) | 0 |
+
+  The "clamped in T" column is split because it hides two different problems:
+  *too cold* for the 1000 K floor (a real gap — it is where the old fiducial's
+  closure happens) versus *too hot* for the 3000 K ceiling, which is the deep
+  convective interior where opacity does not shape the structure at all. (c)
+  could not be "the three cells with the largest in-box radiative fraction"
+  because A47 found that fraction is zero in all 108; the tie is broken on max
+  radiative ρ, one cell per T_eq, and the script says so when it does it.
+
+  **Campaign specification** (`outputs/S5_grid_coverage.csv`), on the requested
+  100 K × 0.25 dex lattice, taking the four bracketing corners of each needed
+  sample's cell so enclosure is guaranteed — and then *verified* with the same
+  triangulated interpolator the model uses, not assumed:
+
+  * **55 nodes**, T ∈ [1000, 2700] K, ρ ∈ [100, 3162] kg/m³, enclose the in-box
+    part of all six trajectories (1898 samples). Enclosure: **verified**.
+  * Addendum, reported separately because it is a different ask: **47 nodes**
+    over T ∈ [300, 1000] K at the same densities would be needed to cover the
+    dense-but-cold segments where the composite currently clamps in T (1337
+    samples). This is the extension the old fiducial's headline actually depends
+    on.
+
+  Corner nodes may sit up to one lattice step outside the grid's present range;
+  that is what enclosing an edge sample requires. Gate
+  `validation/test_s5_grid_coverage.py` (categories partition the mass, the clamp
+  categories reproduce the source's own clamp mask, and the emitted nodes really
+  do enclose the samples they claim to).
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep
