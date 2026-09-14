@@ -70,6 +70,36 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   (**+0.023%**). The demonstration is real but thin: it rests on ~4×10⁻⁴ of the
   envelope mass and an 8 kg/m³ slice of density.
 
+- **A44 — At the candidate the evolution signal is ~30× smaller than at the old
+  fiducial, and the cooling-time ratio is 1.000 ± 0.002.** `config/candidate.yaml`
+  fixes the A42 case (M_c = 5 M⊕, f_env = 5%, T_eq = 700 K; structural case
+  T_int = 20 K) and `figures/plot_s6_candidate_evolution.py` runs the E2
+  comparison and the fixed-entropy τ_KH ratio there. The cooling ages are
+  integrated on a 24-node T_int grid first and re-run on E2's 44-node grid if the
+  A38 age check trips (`evolution.age_grid_problem`, new; `HistoryComparison` now
+  carries its two tracks so a caller can check them). The coarse grid passed, so
+  these are 24-node numbers:
+
+  | age | Δs [J/kg/K] | Δs/s | ΔR_p [R⊕] | ΔR_p/R_p |
+  |---|---|---|---|---|
+  | 5 Gyr | −13.61 | −0.140% | −0.000357 | −0.0203% |
+  | 7 Gyr | +22.96 | +0.242% | +0.000075 | +0.0043% |
+  | 10 Gyr | +109.45 | +1.183% | +0.001205 | +0.0688% |
+
+  FP-relevant epoch 4.09–16.37 Gyr (the deepest RCB first reaches ρ ≥ 108.796 at
+  3.97 Gyr for the composite, 3.81 Gyr for HITEMP); escape window clean as ever
+  (max |ΔR_p/R_p| = 5.45e-5 %, max |Δs/s| = 8.06e-5 % over the first 100 Myr).
+  τ_KH(composite)/τ_KH(HITEMP) at fixed interior entropy over T_int,ref ∈ {30, 40}
+  K × f_env ∈ {0.02, 0.05, 0.10}: **0.9981–1.0020** — no cooling signal at all.
+
+  Two honest caveats. (i) Compared with the old T_eq = 500 K fiducial (Δs/s = +7.2%
+  at 7 Gyr, A37) the candidate's entropy signal at 7 Gyr is **+0.24%**, ~30× smaller:
+  moving into the FP domain buys provenance and costs signal. (ii) The candidate is
+  clamp-free only at its *structural* case (T_int = 20 K, clamp_fraction_all = 0);
+  the fixed-entropy models at T_int,ref = 30–40 K clamp 1.4–35% of their samples,
+  so the candidate's cooling numbers do not inherit the structural case's
+  provenance.
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep

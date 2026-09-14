@@ -135,6 +135,24 @@ def cooling_track(
     )
 
 
+def age_grid_problem(track: CoolingTrack) -> str | None:
+    """Message if a track's age integral came out unphysical, else None (A38).
+
+    The cumulative-Simpson age integral overshoots when L(T_int) varies steeply
+    across too few nodes, producing negative or non-monotone ages. Callers should
+    re-run on a finer T_int grid rather than quietly interpolating nonsense.
+    """
+    order = np.argsort(track.t_int_k)[::-1]  # hottest first = youngest first
+    age = np.asarray(track.age_gyr, float)[order]
+    if np.any(age < 0):
+        return (f"{track.source}: {int((age < 0).sum())} of {age.size} ages are negative "
+                f"(min {age.min():.3f} Gyr) on a {age.size}-node T_int grid")
+    if np.any(np.diff(age) < 0):
+        return (f"{track.source}: age is not monotone in T_int on a {age.size}-node grid "
+                f"({int((np.diff(age) < 0).sum())} decreasing steps)")
+    return None
+
+
 def cooling_time_ratio(track_a: CoolingTrack, track_b: CoolingTrack, radius_rearth: float) -> float:
     """Ratio of ages at which two sources have contracted to the same R_p
     (the definitive 'stay puffy longer' number: age_FP / age_LL)."""

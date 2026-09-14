@@ -12,6 +12,7 @@ from evolution.radiogenic import radiogenic_power_w, t_int_floor_k
 from evolution.track import (
     SECONDS_PER_GYR,
     CoolingTrack,
+    age_grid_problem,
     cooling_time_ratio,
     cooling_track,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "CoolingTrack",
     "cooling_track",
     "cooling_time_ratio",
+    "age_grid_problem",
     "SECONDS_PER_GYR",
     "HistoryComparison",
     "compare_histories",

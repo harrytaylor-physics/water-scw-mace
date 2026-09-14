@@ -42,6 +42,9 @@ class HistoryComparison:
     rcb_rho_b: np.ndarray
     entropy_a: np.ndarray
     entropy_b: np.ndarray
+    # The underlying tracks, so a caller can check their age integral (A38/A44).
+    track_a: "CoolingTrack | None" = None
+    track_b: "CoolingTrack | None" = None
 
     @property
     def radius_frac_diff(self) -> np.ndarray:
@@ -199,4 +202,5 @@ def compare_histories(
         radius_a=on_age(ta, ta.radius_p_rearth), radius_b=on_age(tb, tb.radius_p_rearth),
         rcb_rho_a=on_age(ta, rho_a), rcb_rho_b=on_age(tb, rho_b),
         entropy_a=on_age(ta, ta.entropy_j_kg_k), entropy_b=on_age(tb, tb.entropy_j_kg_k),
+        track_a=ta, track_b=tb,
     )
