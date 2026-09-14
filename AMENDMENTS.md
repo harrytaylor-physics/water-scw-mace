@@ -100,6 +100,27 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   so the candidate's cooling numbers do not inherit the structural case's
   provenance.
 
+- **A45 — The candidate's T_int = 20 K is below the radiogenic floor at every
+  age: the in-domain demonstration is not reachable either.** Running the D1/A30
+  floor calculation at the candidate (M_c = 5 M⊕, R_p = 1.75944 R⊕, Earth-like
+  20 TW per M⊕ at 4.5 Gyr, effective halving every 6 Gyr):
+
+  | age | L_radio | T_int floor |
+  |---|---|---|
+  | 1 Gyr | 149.8 TW | **35.95 K** |
+  | 4.5 Gyr (present day) | 100.0 TW | **32.49 K** |
+  | 10 Gyr | 53.0 TW | 27.72 K |
+
+  The candidate's structural case is T_int = 20 K, i.e. **12.5 K below the
+  present-day floor and 16 K below the 1 Gyr floor**. v1 omits core luminosity
+  (SPEC §4), so the solver reaches 20 K happily; a real 5 M⊕ Earth-like core does
+  not let the planet get there. Combined with A42 (the FP box is touched only at
+  T_int = 20 K) this closes the loop A30 opened: **the regime where the
+  first-principles data actually constrain a line-list radiative zone is, for
+  steam sub-Neptunes on a 5 M⊕ core, radiogenically out of reach.** Gate
+  `validation/test_s7_radiogenic_floor.py` (the floor stays above 20 K for
+  R_p ∈ [1.5, 2.5] R⊕ at 1, 4.5 and 10 Gyr).
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep

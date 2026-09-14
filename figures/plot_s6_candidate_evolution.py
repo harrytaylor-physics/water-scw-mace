@@ -11,7 +11,9 @@ buys over a cooling history and over the Kelvin–Helmholtz time:
       interior-entropy and radius differences at 5, 7 and 10 Gyr, the FP-relevant
       epoch, and the escape-window maxima (A40);
   (b) τ_KH(composite)/τ_KH(HITEMP) at fixed interior entropy, for
-      T_int,ref ∈ {30, 40} K over f_env ∈ {0.02, 0.05, 0.10}.
+      T_int,ref ∈ {30, 40} K over f_env ∈ {0.02, 0.05, 0.10};
+  (c) the radiogenic T_int floor for this core (A30/D1), so the manuscript can
+      say whether the candidate's T_int is reachable at all.
 
 Cooling ages are integrated on a coarse T_int grid first; if that grid trips the
 A38 age check (negative or non-monotone ages) the failure is reported and the run
@@ -34,7 +36,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from eos import AquaEOS
-from evolution import age_grid_problem, compare_histories
+from evolution import age_grid_problem, compare_histories, t_int_floor_k
+from evolution.radiogenic import H_EARTH_NOW_W, radiogenic_power_w
 from figures._common import band_caption, comparison_band, load_cfg, save, set_style
 from structure import FP_GRID_FLOOR_SI, build_at_entropy, build_structure
 
@@ -54,9 +57,17 @@ def _at_age(age_grid, values, age_gyr):
     return float(np.interp(age_gyr, age_grid, values))
 
 
-def history_at_candidate(cfg, eos, t_eq_k):
-    """E2 comparison, coarse grid first, fine grid if the age integral misbehaves."""
-    for label, grid in (("coarse", COARSE_GRID_K), ("fine", FINE_GRID_K)):
+def history_at_candidate(cfg, eos, t_eq_k, grid_choice: str = "auto"):
+    """E2 comparison, coarse grid first, fine grid if the age integral misbehaves.
+
+    ``grid_choice`` "coarse"/"fine" pins one grid instead (a robustness re-run:
+    the A38 check only catches an unphysical age integral, not an under-resolved
+    one, so the reported differences are worth repeating on the fine grid).
+    """
+    options = {"auto": (("coarse", COARSE_GRID_K), ("fine", FINE_GRID_K)),
+               "coarse": (("coarse", COARSE_GRID_K),),
+               "fine": (("fine", FINE_GRID_K),)}[grid_choice]
+    for label, grid in options:
         h = compare_histories(cfg, "composite", LINE_LIST, t_eq_k, eos=eos,
                               t_int_grid_k=grid)
         problems = [p for p in (age_grid_problem(h.track_a), age_grid_problem(h.track_b))
@@ -66,8 +77,9 @@ def history_at_candidate(cfg, eos, t_eq_k):
         print(f"  [A38] the {label} {grid.size}-node T_int grid failed the age check:")
         for p in problems:
             print(f"        {p}")
-        if label == "fine":
-            print("        the fine grid failed too — reporting the run as unusable.")
+        if label == options[-1][0]:
+            print(f"        the {label} grid is the last one tried — reporting the run "
+                  f"as unusable.")
             return h, label, grid.size, problems
         print("        repeating on the fine grid.")
     raise AssertionError("unreachable")
@@ -95,7 +107,16 @@ def tau_ratios(cfg, eos, t_eq_k, band):
 
 
 def main(argv=None):
-    cfg = load_cfg(argv if argv is not None else sys.argv[1:])
+    import argparse
+
+    argv = sys.argv[1:] if argv is None else argv
+    ap = argparse.ArgumentParser()
+    ap.add_argument("config", type=Path, help="run config YAML")
+    ap.add_argument("--grid", choices=("auto", "coarse", "fine"), default="auto",
+                    help="T_int grid for the cooling ages (default: coarse, falling "
+                         "back to fine if the A38 age check trips)")
+    args = ap.parse_args(argv)
+    cfg = load_cfg([str(args.config)])
     set_style()
     eos = AquaEOS.from_config(cfg)
     t_eq = float(cfg.irradiation.t_eq_k[0])
@@ -103,7 +124,8 @@ def main(argv=None):
 
     print(f"S6 — candidate evolution: {cfg.name}, M_c={cfg.core.mass_mearth:g} M_earth, "
           f"f_env={cfg.envelope.f_env:.0%}, T_eq={t_eq:g} K, {band_caption(band)}")
-    h, grid_label, n_nodes, problems = history_at_candidate(cfg, eos, t_eq)
+    h, grid_label, n_nodes, problems = history_at_candidate(cfg, eos, t_eq,
+                                                            grid_choice=args.grid)
     ratios = tau_ratios(cfg, eos, t_eq, band)
 
     # ---------------- figure ----------------
@@ -136,14 +158,16 @@ def main(argv=None):
 
     x = np.arange(len(F_ENV_GRID))
     for k, t_int_ref in enumerate(T_INT_REF_K):
-        vals = [r["ratio"] for r in ratios if r["t_int_ref_k"] == t_int_ref]
+        # Plotted as a deviation from unity: the whole signal is ±0.2%, which a
+        # bar chart anchored at zero would render as four identical bars.
+        vals = [(r["ratio"] - 1.0) * 100 for r in ratios if r["t_int_ref_k"] == t_int_ref]
         ax_r.bar(x + (k - 0.5) * 0.35, vals, width=0.35,
                  color=["#0072B2", "#D55E00"][k],
                  label=f"$T_{{int,ref}}$ = {t_int_ref:.0f} K")
-    ax_r.axhline(1.0, color="k", lw=0.8, ls=":")
+    ax_r.axhline(0.0, color="k", lw=0.8)
     ax_r.set_xticks(x, [f"{f:.2f}" for f in F_ENV_GRID])
     ax_r.set_xlabel("$f_{env}$")
-    ax_r.set_ylabel(r"$\tau_{KH}$(composite) / $\tau_{KH}$(HITEMP)")
+    ax_r.set_ylabel(r"$\tau_{KH}$(composite) / $\tau_{KH}$(HITEMP) − 1  [%]")
     ax_r.set_title("(b) cooling-time ratio at fixed interior entropy", fontsize=9.5)
     ax_r.legend(fontsize=8.5)
 
@@ -211,6 +235,30 @@ def main(argv=None):
     lo = min(r["ratio"] for r in ratios)
     hi = max(r["ratio"] for r in ratios)
     print(f"    range over the grid: {lo:.4f} - {hi:.4f}")
+
+    # -- (c) radiogenic T_int floor at the candidate (A30/D1 calculation) --
+    t_int_struct = float(min(cfg.interior.t_int_k))
+    res = build_structure(cfg, t_eq, t_int_struct, "composite", eos=eos, n_sample=400,
+                          band=band)
+    m_c = cfg.core.mass_mearth
+    print(f"\n(c) radiogenic T_int floor, M_c={m_c:g} M_earth "
+          f"(Earth-like: {H_EARTH_NOW_W / 1e12:g} TW per M_earth at 4.5 Gyr, "
+          f"effective halving every 6 Gyr), R_p={res.radius_p_rearth:.5f} R_earth")
+    for age in (1.0, 4.5, 10.0):
+        floor = t_int_floor_k(m_c, res.radius_p_m, age)
+        power = radiogenic_power_w(m_c, age)
+        tag = {1.0: "  (young)", 4.5: "  (present day)", 10.0: "  (old)"}[age]
+        print(f"    age {age:>4.1f} Gyr: L_radio = {power / 1e12:6.2f} TW -> "
+              f"T_int floor = {floor:5.2f} K{tag}")
+    floor_now = t_int_floor_k(m_c, res.radius_p_m, 4.5)
+    floor_1 = t_int_floor_k(m_c, res.radius_p_m, 1.0)
+    print(f"    candidate structural case T_int = {t_int_struct:g} K is "
+          f"{'ABOVE' if t_int_struct > floor_now else 'BELOW'} the present-day floor "
+          f"({floor_now:.2f} K) and "
+          f"{'ABOVE' if t_int_struct > floor_1 else 'BELOW'} the 1 Gyr floor "
+          f"({floor_1:.2f} K).")
+    print(f"    (v1 omits core luminosity, SPEC §4, so the solver can reach "
+          f"T_int = {t_int_struct:g} K; the floor is the stated sensitivity, A30.)")
     return path
 
 
