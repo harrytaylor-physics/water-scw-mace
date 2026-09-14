@@ -26,21 +26,23 @@ from config.schema import _validate
 from eos import AquaEOS
 from validation.test_g5_literature import anchor_t_eq, our_radius
 
-# GJ 9827 (K2-135), the system in their Table 3. Stellar and orbital values from
-# the NASA Exoplanet Archive (the table's stated source; Niraula et al. 2017,
-# Rodriguez et al. 2018): T_eff = 4340 K, R⋆ = 0.602 R_sun.
-_T_EFF_K = 4340.0
-_R_STAR_RSUN = 0.602
+# GJ 9827 (K2-135), the system in their Table 3, whose planetary data the paper
+# takes from the NASA Exoplanet Archive. Two published stellar parameter sets are
+# used below so the conclusion does not hinge on one stellar radius:
+#   Rodriguez et al. (2018): T_eff = 4340 K, R⋆ = 0.602 R_sun
+#   Niraula et al. (2017):   T_eff = 4255 K, R⋆ = 0.651 R_sun
+_STELLAR = {"rodriguez2018": (4340.0, 0.602), "niraula2017": (4255.0, 0.651)}
 _R_SUN_AU = 0.00465047
 _SEMI_MAJOR_AU = {"b": 0.0189, "c": 0.0394, "d": 0.0562}
 # Their Table 3 T_irr, read from the paper.
 _THEIR_T_IRR_K = {"b": 1184.0, "c": 820.0, "d": 686.0}
 
 
-def _t_irr_eq9(a_au: float, include_half: bool = True) -> float:
+def _t_irr_eq9(a_au: float, stellar: str = "rodriguez2018", include_half: bool = True) -> float:
     """T_eff·√(R⋆/2a) — their Eq. (9). ``include_half=False`` drops the factor 2."""
+    t_eff, r_star = _STELLAR[stellar]
     denom = (2.0 if include_half else 1.0) * a_au
-    return _T_EFF_K * np.sqrt(_R_STAR_RSUN * _R_SUN_AU / denom)
+    return t_eff * np.sqrt(r_star * _R_SUN_AU / denom)
 
 
 @pytest.mark.parametrize("planet", sorted(_THEIR_T_IRR_K))
@@ -53,6 +55,16 @@ def test_their_t_irr_is_the_equilibrium_temperature(planet):
     )
     # Without the factor 2 it is ~41% high, i.e. not what they tabulate.
     assert _t_irr_eq9(_SEMI_MAJOR_AU[planet], include_half=False) > 1.3 * theirs
+
+
+@pytest.mark.parametrize("planet", sorted(_THEIR_T_IRR_K))
+def test_the_factor_2_survives_the_stellar_parameter_choice(planet):
+    """The √2 conclusion is not an artifact of one published R⋆/T_eff pair."""
+    theirs = _THEIR_T_IRR_K[planet]
+    alt = _t_irr_eq9(_SEMI_MAJOR_AU[planet], stellar="niraula2017")
+    assert alt == pytest.approx(theirs, rel=0.03)  # ~1.7% high, still not 41%
+    assert _t_irr_eq9(_SEMI_MAJOR_AU[planet], stellar="niraula2017",
+                      include_half=False) > 1.3 * theirs
 
 
 def test_anchor_conversion_matches_the_convention(cfg):

@@ -78,11 +78,15 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   1. **Irradiation (was wrong).** Their Equation (9) defines the irradiance
      temperature T_irr = T_eff·√(R⋆/2a) — the factor 2 is in it, so T_irr *is*
      the zero-albedo, full-redistribution equilibrium temperature our `t_eq_k`
-     means. Verified against their own Table 3 (GJ 9827, T_eff = 4340 K,
-     R⋆ = 0.602 R_☉): the formula gives 1181/818/686 K for b/c/d against their
-     tabulated **1184/820/686 K** (≤0.3%); dropping the factor 2 gives
-     1671/1157/969 K, 41% high. A32 had applied T_eq = T_irr/√2, i.e. modelled
-     every anchor planet one √2 *too cold*.
+     means. Verified against their own Table 3 (GJ 9827, whose data they take
+     from the NASA Exoplanet Archive). With Rodriguez et al. (2018) stellar
+     parameters (T_eff = 4340 K, R⋆ = 0.602 R_☉) the formula gives 1181/818/686 K
+     for b/c/d against their tabulated **1184/820/686 K** (≤0.3%); with Niraula
+     et al. (2017) values (4255 K, 0.651 R_☉) it gives 1204/834/698 K (≤1.8%).
+     Dropping the factor 2 gives 1671/1157/969 K — 41% high under either
+     parameter set, so the conclusion does not hinge on the stellar radius. A32
+     had applied T_eq = T_irr/√2, i.e. modelled every anchor planet one √2 *too
+     cold*.
   2. **Radius (was slightly wrong).** Their reported radius is the transiting
      radius: interior boundary plus the atmosphere thickness taken at **0.1 Pa**
      (their atmospheric grid's output). Ours is the top-of-atmosphere radius at
@@ -117,35 +121,44 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   cannot account for it either. **Recommendation (owner's call): make
   `anchor.t_irr_to_t_eq = "identity"` the default and re-report G5.**
 
-- **A44 — At the candidate the evolution signal is ~30× smaller than at the old
-  fiducial, and the cooling-time ratio is 1.000 ± 0.002.** `config/candidate.yaml`
+- **A44 — At the candidate the evolution signal is ~18× smaller than at the old
+  fiducial and below the age integral's own grid convergence; the cooling-time
+  ratio is 1.000 ± 0.002.** `config/candidate.yaml`
   fixes the A42 case (M_c = 5 M⊕, f_env = 5%, T_eq = 700 K; structural case
   T_int = 20 K) and `figures/plot_s6_candidate_evolution.py` runs the E2
   comparison and the fixed-entropy τ_KH ratio there. The cooling ages are
   integrated on a 24-node T_int grid first and re-run on E2's 44-node grid if the
   A38 age check trips (`evolution.age_grid_problem`, new; `HistoryComparison` now
-  carries its two tracks so a caller can check them). The coarse grid passed, so
-  these are 24-node numbers:
+  carries its two tracks so a caller can check them). The coarse grid passed its
+  A38 check, but a `--grid fine` re-run shows the differences at this case are
+  **not converged on 24 nodes** — the signal is ~0.1–1%, comparable to the age
+  integral's own grid error, and the 5 Gyr difference even changes sign. Both are
+  reported; the 44-node numbers are the ones to quote, and the figure and CSV in
+  `outputs/` are the fine run:
 
-  | age | Δs [J/kg/K] | Δs/s | ΔR_p [R⊕] | ΔR_p/R_p |
-  |---|---|---|---|---|
-  | 5 Gyr | −13.61 | −0.140% | −0.000357 | −0.0203% |
-  | 7 Gyr | +22.96 | +0.242% | +0.000075 | +0.0043% |
-  | 10 Gyr | +109.45 | +1.183% | +0.001205 | +0.0688% |
+  | age | Δs [J/kg/K] | Δs/s | ΔR_p [R⊕] | ΔR_p/R_p | (24-node: Δs, Δs/s) |
+  |---|---|---|---|---|---|
+  | 5 Gyr | +7.91 | +0.082% | +0.000070 | +0.0040% | −13.61, −0.140% |
+  | 7 Gyr | +37.68 | +0.398% | +0.000373 | +0.0213% | +22.96, +0.242% |
+  | 10 Gyr | +128.32 | +1.388% | +0.001578 | +0.0901% | +109.45, +1.183% |
 
-  FP-relevant epoch 4.09–16.37 Gyr (the deepest RCB first reaches ρ ≥ 108.796 at
-  3.97 Gyr for the composite, 3.81 Gyr for HITEMP); escape window clean as ever
-  (max |ΔR_p/R_p| = 5.45e-5 %, max |Δs/s| = 8.06e-5 % over the first 100 Myr).
+  FP-relevant epoch 4.86–16.50 Gyr on the fine grid (4.09–16.37 Gyr coarse; the
+  deepest RCB first reaches ρ ≥ 108.796 at 3.90 Gyr for the composite, 3.81 Gyr
+  for HITEMP — those crossing ages are structural, not integrated, and move by
+  <2%); escape window clean as ever (max |ΔR_p/R_p| = 8.61e-5 %, max |Δs/s| =
+  1.55e-4 % over the first 100 Myr; 5.45e-5 % / 8.06e-5 % coarse).
   τ_KH(composite)/τ_KH(HITEMP) at fixed interior entropy over T_int,ref ∈ {30, 40}
   K × f_env ∈ {0.02, 0.05, 0.10}: **0.9981–1.0020** — no cooling signal at all.
 
-  Two honest caveats. (i) Compared with the old T_eq = 500 K fiducial (Δs/s = +7.2%
-  at 7 Gyr, A37) the candidate's entropy signal at 7 Gyr is **+0.24%**, ~30× smaller:
-  moving into the FP domain buys provenance and costs signal. (ii) The candidate is
+  Three honest caveats. (i) Compared with the old T_eq = 500 K fiducial (Δs/s =
+  +7.2% at 7 Gyr, A37) the candidate's entropy signal at 7 Gyr is **+0.40%**,
+  ~18× smaller: moving into the FP domain buys provenance and costs signal. (ii) The candidate is
   clamp-free only at its *structural* case (T_int = 20 K, clamp_fraction_all = 0);
   the fixed-entropy models at T_int,ref = 30–40 K clamp 1.4–35% of their samples,
   so the candidate's cooling numbers do not inherit the structural case's
-  provenance.
+  provenance. (iii) At this size the differences are at the level of the age
+  integral's grid convergence (see the table above), so they should be quoted as
+  "no cooling signal resolvable at this case", not as a measured Δs.
 
 - **A45 — The candidate's T_int = 20 K is below the radiogenic floor at every
   age: the in-domain demonstration is not reachable either.** Running the D1/A30
