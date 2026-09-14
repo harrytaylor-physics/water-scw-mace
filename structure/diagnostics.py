@@ -355,6 +355,70 @@ def campaign_nodes(cases, table, t_step_k: float = 100.0, log_rho_step: float = 
     }
 
 
+def rcb_opacity_sensitivity(result, source) -> dict:
+    """Each RCB's (T, ρ, P) and the opacity factor that would move it (A49).
+
+    The Schwarzschild criterion the model applies is ∇_rad > ∇_ad with
+    ∇_rad ∝ κ_R, so at fixed structure the factor by which κ_R would have to
+    change for a sample to flip is simply ∇_ad/∇_rad there. ``factor_close`` is
+    that ratio at a radiative layer's deepest sample (κ up by that factor makes
+    it convect, shrinking the layer by one sample); ``factor_extend`` is the same
+    ratio at the first convective sample below the layer (κ down by that factor
+    turns it radiative, growing the layer by one sample).
+
+    This is a first-order sensitivity: it holds the converged (P, T, ρ) profile
+    fixed, so it says how close each boundary is to flipping, not where a
+    self-consistent model with a different opacity would put it.
+    """
+    prof = result.profile
+    t = np.asarray(prof["temperature_k"], float)
+    rho = np.asarray(prof["rho_si"], float)
+    p = np.asarray(prof["pressure_pa"], float)
+    grad_ad = np.asarray(prof["grad_ad"], float)
+    grad_rad = np.asarray(prof["grad_rad"], float)
+    conv = np.asarray(prof["is_convective"], bool)
+    w = _sample_mass_weights(prof["mass_kg"])
+    total = w.sum()
+
+    def at(i):
+        return {
+            "index": int(i), "t_k": float(t[i]), "rho_si": float(rho[i]),
+            "p_pa": float(p[i]), "kappa_r_si": float(source.kappa_R(t[i], rho[i])),
+            "grad_ad": float(grad_ad[i]), "grad_rad": float(grad_rad[i]),
+        }
+
+    flips = np.flatnonzero(np.diff(conv.astype(int)) != 0)
+    rcbs = []
+    for i in flips:
+        t_b = float(np.sqrt(t[i] * t[i + 1]))
+        rho_b = float(np.sqrt(rho[i] * rho[i + 1]))
+        rcbs.append({
+            "t_k": t_b, "rho_si": rho_b,
+            "p_pa": float(np.sqrt(p[i] * p[i + 1])),
+            "kappa_r_si": float(source.kappa_R(t_b, rho_b)),
+        })
+
+    layers = []
+    idx = np.flatnonzero(~conv)
+    if idx.size:
+        for run in np.split(idx, np.flatnonzero(np.diff(idx) > 1) + 1):
+            base = at(run[-1])  # profile runs top -> core, so this is the deepest
+            base["factor_close"] = (float(grad_ad[run[-1]] / grad_rad[run[-1]])
+                                    if grad_rad[run[-1]] > 0 else float("inf"))
+            extend = None
+            j = run[-1] + 1
+            if j < t.size and conv[j]:
+                extend = at(j)
+                extend["factor_extend"] = float(grad_ad[j] / grad_rad[j])
+            layers.append({
+                "t_min_k": float(t[run].min()), "t_max_k": float(t[run].max()),
+                "rho_min_si": float(rho[run].min()), "rho_max_si": float(rho[run].max()),
+                "mass_fraction": float(w[run].sum() / total),
+                "n_samples": int(run.size), "base": base, "extend": extend,
+            })
+    return {"rcbs": rcbs, "layers": layers}
+
+
 def clamp_audit(
     cfg: Config,
     t_eq_k: float,

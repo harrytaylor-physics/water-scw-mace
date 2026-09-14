@@ -318,6 +318,40 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   categories reproduce the source's own clamp mask, and the emitted nodes really
   do enclose the samples they claim to).
 
+- **A49 — Every RCB but the coldest is within 8% of flipping: the boundary
+  positions are far more opacity-sensitive than the opacity data are certain.**
+  The model's criterion is ∇_rad > ∇_ad with ∇_rad ∝ κ_R, so at fixed structure
+  the factor by which κ_R would have to change for a sample to flip is exactly
+  ∇_ad/∇_rad there. `structure.diagnostics.rcb_opacity_sensitivity` reports it at
+  each radiative layer's deepest sample ("close it": κ up, the layer shrinks by
+  one sample) and at the first convective sample below ("extend it": κ down, the
+  layer grows by one sample), for the A48 trajectories under HITEMP:
+
+  | trajectory | RCB (T, ρ, P) | κ_R there | close it | extend it |
+  |---|---|---|---|---|
+  | (a) old fiducial | 629.5 K, 285.3, 180 bar (+2 more at 515/522) | 0.0564 | **×4.098** (layer 1) / ×1.068 (layer 2) | ×0.866 / ×0.824 |
+  | (b) candidate | 1025.0 K, 131.7, 615 bar | 0.5103 | **×1.001** | ×0.976 |
+  | (c1) 300 K | 364.2 K, 423.6, 0.955 bar | 0.0224 | **×13.1** | ×0.992 |
+  | (c2) 500 K | 736.5 K, 124.1, 283 bar | 0.1136 | ×1.030 | ×0.964 |
+  | (c3) 700 K | 1014.0 K, 46.7, 216 bar | 0.4737 | ×1.048 | ×0.962 |
+  | (d) hot | 1554.8 K, 13.3, 95.4 bar | 2.222 | ×1.075 | ×0.993 |
+
+  Read against the FP/line-list difference of **2–3×** in the dense regime (A28,
+  Fx): a boundary needing ×1.001–×1.075 would be moved by an opacity correction
+  far smaller than the one actually in dispute, so the *position* of these RCBs
+  is not a robust prediction — which is the honest framing for the manuscript's
+  RCB numbers. The two exceptions run the other way and are the informative ones:
+  the old fiducial's deep radiative window needs **×4.1** to close, i.e. it is
+  genuinely a 2–3× -scale question that FP data could settle, and the 300 K case
+  needs ×13, i.e. nothing plausible touches it.
+
+  This is a first-order diagnostic: it holds the converged (P, T, ρ) profile
+  fixed and asks how close each boundary is to flipping, not where a
+  self-consistent model with a different opacity would put it. Printed by
+  `figures/plot_s5_grid_coverage.py`; gate
+  `validation/test_s6_rcb_sensitivity.py` pins the arithmetic against the
+  structure model's own RCBs and layer masses.
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep

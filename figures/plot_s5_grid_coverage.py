@@ -22,7 +22,8 @@ what the composite opacity call there actually was —
 The printed summary gives the envelope mass fraction in each category per
 trajectory, then the campaign specification: the (T, ρ) nodes — on a 100 K by
 0.25 dex lattice — that would have to be added for the FP grid's hull to enclose
-the in-box part of every trajectory.
+the in-box part of every trajectory. Task-13 section: the same trajectories' RCBs
+under HITEMP, with the opacity factor that would move each one.
 
 Note: ``S5_g5_audit`` is a different figure (A43); this one writes
 ``outputs/S5_grid_coverage.png`` and ``outputs/S5_grid_coverage.csv``.
@@ -51,6 +52,7 @@ from structure.diagnostics import (
     category_mass_fractions,
     clamped_t_split,
     classify_evaluations,
+    rcb_opacity_sensitivity,
 )
 
 FP_T_FLOOR_K = 1000.0
@@ -137,6 +139,8 @@ def build_case(cfg, eos, band, spec, n_sample=N_SAMPLE):
     prof = out["composite"].profile
     out["categories"] = classify_evaluations(source, prof["temperature_k"], prof["rho_si"])
     out["mass_fractions"] = category_mass_fractions(out["composite"], out["categories"])
+    out["rcb"] = rcb_opacity_sensitivity(out["hitemp"],
+                                         get_source("hitemp", cfg_c, band=band))
     return out
 
 
@@ -314,6 +318,38 @@ def main(argv=None):
         if len(campaign["extend_nodes"]) > 20:
             print(f"    ... and {len(campaign['extend_nodes']) - 20} more (see {csv_path})")
 
+    # ---------------- Task 13: RCB opacity sensitivity ----------------
+    print("\n  RCB sensitivity under HITEMP (A49): where each RCB sits and the factor by "
+          "which kappa_R would have to change to move it.")
+    print("  'close' = factor on kappa_R making grad_rad = grad_ad at the layer's deepest "
+          "radiative sample (that sample convects, the layer shrinks by one sample);")
+    print("  'extend' = the same at the first convective sample below it (that sample "
+          "turns radiative, the layer grows by one sample).")
+    for c in cases:
+        s = c["rcb"]
+        print(f"\n    {c['label']}  (T_eq={c['t_eq_k']:.0f} K, T_int={c['t_int_k']:.0f} K, "
+              f"wmf={c['wmf']:.2f}, M_c={c['mass_core_mearth']:.0f} M_earth) — HITEMP "
+              f"R_p = {c['hitemp'].radius_p_rearth:.5f} R_earth")
+        if not s["rcbs"]:
+            print("      no radiative-convective boundary: the envelope is convective "
+                  "throughout")
+        for i, b in enumerate(s["rcbs"], 1):
+            print(f"      RCB {i}: T = {b['t_k']:>8.1f} K   rho = {b['rho_si']:>10.4g} "
+                  f"kg/m^3   P = {b['p_pa'] / 1e5:>12.4g} bar   "
+                  f"kappa_R = {b['kappa_r_si']:.4g} m^2/kg")
+        for i, lay in enumerate(s["layers"], 1):
+            print(f"      radiative layer {i}: T {lay['t_min_k']:.0f}-{lay['t_max_k']:.0f} K, "
+                  f"rho {lay['rho_min_si']:.3g}-{lay['rho_max_si']:.3g}, "
+                  f"m = {lay['mass_fraction']:.6f}")
+            b = lay["base"]
+            print(f"        base sample: T = {b['t_k']:.1f} K, rho = {b['rho_si']:.4g}, "
+                  f"P = {b['p_pa'] / 1e5:.4g} bar, kappa_R = {b['kappa_r_si']:.4g} m^2/kg, "
+                  f"grad_rad/grad_ad = {b['grad_rad'] / b['grad_ad']:.4f}")
+            print(f"        close it: kappa_R x {b['factor_close']:.4g}"
+                  + ("" if lay["extend"] is None else
+                     f";  extend it: kappa_R x {lay['extend']['factor_extend']:.4g} "
+                     f"(at T = {lay['extend']['t_k']:.1f} K, "
+                     f"rho = {lay['extend']['rho_si']:.4g})"))
     return path
 
 
