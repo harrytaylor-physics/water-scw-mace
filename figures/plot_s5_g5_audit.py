@@ -17,8 +17,9 @@ Aguichine et al. (2021):
      cmf = 0 with M_c = (1−WMF)·M_p. This one already matched.
 
 Each correction is applied separately so its contribution to the median |rel| is
-visible, then together. Defaults are unchanged: the corrections are `anchor.*`
-config flags, off by default.
+visible, then together. Both corrections became the repository defaults in A46;
+this script still runs all four conventions explicitly, so the attribution of
+each step survives the change of default.
 
 Outputs ``outputs/S5_g5_audit.png`` and ``outputs/g5_residuals_conventions.json``.
 """
@@ -45,13 +46,18 @@ T_INT_G5 = 30.0
 SOURCE = "hitemp"
 THEIR_RADIUS_PRESSURE_BAR = 1.0e-6  # 0.1 Pa, the level their atmosphere thickness uses
 
-# (label, anchor overrides) — applied one at a time, then together.
+# (label, anchor overrides) — applied one at a time, then together. Every entry
+# states both flags explicitly: since A46 the *defaults* are the corrected
+# conventions, so an empty override dict would silently make the baseline equal
+# the endpoint.
+PRE_A46 = {"t_irr_to_t_eq": "sqrt2", "radius_pressure_bar": None}
 CONVENTIONS = [
-    ("baseline (A32)", {}),
-    ("+ irradiation (T_eq = T_irr)", {"t_irr_to_t_eq": "identity"}),
-    ("+ radius level (0.1 Pa)", {"radius_pressure_bar": THEIR_RADIUS_PRESSURE_BAR}),
-    ("+ both", {"t_irr_to_t_eq": "identity",
-                "radius_pressure_bar": THEIR_RADIUS_PRESSURE_BAR}),
+    ("baseline (pre-A46)", PRE_A46),
+    ("+ irradiation (T_eq = T_irr)", {**PRE_A46, "t_irr_to_t_eq": "identity"}),
+    ("+ radius level (0.1 Pa)",
+     {**PRE_A46, "radius_pressure_bar": THEIR_RADIUS_PRESSURE_BAR}),
+    ("+ both (A46 default)",
+     {"t_irr_to_t_eq": "identity", "radius_pressure_bar": THEIR_RADIUS_PRESSURE_BAR}),
 ]
 COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7"]
 
@@ -126,8 +132,10 @@ def main(argv=None):
 
     ax_m.bar(np.arange(len(runs)), [medians[label] * 100 for label, _, _ in runs],
              color=COLORS)
-    short = {"baseline (A32)": "baseline", "+ irradiation (T_eq = T_irr)": "+ irradiation",
-             "+ radius level (0.1 Pa)": "+ radius\nlevel", "+ both": "+ both"}
+    short = {"baseline (pre-A46)": "baseline",
+             "+ irradiation (T_eq = T_irr)": "+ irradiation",
+             "+ radius level (0.1 Pa)": "+ radius\nlevel",
+             "+ both (A46 default)": "+ both\n(default)"}
     ax_m.set_xticks(np.arange(len(runs)), [short.get(label, label) for label, _, _ in runs],
                     fontsize=8.5)
     ax_m.set_ylabel("median |rel| [%]")
@@ -163,12 +171,14 @@ def main(argv=None):
           f"cmf={cfg.anchor.cmf:g}, n_sample=400)")
     print("  (1) irradiation: their Eq. (9) T_irr = T_eff*sqrt(R_star/2a) IS the "
           "full-redistribution T_eq;")
-    print("      factor applied by the repository default: T_eq = T_irr/sqrt(2) = "
-          f"{1 / np.sqrt(2):.4f}*T_irr; corrected factor: 1.0")
+    print(f"      pre-A46 factor: T_eq = T_irr/sqrt(2) = {1 / np.sqrt(2):.4f}*T_irr; "
+          f"corrected factor 1.0, now the default "
+          f"(cfg.anchor.t_irr_to_t_eq = {cfg.anchor.t_irr_to_t_eq!r})")
     print(f"  (2) radius: their reported radius is the transiting radius, atmosphere "
           f"thickness at 0.1 Pa = {THEIR_RADIUS_PRESSURE_BAR:g} bar; ours is the "
-          f"top-of-atmosphere radius at p_top = {cfg.boundary.p_top_bar:g} bar "
-          f"(NOT the {cfg.boundary.match_pressure_bar:g}-bar matching radius)")
+          f"radius pre-A46 read at p_top = {cfg.boundary.p_top_bar:g} bar, one decade "
+          f"deeper (NOT the {cfg.boundary.match_pressure_bar:g}-bar matching radius); "
+          f"default now {cfg.anchor.radius_pressure_bar!r} bar")
     print(f"  (3) core: their x_core = CMF/(1-WMF) over the refractory part only; "
           f"Fig. 8 has no metallic core -> x_core = 0 = our cmf = {cfg.anchor.cmf:g}, "
           f"with M_c = (1-WMF)*M_p. Already matched: no correction.")

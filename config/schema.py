@@ -126,21 +126,22 @@ class Anchor:
     """Conventions for matching the published literature anchor, gate G5 (A43).
 
     These are *definition* choices, not physics knobs: how the anchor paper's
-    reported quantities map onto ours. Defaults reproduce the numbers already in
-    `outputs/g5_residuals.json`; the corrected mappings are opt-in so the change
-    in each residual is attributable one at a time.
+    reported quantities map onto ours. Since A46 the defaults are the *corrected*
+    mappings established in A43; the pre-A46 conventions remain selectable so the
+    audit can still attribute each change one at a time.
     """
 
-    # How Aguichine et al. (2021) T_irr maps to our T_eq. "sqrt2" divides by √2
-    # (treats their T_irr as Guillot's irradiation temperature — the original
-    # assumption); "identity" passes it through, which is what their Equation (9)
+    # How Aguichine et al. (2021) T_irr maps to our T_eq. "identity" (the
+    # default since A46) passes it through, which is what their Equation (9)
     # actually defines, T_irr = T_eff·√(R⋆/2a) — verified against their own
-    # Table 3 (A43).
-    t_irr_to_t_eq: str = "sqrt2"
+    # Table 3 (A43). "sqrt2" divides by √2, treating their T_irr as Guillot's
+    # irradiation temperature: the original A32 assumption, kept for the audit.
+    t_irr_to_t_eq: str = "identity"
     # Pressure level the anchor's reported (transiting) radius refers to. Their
-    # atmospheric grid reports the thickness at 0.1 Pa = 1e-6 bar; ours stops at
-    # boundary.p_top_bar (1e-5 bar). None -> use boundary.p_top_bar unchanged.
-    radius_pressure_bar: float | None = None
+    # atmospheric grid reports the thickness at 0.1 Pa = 1e-6 bar; ours would
+    # otherwise stop at boundary.p_top_bar (1e-5 bar), one decade deeper.
+    # None -> use boundary.p_top_bar unchanged (the pre-A46 default).
+    radius_pressure_bar: float | None = 1.0e-6
     # Their x_core = CMF/(1−WMF) is the core fraction of the *refractory* part;
     # Figure 8 is computed with no metallic core, i.e. x_core = 0 -> cmf = 0.
     cmf: float = 0.0

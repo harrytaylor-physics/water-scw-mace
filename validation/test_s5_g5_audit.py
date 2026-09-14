@@ -10,8 +10,10 @@ GJ 9827 b/c/d. Dropping the factor 2 does not — it is 41% high. So their T_irr
 and dividing it by √2 (the original A32 assumption) modelled planets one √2 too
 cold.
 
-The corrections are opt-in `anchor.*` flags; these gates pin both the arithmetic
-and the fact that the repository defaults still reproduce the published numbers.
+The corrections were opt-in `anchor.*` flags in A43 and became the repository
+defaults in A46; these gates pin both the arithmetic and the fact that the
+defaults are now the corrected conventions, with the pre-A46 ones still
+selectable so the audit can attribute each step.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ import pytest
 from config import Anchor, load_config
 from config.schema import _validate
 from eos import AquaEOS
+from figures.plot_s5_g5_audit import PRE_A46
 from validation.test_g5_literature import anchor_t_eq, our_radius
 
 # GJ 9827 (K2-135), the system in their Table 3, whose planetary data the paper
@@ -68,20 +71,20 @@ def test_the_factor_2_survives_the_stellar_parameter_choice(planet):
 
 
 def test_anchor_conversion_matches_the_convention(cfg):
-    """``sqrt2`` (default) divides; ``identity`` passes their T_irr through."""
-    assert anchor_t_eq(cfg, 1000.0) == pytest.approx(1000.0 / np.sqrt(2.0))
-    corrected = replace(cfg, anchor=replace(cfg.anchor, t_irr_to_t_eq="identity"))
-    assert anchor_t_eq(corrected, 1000.0) == pytest.approx(1000.0)
+    """``identity`` (default since A46) passes their T_irr through; ``sqrt2`` divides."""
+    assert anchor_t_eq(cfg, 1000.0) == pytest.approx(1000.0)
+    old = replace(cfg, anchor=replace(cfg.anchor, **PRE_A46))
+    assert anchor_t_eq(old, 1000.0) == pytest.approx(1000.0 / np.sqrt(2.0))
     # The correction makes the modelled planet hotter by exactly √2.
-    assert anchor_t_eq(corrected, 1000.0) / anchor_t_eq(cfg, 1000.0) == pytest.approx(
+    assert anchor_t_eq(cfg, 1000.0) / anchor_t_eq(old, 1000.0) == pytest.approx(
         np.sqrt(2.0))
 
 
-def test_repository_defaults_are_unchanged(cfg, repo_root):
-    """The audit must not move the published G5 numbers (A32)."""
+def test_repository_defaults_are_the_corrected_conventions(cfg, repo_root):
+    """A46: G5 now runs like-for-like by default."""
     assert cfg.anchor == Anchor()
-    assert cfg.anchor.t_irr_to_t_eq == "sqrt2"
-    assert cfg.anchor.radius_pressure_bar is None
+    assert cfg.anchor.t_irr_to_t_eq == "identity"
+    assert cfg.anchor.radius_pressure_bar == pytest.approx(1.0e-6)  # 0.1 Pa
     assert cfg.anchor.cmf == 0.0
     # The candidate config inherits the same anchor defaults.
     assert load_config(repo_root / "config" / "candidate.yaml").anchor == Anchor()
@@ -98,11 +101,12 @@ def test_corrections_move_the_radius_in_the_expected_direction(cfg):
     """Hotter irradiation and a shallower radius level both grow R_p."""
     eos = AquaEOS.from_config(cfg)
     args = dict(m_earth=5.0, wmf=0.2, t_irr_k=1000.0, t_int_k=30.0, source="hitemp", eos=eos)
-    base = our_radius(cfg, **args)
-    hotter = our_radius(replace(cfg, anchor=replace(cfg.anchor, t_irr_to_t_eq="identity")),
-                        **args)
-    higher = our_radius(replace(cfg, anchor=replace(cfg.anchor, radius_pressure_bar=1e-6)),
-                        **args)
+    old_cfg = replace(cfg, anchor=replace(cfg.anchor, **PRE_A46))
+    base = our_radius(old_cfg, **args)
+    hotter = our_radius(replace(old_cfg, anchor=replace(old_cfg.anchor,
+                                                        t_irr_to_t_eq="identity")), **args)
+    higher = our_radius(replace(old_cfg, anchor=replace(old_cfg.anchor,
+                                                        radius_pressure_bar=1e-6)), **args)
     assert hotter > base
     assert higher > base
     # The radius level is the smaller effect: one decade of pressure is a couple

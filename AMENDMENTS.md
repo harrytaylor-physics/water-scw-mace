@@ -181,6 +181,45 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   `validation/test_s7_radiogenic_floor.py` (the floor stays above 20 K for
   R_p ∈ [1.5, 2.5] R⊕ at 1, 4.5 and 10 Gyr).
 
+- **A46 — The corrected G5 conventions are now the defaults: median residual
+  16.5% → 8.4%.** A43 established that Aguichine et al. (2021) Eq. (9)
+  T_irr *is* our T_eq and that their reported radius is the transiting radius at
+  0.1 Pa, and left both corrections opt-in. They are now the `Anchor` defaults
+  (`t_irr_to_t_eq = "identity"`, `radius_pressure_bar = 1e-6` bar); `cmf = 0` was
+  already right and is unchanged. `outputs/g5_residuals.json` is regenerated and
+  now records the conventions it was computed under.
+
+  | | pre-A46 | A46 default |
+  |---|---|---|
+  | median \|ΔR_p/R_p\| | 0.1653 | **0.0844** |
+  | worst | 0.2279 | 0.1787 |
+  | WMF = 0.2 points | −6.2 to −15.0% | **−3.9 to −9.9%** |
+  | WMF = 0.5 points | −18.1 to −22.8% | **−6.9 to −17.9%** |
+
+  The G5 gate now *pins* the median at 0.0844 with a 1% tolerance
+  (`_MEDIAN_A46`), alongside the existing per-point 30% bound: with the
+  definitions corrected the published number is a gate, not a report, so a silent
+  change of EOS, opacity or definition cannot pass unnoticed.
+
+  **The residual that remains is attributed to the reference model's layered
+  supercritical-water structure.** Every corrected residual is still negative and
+  still grows with WMF, which is exactly where our single pure-steam envelope
+  departs from their ice/liquid/supercritical water layers. The two competing
+  explanations are measured and too small or the wrong sign: the 1–100 bar
+  matching-pressure scan moves R_p by **0.349%** (A43), and recomputing the eight
+  residuals with full-band HITEMP κ_R instead of the [100, 4000] cm⁻¹ science
+  band moves the median **0.0844 → 0.1147**, i.e. band truncation makes the
+  agreement *worse*, not better (A40 measured the same effect pre-A46, 0.165 →
+  0.172; re-measured here under the corrected conventions).
+
+  Housekeeping: `figures/plot_s5_g5_audit.py` now states both flags explicitly in
+  every convention (an empty override dict would silently make its baseline equal
+  its endpoint), and `test_repository_defaults_are_unchanged` is renamed
+  `test_repository_defaults_are_the_corrected_conventions`. A43's "defaults
+  unchanged" is superseded by this entry, not rewritten. **Stale, flagged not
+  edited:** `docs/band_limitation.md`'s G5 row still quotes the pre-A46 0.165 →
+  0.172.
+
 ## 2026-09-13 (Nature manuscript checks)
 
 - **A35 — Blend prescription is a config knob and a stated systematic; the deep
