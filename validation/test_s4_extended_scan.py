@@ -10,7 +10,7 @@ wmf 0.05–0.50. Three things have to hold for its table to mean anything:
   * a cell that does not converge, or whose profile leaves the AQUA table, is
     *skipped and logged* rather than silently reported — AQUA clips instead of
     raising (A2), so nothing else would notice;
-  * the CSV round-trips, since the scan costs ~35 min and is re-read, not re-run.
+  * the CSV round-trips, since the scan is re-read from disk, not re-run.
 """
 
 from __future__ import annotations
@@ -126,7 +126,7 @@ def test_mass_convention_is_wmf_equals_f_env(cfg, monkeypatch):
 
 
 def test_csv_round_trips(tmp_path, cfg, monkeypatch):
-    """The scan is re-read from CSV, not re-run (~35 min), so parsing is a gate."""
+    """The scan is re-read from CSV rather than re-run, so parsing is a gate."""
     class FakeResult:
         profile = {"pressure_pa": np.array([1e5]), "temperature_k": np.array([500.0]),
                    "rho_si": np.array([1.0]), "mass_kg": np.array([2.0, 1.0]),

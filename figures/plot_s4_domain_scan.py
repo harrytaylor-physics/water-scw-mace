@@ -190,9 +190,14 @@ _BOOL_FIELDS = ("skipped",) + tuple(f"{s}_layer_entirely_in_box" for s in SOURCE
 
 
 def load_rows(csv_path: Path) -> list[dict]:
-    """Re-read a previous scan's CSV (the extended scan itself costs ~35 min)."""
+    """Re-read a previous scan's CSV (the extended scan itself costs ~5 min)."""
     with Path(csv_path).open() as fh:
         rows = list(csv.DictReader(fh))
+    if rows and "wmf" not in rows[0]:
+        raise ValueError(
+            f"{csv_path} predates A47 (no 'wmf' column): re-run the scan without "
+            f"--from-csv to regenerate it"
+        )
     for r in rows:
         for k in _INT_FIELDS:
             r[k] = int(r[k] or 0)
@@ -334,7 +339,7 @@ def main(argv=None):
     ap.add_argument("config", type=Path, help="run config YAML")
     ap.add_argument("--extended", action="store_true",
                     help="A47 grid: T_eq 300-1300 K x T_int {30,50} x M_c {5,10,15} "
-                         "x wmf {0.05,0.20,0.50} (108 cells, ~35 min)")
+                         "x wmf {0.05,0.20,0.50} (108 cells, ~5 min)")
     ap.add_argument("--from-csv", action="store_true",
                     help="re-plot and re-rank from a previous CSV instead of rebuilding")
     args = ap.parse_args(argv)

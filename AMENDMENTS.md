@@ -318,8 +318,8 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   categories reproduce the source's own clamp mask, and the emitted nodes really
   do enclose the samples they claim to).
 
-- **A49 — Every RCB but the coldest is within 8% of flipping: the boundary
-  positions are far more opacity-sensitive than the opacity data are certain.**
+- **A49 — Every RCB but two is within 8% of flipping: the boundary positions are
+  far more opacity-sensitive than the opacity data are certain.**
   The model's criterion is ∇_rad > ∇_ad with ∇_rad ∝ κ_R, so at fixed structure
   the factor by which κ_R would have to change for a sample to flip is exactly
   ∇_ad/∇_rad there. `structure.diagnostics.rcb_opacity_sensitivity` reports it at
