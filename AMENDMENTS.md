@@ -142,6 +142,52 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   `sigma` was floor-subtracted before smoothing. **Asked of the owner in the run
   summary; no number in Tasks 16-18 depends on the answer.**
 
+- **A53 — Crossover rebuilt on 48 points; the new cold points expose that the
+  FP/line-list Rosseland ratio is a WINDOW-DEPTH difference, not an opacity
+  difference.** `opacity/crossover.py` recomputes the M2 ratios through our own
+  band-limited table builder over all 48 FP points, writing
+  `outputs/crossover_hitemp_v2.json`; `figures/plot_p2_crossover.py` now plots
+  that instead of replaying the delivered JSON, which is kept overplotted as the
+  independent check. The extension grid is not a subset of HITEMP's (T = 650 and
+  ρ = 60/150/500 have no twin), so HITEMP is evaluated through its own
+  `GridOpacitySource` — the same triangulated (T, log ρ) call the structure model
+  makes — rather than by exact-point matching. Every FP point is interior to
+  HITEMP's T range; the nine with ρ > 1000 keep the existing nearest-neighbour
+  clamp and are flagged `ll_clamped` everywhere.
+
+  **Agreement with the delivered RADIS analysis, split by how κ_LL was obtained**
+  (the split matters: a single "max deviation" would be dominated by the clamps):
+
+  | κ_LL obtained by | n | max \|dev\| Planck | max \|dev\| Rosseland |
+  |---|---|---|---|
+  | both coords on HITEMP's grid | 3 | 0.38% | **0.24%** |
+  | T interpolated (2250, 2750 K) | 15 | 0.63% | 2.98% |
+  | ρ clamped (> 1000 kg/m³) | 9 | 2.88% | 29.65% |
+
+  The first row is the real cross-check and it reproduces A25's ~1%. The last is
+  expected — RADIS computed those at the true density, we hold κ at ρ = 1000.
+
+  **The finding.** At the eight new cold points (T = 650, 800 K) the FP/HITEMP
+  Rosseland ratio is **24-213×**, against 1.4-7× everywhere at T ≥ 1000, while
+  the Planck ratio stays at 1.3-2.0. The spectral contrast κ_P/κ_R says why:
+  HITEMP's runs from 2.4 at 3000 K to **567 at 650 K** — a line list's
+  transparency windows deepen enormously as it cools, lines being narrow and
+  sparse — while **FP's never leaves 1.0-32 anywhere on the grid**. The FP
+  spectrum has no deep windows at all. Since the Rosseland mean is harmonic and
+  takes 74-93% of its integrand from the 1900-3100 cm⁻¹ window at ρ ≤ 500 (A52),
+  the cold Rosseland ratio is measuring how deep each dataset's windows are, not
+  how opaque the water is.
+
+  **Consequence for the headline.** "FP is 2-3× more opaque at ρ ≥ 109, T ≥ 1000"
+  survives as a statement about the *legacy* grid. Its extrapolation to the cold,
+  dense regime — the regime the whole structural claim lives in, and the one the
+  campaign was run to reach — does not: there the disagreement is 24-213× and is
+  attributable to FP's filled-in windows under A52's model (a), or is a real and
+  extraordinary physical result under model (b). The two cannot be separated in
+  this repository. Tasks 17 and 18 report the numbers the model gives either way,
+  but the manuscript cannot quote a cold Rosseland ratio as physics until A52's
+  open question is answered.
+
 ## 2026-09-14 (relocating the structural demonstration)
 
 - **A41 — At the current fiducial the deep closure is decided by CLAMPED FP
