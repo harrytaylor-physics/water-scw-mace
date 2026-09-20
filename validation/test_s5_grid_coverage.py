@@ -78,17 +78,26 @@ def test_clamped_categories_agree_with_the_clamp_mask(composite, old_fiducial):
 
 
 def test_the_old_fiducial_runs_on_extrapolated_opacity(composite, old_fiducial):
-    """A41/A48, restated as coverage: almost none of its envelope is FP data."""
+    """A41/A48, restated as coverage — and what the extension changed (A51).
+
+    The cold-clamped tail is essentially gone: the extension campaign put FP data
+    at T = 650/800 K over ρ = 100-500, so ``clamped_t`` falls from >1% of the
+    envelope mass to ~0.02%. What remains is the *other* ask A48 separated out —
+    the scattered grid's own interior gaps — which still carry ~99% of the mass.
+    So the old fiducial is still not running on interpolated FP data; the reason
+    has changed from "too cold for the grid" to "inside the box, outside the
+    hull", which is fillable without extending the grid's range at all.
+    """
     prof = old_fiducial.profile
     cats = classify_evaluations(composite, prof["temperature_k"], prof["rho_si"])
     frac = category_mass_fractions(old_fiducial, cats)
     assert frac["interpolated"] < 0.01, (
         f"the old fiducial now interpolates {frac['interpolated']:.3f} of its envelope "
         f"mass — A41/A48's finding has moved")
-    # Its deep envelope is inside the FP (T, ρ) box but outside the scattered
-    # hull, with a cold-extrapolated tail: two different asks of a new campaign.
-    assert frac["in_box_out_of_hull"] > 0.5
-    assert frac["clamped_t"] > 0.01
+    assert frac["in_box_out_of_hull"] > 0.9
+    # Was > 0.01 before the extension; now a residual tail below the 650 K floor.
+    assert frac["clamped_t"] < 0.01
+    assert frac["clamped_t"] > 0.0
 
 
 def test_campaign_nodes_enclose_what_they_claim(cfg, composite, old_fiducial):
@@ -117,11 +126,14 @@ def test_extension_nodes_are_reported_separately(cfg, composite, old_fiducial):
     spec = campaign_nodes([(old_fiducial, cats)], table, t_floor_k=FP_T_FLOOR_K,
                           rho_floor_si=FP_RHO_FLOOR_SI)
     t_lo = float(np.min(table.temperature_k))
+    t_step = spec["lattice"][0]
     # This case is the reason the addendum exists: its dense envelope is ~630-760 K.
     assert spec["n_extend_needed"] > 0
     assert spec["extend_nodes"]
-    # Bracketing corners, so the warmest may land exactly on the existing floor;
-    # none may sit above it, or it would not be an extension.
-    assert all(t <= t_lo for t, _ in spec["extend_nodes"])
+    # Bracketing corners: a sample just below the floor brackets to the lattice
+    # cell spanning it, so a node may sit up to one step ABOVE the floor (A51 —
+    # with the floor now 650 K, the 600-700 K cell straddles it). None may sit
+    # further above, or it would not be an extension.
+    assert all(t <= t_lo + t_step for t, _ in spec["extend_nodes"])
     assert any(t < t_lo for t, _ in spec["extend_nodes"])
     assert all(rho > 0.0 for _, rho in spec["extend_nodes"])

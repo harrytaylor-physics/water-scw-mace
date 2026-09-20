@@ -56,11 +56,18 @@ def test_scaled_fp_planck_means_are_plausible(cfg):
 
 
 def test_raw_unscaled_means_trip_the_assertion(cfg):
+    """The plausibility assertion still catches a factor-1000 error (SPEC §2).
+
+    Since A50 the FP files are in correct units and the registry scale is 1.0,
+    so there is no scale left to undo: the legacy error is re-introduced
+    explicitly instead. The guard itself is unchanged — it is what would catch a
+    legacy ×1000 file that somehow reached the table builder.
+    """
     _, _, _, kappa_p = compute_point_means("fp", cfg, resolve_band(cfg))
-    # Undoing the ×1e-3 scale recreates the legacy factor-1000 error.
-    raw = kappa_p / get_spec("fp").scale
+    assert get_spec("fp").scale == 1.0  # A50: the correction lives in the data
+    legacy = kappa_p * 1.0e3
     with pytest.raises(AssertionError, match="factor-1000"):
-        _assert_plausible("fp", get_spec("fp"), raw)
+        _assert_plausible("fp", get_spec("fp"), legacy)
 
 
 # --------------------------------------------------------------------------

@@ -4,6 +4,95 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-20 (extension opacity campaign: units at source, enlarged domain)
+
+- **A50 — The FP factor-1000 error is fixed IN THE DATA; `sigma`/`sigma_raw`
+  were already correct and were NOT scaled.** The extension campaign delivers 21
+  new FP spectra in correct units, so a single on-load scale (SPEC §2, A4) could
+  no longer serve both halves of the grid. `tools/fix_fp_units.py` therefore
+  archives `fp_opacity/` to `fp_opacity_legacy_x1000/`, divides the 27 originals
+  at source, merges the 21 new points, stamps every file with a `units_fixed`
+  marker, and regenerates `grid.json` over all 48. The registry's FP `scale` is
+  now 1.0 and `opacity/loaders.py` **refuses** any FP npz without the marker, so
+  a legacy file can never be silently re-ingested.
+
+  **Which arrays were scaled, and the evidence.** The owner's brief listed
+  `kappa, alpha, sigma, sigma_raw, planck, rosseland`. Measured on the real
+  files, the ×1000 entered at the `alpha` step and not at the cross-sections: in
+  all 27 originals `alpha = 1000·n·sigma` (n = ρN_A/M, matched to 10 significant
+  figures), and in all 21 extension files `alpha = n·sigma` exactly; `kappa =
+  alpha/ρ` holds in both. So `sigma`/`sigma_raw` are already correct
+  cm²/molecule. Scaling them would have broken `alpha = n·sigma` in the
+  rewritten files and corrupted the cross-sections the dilute noise-floor check
+  (A51) reads. **Owner decision (2026-09-20): scale `alpha`, `kappa`, `planck`,
+  `rosseland` only; leave `sigma`, `sigma_raw` untouched.** The identity is
+  re-asserted on every file before the rewrite and pinned by
+  `validation/test_fp_units.py::test_sigma_was_not_scaled`.
+
+  Gates (`validation/test_fp_units.py`, 7 tests): (a) the loader's κ at
+  (1000 K, 129.744) is unchanged across the whole operation — κ_R = 35.409291,
+  κ_P = 383.437496 cm²/g on [100, 4000] cm⁻¹, captured live immediately before
+  the rewrite and now pinned as a constant, since no "before" survives it;
+  (b) old-vs-new consistency κ_P(1000, 129.744)/κ_P(1000, 100) = 0.9262, inside
+  [0.7, 1.3] and matching the stored full-band scalars' 0.9257; (c) all 48 files
+  load with finite positive κ, all marked, all spanning the science band (common
+  wn span [1.3359, 6000.11] cm⁻¹ — `T2750_rho1841.02` has the one offset grid).
+
+  The stored `planck`/`rosseland` scalars were scaled for self-consistency only:
+  they are FULL-BAND means and no science path reads them (band-limited means
+  are recomputed from `kappa(wn)` by the shared table builder, A4).
+
+  **Consequence — the FP grid is now 48 points over T = 650–3000 K,
+  ρ = 10–2229 kg/m³**, replacing the 27-point T = 1000–3000 K, ρ = 109–2229 box
+  that every "FP floor" number in the repo was written against.
+
+  *SPEC §2 is now stale* (it mandates the ×1e-3 on load). Not edited — it is the
+  owner's document; proposed replacement text is in the run summary.
+
+- **A51 — The enlarged grid REVERSES A41: the old fiducial's deep closure now
+  rests on interpolated FP data, not on a clamp.** A41's finding was that at
+  (M_c = 5 M⊕, f_env = 5%, T_eq = 500 K, T_int = 20 K) every one of the 46 FP
+  evaluations closing ρ ∈ [400, 550] was a nearest-neighbour clamp ~300 K below
+  the grid's 1000 K floor, which is why the headline was demoted to
+  "extrapolated, not evidence". The extension campaign added T = 650 and 800 K
+  at ρ = 100-500 — precisely that region — and A48's cold-extension ask is
+  therefore satisfied. Re-running the same audit (n_sample = 1500):
+
+  | | A41 (27-point grid) | now (48-point grid) |
+  |---|---|---|
+  | FP samples in ρ ∈ [400, 550] | 46 | 48 |
+  | of those, clamped | **46 / 46**, all below the T floor | **0 / 48**, all interpolated |
+  | composite `clamp_fraction_all` | 0.4855 | 0.4562 |
+  | envelope mass `clamped_t` | 0.045 (A48) | **0.000209** |
+  | envelope mass `in_box_out_of_hull` | 0.954 (A48) | 0.9917 |
+  | envelope mass `interpolated` | 0.0009 (A48) | 0.0081 |
+
+  Composite: R_p = 1.71732 R⊕, one RCB at ρ = 215.1, max radiative ρ = 136.8.
+  HITEMP is unchanged (its data did not move): R_p = 1.71229 R⊕, three RCBs at
+  ρ = 285.3 / 515.3 / 522.4, max radiative ρ = 504.3, `clamp_fraction_all`
+  0.3791. **The closure itself still holds** — HITEMP leaves a radiative sliver
+  at ρ = 450-504, the composite does not — and it is now made of FP data inside
+  the grid.
+
+  *But the old fiducial is still not running on FP data overall.* 99.2% of its
+  envelope mass is `in_box_out_of_hull`: inside the grid's (T, ρ) box, outside
+  the scattered hull (A6). The campaign closed the "too cold for the grid" ask
+  and left the "fill the grid's own interior gaps" ask open — the two A48
+  separated. That gap needs no extension of the grid's range at all.
+
+  **Gates updated (5), all consequences of the enlarged grid, none loosened:**
+  `test_opacity::test_raw_unscaled_means_trip_the_assertion` (no scale left to
+  undo since A50 — the legacy error is now re-introduced explicitly ×1000, and
+  the guard is unchanged); `test_s5_clamp_audit::test_fiducial_deep_closure_*`
+  (inverted, and renamed to `..._now_rests_on_interpolated_fp_data`);
+  `test_s5_clamp_audit::test_clamp_reasons_attributes_to_the_used_subsource`
+  (the (700 K, 500) probe is in-grid now; the out-of-grid probe moves to
+  500 K); `test_s5_grid_coverage::test_the_old_fiducial_runs_on_extrapolated_
+  opacity` (`clamped_t` > 0.01 becomes < 0.01 and > 0, `in_box_out_of_hull`
+  > 0.9); `test_s5_grid_coverage::test_extension_nodes_are_reported_separately`
+  (bracketing corners may now sit one lattice step above the 650 K floor,
+  because the 600-700 K cell straddles it). Suite: 124 → 131 gates.
+
 ## 2026-09-14 (relocating the structural demonstration)
 
 - **A41 — At the current fiducial the deep closure is decided by CLAMPED FP

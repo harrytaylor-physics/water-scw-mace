@@ -1,8 +1,10 @@
 """Per-point opacity spectrum loading (SPEC §2, §3).
 
 Loads a source's ``T*_opacity.npz`` spectra, applies the source's on-load scale
-factor (FP: ×1e-3 for the legacy factor-1000 error), and verifies each file
-covers the common band. Returns lightweight records the table builder consumes.
+factor (1.0 for every source since A50 — FP's factor-1000 error is now fixed in
+the data itself), refuses any file missing its source's units marker, and
+verifies each file covers the common band. Returns lightweight records the table
+builder consumes.
 """
 
 from __future__ import annotations
@@ -29,6 +31,15 @@ class SpectrumRecord:
 def load_spectrum(path: Path, spec: SourceSpec, band_cm: tuple[float, float]) -> SpectrumRecord:
     """Load and scale one spectrum npz; assert it spans ``band_cm``."""
     with np.load(path) as d:
+        if spec.units_marker is not None and spec.units_marker not in d.files:
+            raise ValueError(
+                f"{path.name}: missing the {spec.units_marker!r} marker key, so this "
+                f"file has NOT had its units fixed at source. Legacy FP spectra carry "
+                f"a factor-1000 error (A4) and loading one unscaled would inflate "
+                f"kappa by 1000x. Run tools/fix_fp_units.py, or move the file out of "
+                f"{path.parent} (the untouched originals live in "
+                f"{path.parent.name}_legacy_x1000/). See AMENDMENTS A50."
+            )
         wn = np.asarray(d["wn"], dtype=float)
         kappa = np.asarray(d["kappa"], dtype=float) * spec.scale
         temperature_k = float(d["T"])
