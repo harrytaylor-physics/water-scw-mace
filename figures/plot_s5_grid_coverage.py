@@ -43,9 +43,16 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 from eos import AquaEOS
-from figures._common import band_caption, comparison_band, load_cfg, save, set_style
+from figures._common import (
+    band_caption,
+    comparison_band,
+    fp_floors,
+    load_cfg,
+    save,
+    set_style,
+)
 from opacity import get_source
-from structure import FP_GRID_FLOOR_SI, build_structure
+from structure import build_structure
 from structure.diagnostics import (
     CATEGORIES,
     campaign_nodes,
@@ -55,7 +62,8 @@ from structure.diagnostics import (
     rcb_opacity_sensitivity,
 )
 
-FP_T_FLOOR_K = 1000.0
+# Default FP box corner (schema defaults, A54); main() reads the run config.
+FP_T_FLOOR_K = 650.0
 N_SAMPLE = 1500
 T_STEP_K = 100.0       # campaign lattice spacing in temperature
 LOG_RHO_STEP = 0.25    # ... and in log10 density
@@ -180,6 +188,7 @@ def main(argv=None):
     set_style()
     eos = AquaEOS.from_config(cfg)
     band = comparison_band(cfg, ["composite", "hitemp"])
+    t_floor, rho_floor = fp_floors(cfg)
     out_dir = cfg.output_path
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -219,8 +228,8 @@ def main(argv=None):
                          f"{c['label']}\n$T_{{eq}}$={c['t_eq_k']:.0f} K, "
                          f"$T_{{int}}$={c['t_int_k']:.0f} K, wmf={c['wmf']:.2f}, "
                          f"$M_c$={c['mass_core_mearth']:.0f} $M_⊕$")
-        ax.axhline(FP_GRID_FLOOR_SI, color="#0072B2", ls=":", lw=1.0)
-        ax.axvline(FP_T_FLOOR_K, color="#0072B2", ls=":", lw=1.0)
+        ax.axhline(rho_floor, color="#0072B2", ls=":", lw=1.0)
+        ax.axvline(t_floor, color="#0072B2", ls=":", lw=1.0)
         ax.set_yscale("log")
         ax.set_xscale("log")
         ax.set_xticks([300, 500, 1000, 2000, 4000, 6000])
@@ -246,8 +255,8 @@ def main(argv=None):
     # ---------------- campaign specification ----------------
     campaign = campaign_nodes(
         [(c["composite"], c["categories"]) for c in cases], table,
-        t_step_k=T_STEP_K, log_rho_step=LOG_RHO_STEP, t_floor_k=FP_T_FLOOR_K,
-        rho_floor_si=FP_GRID_FLOOR_SI,
+        t_step_k=T_STEP_K, log_rho_step=LOG_RHO_STEP, t_floor_k=t_floor,
+        rho_floor_si=rho_floor,
     )
 
     csv_path = out_dir / "S5_grid_coverage.csv"
@@ -288,7 +297,7 @@ def main(argv=None):
 
     print(f"\n  CAMPAIGN SPECIFICATION — nodes on a {T_STEP_K:.0f} K x "
           f"{LOG_RHO_STEP:g} dex lattice needed so the FP hull encloses the IN-BOX part "
-          f"(T >= {FP_T_FLOOR_K:.0f} K, rho >= {FP_GRID_FLOOR_SI:g}) of every trajectory:")
+          f"(T >= {t_floor:.0f} K, rho >= {rho_floor:g}) of every trajectory:")
     if not campaign["fill_nodes"]:
         print("    none — the in-box part of every trajectory is already inside the hull "
               "(or no trajectory enters the box at all).")
@@ -301,7 +310,7 @@ def main(argv=None):
           f"{'YES' if campaign['fill_encloses'] else 'NO'}")
 
     print(f"\n  (addendum, NOT part of the in-box specification) the same lattice, "
-          f"extending the grid BELOW its {FP_T_FLOOR_K:.0f} K floor, would be needed to "
+          f"extending the grid BELOW its {t_floor:.0f} K floor, would be needed to "
           f"cover the dense-but-cold segments where the composite currently clamps in T:")
     if not campaign["extend_nodes"]:
         print("    none.")

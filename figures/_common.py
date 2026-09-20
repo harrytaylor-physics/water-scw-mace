@@ -120,3 +120,14 @@ def load_cfg(argv) -> Config:
     ap = argparse.ArgumentParser()
     ap.add_argument("config", type=Path, help="run config YAML")
     return load_config(ap.parse_args(argv).config)
+
+
+def fp_floors(cfg) -> tuple[float, float]:
+    """The FP grid's own (T, ρ) corner, from config (A54).
+
+    The extension campaign moved it from (1000 K, 108.796) to (650 K, 10), so
+    every "in the FP box" test reads it from config rather than a constant;
+    ``validation/test_fp_grid_floor.py`` asserts it matches the built table.
+    """
+    return (float(cfg.opacity.fp_grid_t_floor_k),
+            float(cfg.opacity.fp_grid_rho_floor_kg_m3))

@@ -87,19 +87,31 @@ class Opacity:
     clamp_fraction_threshold: float = 0.20
 
     # Composite source (A11/A12): line-list (dilute) blended with FP (dense)
-    # across a density window (kg/m³). Default 100-300 keeps FP above its real
-    # data floor (~109); 30-100 is a documented sensitivity case (A15). Seam
-    # location/width are scan parameters (A35: the surviving RCB sits inside the
-    # window, so the blend prescription is a stated systematic, scanned by
-    # figures/plot_s1_blend_sensitivity.py).
+    # across a density window (kg/m³). The window's lower edge must not fall
+    # below the FP grid's ρ floor, or the composite hands κ to FP where FP has no
+    # data. Seam location/width remain scan parameters (A35: the surviving RCB
+    # sits inside the window, so the blend prescription is a stated systematic,
+    # scanned by figures/plot_s1_blend_sensitivity.py).
     composite_dilute_source: str = "hitemp"
     composite_dense_source: str = "fp"
-    blend_window_kg_m3: tuple[float, float] = (100.0, 300.0)
+    # A54: moved 100-300 -> 10-30 once the extension campaign put FP data down to
+    # ρ = 10. Chosen on κ_R seam continuity (see AMENDMENTS): the seam FP/HITEMP
+    # ratio falls from 10.5× (100-300) to 3.7× (10-30). The 3-10 window is
+    # narrowly better on continuity (3.1×) but its seam at ρ = 5.5 is BELOW the FP
+    # grid's floor, so FP is clamped there by construction — disqualified.
+    blend_window_kg_m3: tuple[float, float] = (10.0, 30.0)
     # "linear": the existing log-space blend across the window (smoothstep
     # weight, C¹ — unchanged default behaviour, A12/A35). "sharp": a hard switch
     # to FP at the window's lower edge, no blending (the window may be
     # zero-width, e.g. [108.796, 108.796] = switch at the FP grid floor).
     blend_mode: str = "linear"
+    # The FP grid's own (T, ρ) floor — the corner below which it has no data, so
+    # "in the FP box" and "FP-relevant" are defined against it (A41/A42/A47). Read
+    # from config, not hard-coded, because the extension campaign moved it from
+    # (1000 K, 108.796) to (650 K, 10); a gate asserts these equal the built FP
+    # table's actual minima, so config cannot drift from the data (A54).
+    fp_grid_t_floor_k: float = 650.0
+    fp_grid_rho_floor_kg_m3: float = 10.0
     # Constant multiplier on the FP table's κ_R and κ_P, applied at table-build
     # time (before any blending) — the opacity-perturbation robustness knob
     # (A37). 1.0 = unperturbed; the manuscript scan is 0.8 / 1.0 / 1.25.
@@ -270,6 +282,8 @@ def _validate(cfg: Config) -> None:
         raise ValueError(f"opacity.blend_window_kg_m3 must satisfy 0 < lo <= hi, got {(lo, hi)}")
     if cfg.opacity.blend_mode == "linear" and lo == hi:
         raise ValueError("a zero-width blend window requires opacity.blend_mode='sharp'")
+    if cfg.opacity.fp_grid_t_floor_k <= 0 or cfg.opacity.fp_grid_rho_floor_kg_m3 <= 0:
+        raise ValueError("opacity.fp_grid_* floors must be positive")
     if cfg.opacity.fp_scale <= 0:
         raise ValueError(f"opacity.fp_scale must be positive, got {cfg.opacity.fp_scale}")
     if cfg.anchor.t_irr_to_t_eq not in {"sqrt2", "identity"}:

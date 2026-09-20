@@ -22,6 +22,7 @@ from structure.integrator import (
 )
 from structure.model import (
     FP_GRID_FLOOR_SI,
+    FP_GRID_T_FLOOR_K,
     StructureResult,
     build_at_entropy,
     build_structure,
@@ -48,4 +49,5 @@ __all__ = [
     "StructureResult",
     "deep_radiative_zones",
     "FP_GRID_FLOOR_SI",
+    "FP_GRID_T_FLOOR_K",
 ]

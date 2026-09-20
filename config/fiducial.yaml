@@ -32,7 +32,10 @@ opacity:
   clamp_fraction_threshold: 0.20
   # Composite blend prescription (A35). The surviving RCB sits inside this
   # window, so both knobs are scanned by figures/plot_s1_blend_sensitivity.py.
-  blend_window_kg_m3: [100.0, 300.0]  # line-list -> FP density window
+  blend_window_kg_m3: [10.0, 30.0]  # A54: seam continuity; FP has
+                                    # data down to rho = 10 now
+  fp_grid_t_floor_k: 650.0          # the FP grid's own corner (A54)
+  fp_grid_rho_floor_kg_m3: 10.0
   blend_mode: "linear"  # linear (smoothstep log-blend) | sharp (switch at lo)
   fp_scale: 1.0        # constant perturbation of the FP table's kappa (A37)
 

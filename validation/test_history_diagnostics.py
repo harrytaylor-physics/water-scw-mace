@@ -22,6 +22,10 @@ from evolution.history import HistoryComparison
 from figures.plot_f3_cooling_ratio import F_ENV_GRID, ratio_extremes
 from structure import FP_GRID_FLOOR_SI
 
+# The legacy FP ρ floor. Used here as an arbitrary interior threshold so the
+# interpolation test stays meaningful whatever the live floor is (A54).
+THRESHOLD_SI = 108.796
+
 
 def _history(age, radius_a, radius_b, entropy_a, entropy_b, rcb_a, rcb_b):
     return HistoryComparison(
@@ -70,14 +74,17 @@ def test_first_age_rcb_above_interpolates_the_crossing():
     h = _history(age,
                  radius_a=[1.0] * 3, radius_b=[1.0] * 3,
                  entropy_a=[1.0] * 3, entropy_b=[1.0] * 3,
-                 rcb_a=[10.0, 50.0, 200.0],  # crosses 108.796 between 10 and 100 Gyr
+                 rcb_a=[10.0, 50.0, 200.0],  # crosses THRESHOLD between 10 and 100 Gyr
                  rcb_b=[10.0, 10.0, 10.0])  # never crosses
-    cross = h.first_age_rcb_above(FP_GRID_FLOOR_SI)
-    w = (FP_GRID_FLOOR_SI - 50.0) / (200.0 - 50.0)
+    # An explicit threshold, not the module default: A54 moved FP_GRID_FLOOR_SI to
+    # 10, which this synthetic track starts *at*, so the default would make the
+    # crossing trivial and stop testing the interpolation.
+    cross = h.first_age_rcb_above(THRESHOLD_SI)
+    w = (THRESHOLD_SI - 50.0) / (200.0 - 50.0)
     expected = np.exp(np.log(10.0) + w * (np.log(100.0) - np.log(10.0)))
     assert cross["composite"] == pytest.approx(expected)
     assert cross["hitemp"] is None
-    assert cross["rho_si"] == pytest.approx(FP_GRID_FLOOR_SI)
+    assert cross["rho_si"] == pytest.approx(THRESHOLD_SI)
 
 
 def test_first_age_rcb_above_handles_an_already_deep_start():
@@ -85,7 +92,7 @@ def test_first_age_rcb_above_handles_an_already_deep_start():
                  radius_a=[1.0, 1.0], radius_b=[1.0, 1.0],
                  entropy_a=[1.0, 1.0], entropy_b=[1.0, 1.0],
                  rcb_a=[500.0, 600.0], rcb_b=[1.0, 2.0])
-    assert h.first_age_rcb_above(FP_GRID_FLOOR_SI)["composite"] == pytest.approx(0.5)
+    assert h.first_age_rcb_above(THRESHOLD_SI)["composite"] == pytest.approx(0.5)
 
 
 def test_f3_ratio_extremes_report_their_grid_location():

@@ -188,6 +188,130 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   but the manuscript cannot quote a cold Rosseland ratio as physics until A52's
   open question is answered.
 
+- **A54 — Blend window moved to 10-30 kg/m³ (NOT the proposed 3-10), and the FP
+  box corner is a config value.** With FP data now reaching ρ = 10, the owner
+  proposed blending 3-10. Measured κ_R seam continuity (FP/HITEMP at the seam,
+  T = 1000/1500/2000 K) across the candidates:
+
+  | window | seam ρ | worst seam mismatch | FP at the seam |
+  |---|---|---|---|
+  | 3-10 | 5.48 | 3.08× | **CLAMPED — below the FP grid's ρ floor** |
+  | **10-30** | **17.32** | **3.69×** | interpolated |
+  | 30-100 | 54.77 | 7.47× | interpolated |
+  | 100-300 (previous default) | 173.21 | 10.50× | interpolated |
+
+  3-10 wins narrowly on continuity but its seam sits *below* ρ = 10, so the
+  composite would hand κ to FP exactly where FP has no data — nearest-neighbour
+  extrapolation by construction. **Adopted 10-30**: the best continuity among
+  windows where FP has data, and it cuts the seam discontinuity from 10.5× to
+  3.7×. Pinned by `test_fp_grid_floor::test_the_blend_window_starts_at_or_above_
+  the_fp_data_floor`.
+
+  *Caveat, stated rather than buried:* a lower seam hands more of the cold
+  envelope to FP, and A52/A53 show that is exactly where FP's κ_R is least
+  trustworthy (floor-limited windows; 24-213× disagreement at T < 1000 K). Seam
+  continuity alone cannot settle the window; `plot_s1_blend_sensitivity.py`
+  remains the scan that bounds it.
+
+  **FP grid floors are now `opacity.fp_grid_t_floor_k` (650) and
+  `opacity.fp_grid_rho_floor_kg_m3` (10)**, not module constants.
+  `figures/_common.fp_floors(cfg)` is the accessor, `structure.model` keeps
+  mirrored constants for the few call sites with no Config, and
+  `validation/test_fp_grid_floor.py` asserts the configured values equal the
+  built FP table's actual minima — so config cannot drift from data.
+
+  **Gates updated (6), none loosened.** `test_evolution::test_history_comparison_
+  diagnostics` — the "FP-relevant epoch" has stopped discriminating: with the ρ
+  floor at 10 every RCB in the model qualifies, so the epoch now starts at
+  0.16 Gyr instead of >0.5 Gyr; the physics claim it encoded (the *deep* RCB
+  regime is late) is re-tested explicitly against the legacy 108.796 threshold.
+  `test_history_diagnostics` — the synthetic crossing track starts at ρ = 10, so
+  it now passes an explicit threshold rather than the module default.
+  `test_s6_candidate` — blend-window pin, and the closure restated (below).
+  `test_s4_domain_scan`, `test_s5_grid_coverage` — box-corner constants.
+  `test_s5_grid_coverage::test_the_old_fiducial_*` — inverted, see below.
+
+  **Consequence — the old fiducial now runs on FP data.** Envelope mass
+  interpolated: **0.0009 (A48) → 0.0081 (A51, after the merge) → 0.9995 (now)**,
+  with `in_box_out_of_hull` 0.954 → 0.992 → 0.0004 and `clamped_t` 0.045 →
+  0.0002 → 0.0001. The composite's trajectory under the 10-30 window runs
+  through the well-covered part of the enlarged grid. A41's central objection to
+  the headline case is fully resolved.
+
+  **Consequence — the candidate's closure is now PARTIAL.** A44 could say "zero
+  in-box radiative layers" because the box was (1000 K, 108.796), entirely inside
+  the FP-dominated region. With the box floor at (650 K, 10) "in box" reaches
+  into densities where the composite uses the line list *by design*. At the
+  candidate (T_eq = 700 K, T_int = 20 K): HITEMP leaves an in-box layer of
+  **3025 ppm** (T 855-1023 K, ρ 10.4-130); the composite leaves **377 ppm**
+  (T 855-916 K, ρ 10.1-25.6) — an 8× shrinkage at the box's dilute edge, not an
+  elimination. Nothing survives above the blend window's top. R_p 1.75904 →
+  1.77269 R⊕.
+
+- **A55 — Scan on the enlarged domain: the FP/line-list dispute AT the boundary
+  is 6-54×, against a flip threshold of 1.01-1.21×. The boundaries move; the mass
+  does not.** 108 cells rerun with the new composite,
+  `outputs/S4_domain_scan_extended.csv`. **All 108 converged inside the AQUA
+  table; no skips.**
+
+  *In-box radiative structure.* A47 found ZERO cells with any in-box radiative
+  mass against the old (1000 K, 109) box. Against the new (650 K, 10) box most
+  cells have some, but it is tiny — the largest is **506 ppm** of envelope mass
+  (M_c = 5, wmf = 0.05, T_eq = 500, T_int = 30; layer T 653-731 K, ρ 28.9-60.2).
+  **One cell of 108** has the composite close every in-box layer with
+  `clamp_fraction_all` < 1% — that same cell, R_p 1.73887 → 1.74763 R⊕ (+0.50%).
+  **Zero cells** have a radiative layer lying *entirely* inside the box: every
+  layer runs up to ρ ~ 1e-6 at the top of the atmosphere.
+
+  *The Task-17 clamp gate, and why it needs two forms.* As specified — clamped
+  fraction where T ≥ 650 and ρ ≥ 10 — it is **unsatisfiable by construction**:
+  the corner has no upper bound, so the deep convective interior (past 10 000 K
+  against the grid's 3000 K ceiling, past 2229 kg/m³ against its density
+  ceiling) counts as in-box and clamps necessarily. All 108 cells violate it.
+  `structure.diagnostics.in_box_clamp_fraction` therefore reports both the
+  literal corner and the grid's actual **rectangle**, with clamps attributed to
+  `too_hot` / `too_dense` / `in_box_out_of_hull`. On the rectangle:
+
+  * **80 of 108 cells pass** at < 1%;
+  * **28 fail, and they are a result, not noise**: all 18 cells at T_eq = 300 K
+    (clamps **100% `in_box_out_of_hull`** — the cold-dilute corner 650-1000 K,
+    10-100 kg/m³, where the campaign has FP at T = 650/800 only for ρ ≥ 100 and
+    at ρ = 10-60 only for T ≥ 1000), plus 9 at T_eq = 1300 K and 1 at 500 K over
+    small in-box counts;
+  * the T_eq = 700-1100 K belt the manuscript lives in is **clean**.
+
+  CLAMP_LIMIT is not relaxed; the violating set is pinned by
+  `validation/test_s4_in_box_clamp.py` so filling the gap or regressing both show
+  up. **That corner is the campaign's remaining ask.**
+
+  *Task 13 redone at the boundary (`figures/plot_s8_rcb_flip.py`).* A49 measured
+  flip thresholds but could not measure the dispute *at* the RCB, because FP was
+  clamped from 1000 K everywhere. Now **8 of the 10 strongest cells have FP
+  interpolated at the HITEMP RCB** (the other 2 sit at ρ ≈ 54, in the cold-dilute
+  hull gap above). At those 8 boundaries (T = 726-1008 K, ρ = 44-124,
+  P = 170-283 bar):
+
+  | quantity | range |
+  |---|---|
+  | HITEMP κ_R at the RCB | 1.06-4.63 cm²/g |
+  | FP κ_R at the RCB | 28.7-61.6 cm²/g |
+  | **FP / HITEMP** | **6.2-54.3×** |
+  | flip threshold ∇_ad/∇_rad | **1.010-1.208×** |
+  | boundaries where dispute > threshold | **8 of 8** |
+
+  So the dispute exceeds what the boundary needs by a factor of 5-50, and the
+  composite duly moves every boundary — by **0.39-0.85 dex in density** (the
+  composite RCB is 2.5-7× less dense). **But the enclosed mass barely moves:
+  0.0000-0.0006 of the envelope**, and |ΔR_p|/R_p over the ten strongest cells is
+  **0.36-0.89%**. A49's "the boundaries are not robust" is confirmed and now
+  measured on real FP data rather than a clamp.
+
+  *The caveat that governs all of it.* Those 6-54× ratios are at T = 726-1008 K,
+  which is exactly where A52 finds FP's transparency windows at or below the
+  dipole noise floor and A53 finds the FP/HITEMP Rosseland ratio measuring window
+  depth rather than opacity. The boundaries move because FP has no transparency
+  windows there. Whether that is physics or floor is A52's open question.
+
 ## 2026-09-14 (relocating the structural demonstration)
 
 - **A41 — At the current fiducial the deep closure is decided by CLAMPED FP

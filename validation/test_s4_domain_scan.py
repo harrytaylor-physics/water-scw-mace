@@ -1,7 +1,7 @@
 """Radiative-layer bookkeeping behind the domain scan (A42).
 
 The scan's conclusion — that a line-list radiative zone almost never reaches
-inside the FP data box (T ≥ 1000 K, ρ ≥ 108.796 kg/m³) — is only as good as the
+inside the FP data box (T ≥ 650 K, ρ ≥ 10 kg/m³ since A54) — is only as good as the
 layer accounting it rests on. These gates check that accounting: mass weights
 that sum to the envelope, layers that partition the radiative samples, and a
 box filter that actually restricts.
@@ -20,8 +20,8 @@ from structure.diagnostics import (
     radiative_layers,
 )
 
-FP_T_FLOOR_K = 1000.0
-FP_RHO_FLOOR_SI = 108.796
+FP_T_FLOOR_K = 650.0   # A54: the extension campaign moved the box corner
+FP_RHO_FLOOR_SI = 10.0
 
 
 @pytest.fixture(scope="module")

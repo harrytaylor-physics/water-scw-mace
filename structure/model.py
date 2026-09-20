@@ -133,7 +133,13 @@ def _rcb_densities(rho, is_convective):
     return [float(np.sqrt(rho[i] * rho[i + 1])) for i in flips]
 
 
-FP_GRID_FLOOR_SI = 108.796  # FP's least-dense grid point (kg/m³); FP-relevance boundary
+# The FP grid's own corner. AUTHORITATIVE VALUES ARE CONFIG (A54):
+# opacity.fp_grid_t_floor_k / opacity.fp_grid_rho_floor_kg_m3. These module
+# constants mirror the schema defaults for the few call sites that hold no
+# Config (e.g. evolution.history's default argument) and are asserted equal to
+# the built FP table's actual minima by validation/test_fp_grid_floor.py.
+FP_GRID_T_FLOOR_K = 650.0  # FP's coldest grid point (K)
+FP_GRID_FLOOR_SI = 10.0  # FP's least-dense grid point (kg/m³); FP-relevance boundary
 
 
 def deep_radiative_zones(result: "StructureResult", rho_min_si: float = 300.0):
@@ -307,7 +313,7 @@ def build_structure(
         rcb_pressures_pa=rcbs,
         rcb_densities_si=rcb_rho,
         max_radiative_rho_si=max_rad_rho,
-        reaches_fp_grid=max_rad_rho >= FP_GRID_FLOOR_SI,
+        reaches_fp_grid=max_rad_rho >= cfg.opacity.fp_grid_rho_floor_kg_m3,
         rcb_above_match=any(rp < p_match for rp in rcbs),
         photosphere_pressure_pa=p_phot,
         photosphere_temperature_k=t_phot,

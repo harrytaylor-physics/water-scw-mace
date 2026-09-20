@@ -29,8 +29,10 @@ from structure.diagnostics import (
     classify_evaluations,
 )
 
-FP_T_FLOOR_K = 1000.0
-FP_RHO_FLOOR_SI = 108.796
+# The FP box corner, moved by the extension campaign (A54). Mirrors the
+# schema defaults; test_fp_grid_floor ties them to the built table.
+FP_T_FLOOR_K = 650.0
+FP_RHO_FLOOR_SI = 10.0
 
 
 @pytest.fixture(scope="module")
@@ -77,27 +79,32 @@ def test_clamped_categories_agree_with_the_clamp_mask(composite, old_fiducial):
     assert np.array_equal(labelled, clamped & (cats.astype(str) != "dilute_flat"))
 
 
-def test_the_old_fiducial_runs_on_extrapolated_opacity(composite, old_fiducial):
-    """A41/A48, restated as coverage — and what the extension changed (A51).
+def test_the_old_fiducial_now_runs_on_fp_data(composite, old_fiducial):
+    """A41/A48 REVERSED TWICE OVER (A54): the old fiducial is FP data now.
 
-    The cold-clamped tail is essentially gone: the extension campaign put FP data
-    at T = 650/800 K over ρ = 100-500, so ``clamped_t`` falls from >1% of the
-    envelope mass to ~0.02%. What remains is the *other* ask A48 separated out —
-    the scattered grid's own interior gaps — which still carry ~99% of the mass.
-    So the old fiducial is still not running on interpolated FP data; the reason
-    has changed from "too cold for the grid" to "inside the box, outside the
-    hull", which is fillable without extending the grid's range at all.
+    A41 found this case running on FP opacity clamped 300 K below the grid's
+    floor; A48 quantified it as 0.09% of the envelope mass interpolated, 95.4%
+    inside the box but outside the scattered hull, 4.5% too cold. A51 removed the
+    "too cold" part (the campaign added T = 650/800 K) but left ~99% out-of-hull.
+    Moving the blend window to 10-30 (A54) completes the reversal: the composite's
+    trajectory now runs through the well-covered part of the enlarged grid, and
+    **99.9% of the envelope mass is interpolated FP data**.
+
+    If this ever starts failing, read the numbers before changing it — the whole
+    point of A41 was that this quantity is the difference between a demonstration
+    and an extrapolation.
     """
     prof = old_fiducial.profile
     cats = classify_evaluations(composite, prof["temperature_k"], prof["rho_si"])
     frac = category_mass_fractions(old_fiducial, cats)
-    assert frac["interpolated"] < 0.01, (
-        f"the old fiducial now interpolates {frac['interpolated']:.3f} of its envelope "
-        f"mass — A41/A48's finding has moved")
-    assert frac["in_box_out_of_hull"] > 0.9
-    # Was > 0.01 before the extension; now a residual tail below the 650 K floor.
+    assert frac["interpolated"] > 0.99, (
+        f"the old fiducial now interpolates only {frac['interpolated']:.4f} of its "
+        f"envelope mass — A54's finding has moved")
+    # The residue is the scattered grid's own interior gaps plus a thin tail
+    # below the 650 K floor; both are small enough to be stated, not caveated.
+    assert frac["in_box_out_of_hull"] < 0.01
     assert frac["clamped_t"] < 0.01
-    assert frac["clamped_t"] > 0.0
+    assert frac["clamped_rho"] == 0.0
 
 
 def test_campaign_nodes_enclose_what_they_claim(cfg, composite, old_fiducial):

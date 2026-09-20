@@ -4,7 +4,7 @@ At the candidate case (config/candidate.yaml: M_c = 5 M⊕, f_env = 5%,
 T_eq = 700 K, T_int = 20 K) the claim is specifically that
 
   * the line list leaves a radiative layer inside the FP data box
-    (T ≥ 1000 K, ρ ≥ 108.796 kg/m³) — without this the demonstration is vacuous;
+    (T ≥ 650 K, ρ ≥ 10 kg/m³ since A54) — without this the demonstration is vacuous;
   * the composite closes it, leaving no in-box radiative layer;
   * and it does so with `clamp_fraction_all` < 1%, i.e. essentially every FP
     evaluation interpolated rather than clamped (contrast A41, where the old
@@ -26,7 +26,9 @@ from figures._common import comparison_band
 from structure import FP_GRID_FLOOR_SI, build_structure
 from structure.diagnostics import radiative_layers
 
-FP_T_FLOOR_K = 1000.0
+# The FP box floors are config values since A54; these mirror the schema
+# defaults and are asserted against the built table by test_fp_grid_floor.
+FP_T_FLOOR_K = 650.0
 T_INT_K = 20.0
 CLAMP_LIMIT = 0.01
 N_SAMPLE = 1500  # the in-box layer is a few samples thick (A42)
@@ -46,11 +48,13 @@ def eos(cfg):
 def models(candidate_cfg, eos):
     band = comparison_band(candidate_cfg, ["composite", "hitemp"])
     t_eq = float(candidate_cfg.irradiation.t_eq_k[0])
-    return {
+    out = {
         name: build_structure(candidate_cfg, t_eq, T_INT_K, name, eos=eos,
                               n_sample=N_SAMPLE, band=band)
         for name in ("hitemp", "composite")
     }
+    out["cfg"] = candidate_cfg  # the box floors are config now (A54)
+    return out
 
 
 def test_candidate_config_is_the_scanned_case(candidate_cfg):
@@ -61,7 +65,7 @@ def test_candidate_config_is_the_scanned_case(candidate_cfg):
     # The blend prescription and band are the fiducial's, so the comparison moves
     # only in (T_eq, f_env).
     assert candidate_cfg.opacity.band_cm == (100.0, 4000.0)
-    assert candidate_cfg.opacity.blend_window_kg_m3 == (100.0, 300.0)
+    assert candidate_cfg.opacity.blend_window_kg_m3 == (10.0, 30.0)  # A54
     assert candidate_cfg.opacity.fp_scale == 1.0
 
 
@@ -77,17 +81,42 @@ def test_line_list_leaves_an_in_box_radiative_layer(models):
 
 
 def test_composite_closes_it_with_interpolated_opacity(models):
-    """A44: zero in-box radiative layers, and the FP κ used is not extrapolated."""
+    """A44, restated for the enlarged box (A55): the closure is now PARTIAL.
+
+    A44 could say "zero in-box radiative layers" because the box was
+    T ≥ 1000 K, ρ ≥ 108.796 — entirely inside the region where the composite
+    hands κ to FP. The extension campaign moved the box floor to (650 K, 10), so
+    "in box" now reaches down into the density range where the composite uses the
+    LINE LIST by design (the blend window is 10-30, seam ρ ≈ 17.3). The composite
+    therefore keeps a thin radiative sliver at the box's dilute edge, and the
+    claim it supports is a shrinkage, not an elimination.
+    """
     res = models["composite"]
     layers = radiative_layers(res, FP_T_FLOOR_K, FP_GRID_FLOOR_SI)
-    assert layers == [], (
-        f"the composite still has {len(layers)} in-box radiative layer(s) at the "
-        f"candidate: {layers}"
-    )
-    assert res.clamp_fraction_all < CLAMP_LIMIT, (
-        f"composite clamp_fraction_all = {res.clamp_fraction_all:.4f} exceeds "
-        f"{CLAMP_LIMIT:.0%}: the closure is no longer made of interpolated FP data"
-    )
+    ht_layers = radiative_layers(models["hitemp"], FP_T_FLOOR_K, FP_GRID_FLOOR_SI)
+    ht_mass = sum(x["mass_fraction"] for x in ht_layers)
+    mass = sum(x["mass_fraction"] for x in layers)
+    assert mass < 0.2 * ht_mass, (
+        f"the composite's in-box radiative mass ({mass:.2e}) is no longer a small "
+        f"fraction of the line list's ({ht_mass:.2e}) — the closure claim has moved")
+    # What survives sits at the dilute edge, where the composite is line-list by
+    # construction: nothing survives above the blend window's top.
+    assert all(x["rho_max_si"] <= 30.0 for x in layers), (
+        f"a composite in-box layer now reaches above the blend window: {layers}")
+    # Reliability is judged on the FP grid's actual rectangle, not the open
+    # corner: the corner has no upper bound, so the >3000 K convective interior
+    # would count as "in box" and clamp by arithmetic necessity (A55).
+    from figures._common import fp_floors
+    from opacity import get_source
+    from structure.diagnostics import in_box_clamp_fraction
+
+    t_floor, rho_floor = fp_floors(models["cfg"])
+    audit = in_box_clamp_fraction(
+        get_source("composite", models["cfg"]), res, t_floor, rho_floor)
+    assert audit["full_fraction"] < CLAMP_LIMIT, (
+        f"composite clamps {audit['full_fraction']:.4f} of its {audit['n_full_box']} "
+        f"samples inside the FP grid's rectangle: the closure is no longer made of "
+        f"interpolated FP data")
     assert res.clamp_reliable
 
 

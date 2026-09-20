@@ -37,7 +37,10 @@ opacity:
   band_cm: [100.0, 4000.0]
   rel_floor: 1.0e-6
   clamp_fraction_threshold: 0.20
-  blend_window_kg_m3: [100.0, 300.0]
+  blend_window_kg_m3: [10.0, 30.0]  # A54: seam continuity; FP has
+                                    # data down to rho = 10 now
+  fp_grid_t_floor_k: 650.0          # the FP grid's own corner (A54)
+  fp_grid_rho_floor_kg_m3: 10.0
   blend_mode: "linear"
   fp_scale: 1.0
 

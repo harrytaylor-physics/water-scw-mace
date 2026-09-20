@@ -63,7 +63,16 @@ def test_history_comparison_diagnostics(cfg, eos):
     # Young ages (shallow RCB) -> the two opacities agree; FP-relevance is late.
     assert abs(h.diff_at_age(0.1)) < 5e-3  # <0.5% at 100 Myr (escape window clean)
     ep = h.fp_relevant_epoch_gyr()
-    assert ep is not None and ep[0] > 0.5  # FP-relevant epoch starts well after 0.5 Gyr
+    assert ep is not None
+    # A54: the FP grid's ρ floor moved 108.796 -> 10, so "the RCB has reached FP's
+    # data" is now true almost from the start (every RCB in the model sits above
+    # ρ = 10) and the epoch has stopped discriminating. The physics claim it used
+    # to encode — that the DEEP, dense-RCB regime is late — is re-tested against
+    # the legacy threshold explicitly.
+    assert ep[0] < 0.5
+    deep = h.first_age_rcb_above(108.796)["composite"]
+    assert deep is None or deep > 0.5, (
+        f"the deep (ρ ≥ 109) RCB regime now starts at {deep:.3g} Gyr, not late")
 
 
 def test_more_opaque_stays_puffy_longer(cfg, eos):

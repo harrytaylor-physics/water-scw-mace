@@ -160,8 +160,8 @@ def radiative_layers(result, t_min_k: float = 0.0, rho_min_si: float = 0.0) -> l
     """Contiguous radiative layers of a profile, with their extents and mass share.
 
     ``t_min_k``/``rho_min_si`` restrict the layers to a (T, ρ) box — with the FP
-    grid's corner (1000 K, 108.796 kg/m³) this is the "in-box" radiative structure
-    the first-principles data can actually speak to (A42).
+    grid's corner (650 K, 10 kg/m³ since the extension campaign, A54) this is the
+    "in-box" radiative structure the first-principles data can speak to (A42).
     """
     prof = result.profile
     rho = np.asarray(prof["rho_si"], float)
@@ -184,8 +184,8 @@ def radiative_layers(result, t_min_k: float = 0.0, rho_min_si: float = 0.0) -> l
     return layers
 
 
-def in_box_radiative_mass_fraction(result, t_min_k: float = 1000.0,
-                                   rho_min_si: float = 108.796) -> float:
+def in_box_radiative_mass_fraction(result, t_min_k: float = 650.0,
+                                   rho_min_si: float = 10.0) -> float:
     """Envelope mass fraction that is radiative *and* inside the FP grid's corner."""
     prof = result.profile
     w = _sample_mass_weights(prof["mass_kg"])
@@ -195,6 +195,75 @@ def in_box_radiative_mass_fraction(result, t_min_k: float = 1000.0,
         & (np.asarray(prof["rho_si"], float) >= rho_min_si)
     )
     return float(w[mask].sum() / w.sum())
+
+
+def in_box_clamp_fraction(source, result, t_min_k: float = 650.0,
+                          rho_min_si: float = 10.0, t_max_k: float | None = None,
+                          rho_max_si: float | None = None) -> dict:
+    """Clamped fraction of the profile samples inside the FP box (A55).
+
+    ``clamp_fraction_all`` counts every sample, most of which are in the deep
+    convective interior where the FP grid has no data and opacity does not shape
+    the structure anyway. The question Task 17 asks is narrower: where the
+    trajectory is inside the box the campaign covers, is the composite running on
+    FP data or on a clamp?
+
+    Two boxes are reported, because they answer different questions:
+
+    ``corner``
+        the literal lower-corner test, T ≥ ``t_min_k`` and ρ ≥ ``rho_min_si``.
+        This is what Task 17 specifies, but it has no upper bound, so the deep
+        convective interior — which runs to >10 000 K, far above the FP grid's
+        3000 K ceiling — counts as "in box" and necessarily clamps.
+    ``full``
+        the grid's actual (T, ρ) rectangle, bounded above by ``t_max_k`` /
+        ``rho_max_si`` (default: the source's own maxima). This is the box where
+        a clamp is a real gap in the data rather than an arithmetic certainty.
+
+    The corner clamps are split by reason — ``too_hot`` (above the T ceiling),
+    ``too_dense`` (above the ρ ceiling) and ``in_box_out_of_hull`` (inside the
+    rectangle but outside the scattered grid's convex hull, A6) — so a violation
+    can be attributed instead of merely counted.
+    """
+    prof = result.profile
+    t = np.asarray(prof["temperature_k"], float)
+    rho = np.asarray(prof["rho_si"], float)
+
+    dense = getattr(source, "dense", source)  # composite -> its FP sub-source
+    table = getattr(dense, "table", None)
+    if t_max_k is None:
+        t_max_k = float(table.temperature_k.max()) if table is not None else np.inf
+    if rho_max_si is None:
+        rho_max_si = float(table.rho_si.max()) if table is not None else np.inf
+
+    corner = (t >= t_min_k) & (rho >= rho_min_si)
+    full = corner & (t <= t_max_k) & (rho <= rho_max_si)
+
+    def fraction(sel):
+        n = int(sel.sum())
+        if not n:
+            return n, 0, 0.0, np.zeros(0, dtype=bool)
+        clamped = np.asarray(source.clamped_mask(t[sel], rho[sel])).ravel()
+        return n, int(clamped.sum()), float(clamped.sum() / n), clamped
+
+    n_corner, c_corner, f_corner, mask_corner = fraction(corner)
+    n_full, c_full, f_full, _ = fraction(full)
+
+    out = {
+        "n_in_box": n_corner, "n_clamped": c_corner, "fraction": f_corner,
+        "n_full_box": n_full, "n_full_clamped": c_full, "full_fraction": f_full,
+        "t_box_k": (float(t_min_k), float(t_max_k)),
+        "rho_box_si": (float(rho_min_si), float(rho_max_si)),
+        "too_hot": 0, "too_dense": 0, "in_box_out_of_hull": 0,
+    }
+    if n_corner:
+        tc, rc = t[corner], rho[corner]
+        hot = (tc > t_max_k) & mask_corner
+        heavy = (rc > rho_max_si) & mask_corner & ~hot
+        out["too_hot"] = int(hot.sum())
+        out["too_dense"] = int(heavy.sum())
+        out["in_box_out_of_hull"] = int(mask_corner.sum() - hot.sum() - heavy.sum())
+    return out
 
 
 CATEGORIES = ("interpolated", "in_box_out_of_hull", "clamped_t", "clamped_rho",
@@ -279,7 +348,7 @@ def clamped_t_split(result, categories, table) -> dict:
 
 
 def campaign_nodes(cases, table, t_step_k: float = 100.0, log_rho_step: float = 0.25,
-                   t_floor_k: float = 1000.0, rho_floor_si: float = 108.796) -> dict:
+                   t_floor_k: float = 650.0, rho_floor_si: float = 10.0) -> dict:
     """(T, ρ) lattice nodes that would close the FP grid's gaps (A48).
 
     ``cases`` are ``(StructureResult, categories)`` pairs. A trajectory sample
