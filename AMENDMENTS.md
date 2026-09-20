@@ -93,6 +93,55 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   (bracketing corners may now sit one lattice step above the 650 K floor,
   because the 600-700 K cell straddles it). Suite: 124 → 131 gates.
 
+- **A52 — The dilute FP windows are floor-dominated — but so is nearly the whole
+  grid, and the construction contradicts itself.** Task 15 asked whether the nine
+  new ρ ≤ 60 cells clear the dipole model's noise floor
+  (`figures/plot_s7_dilute_floor.py`, gates in
+  `validation/test_s7_dilute_floor.py`). The ARC original,
+  `lda_campaign/stepG_dipoles/compare_point_full.py`, is **not on this machine**
+  and remains the authority; what is implemented here is:
+  σ(ν) ∝ ν(1−e^{−hcν/kT})·D(ν) ⇒ D(ν) = σ/[ν(1−e^{−x})]; the residual is an
+  *amplitude* ratio so it enters the power squared, r² = (5.75/12.4)² = 0.215;
+  that power is spread flat over the 0.5 fs timestep's Nyquist wavenumber
+  (33 356 cm⁻¹) giving D_floor = r²∫D dν/ν_Nyq; mapped back through the same
+  prefactor, κ_floor(ν) = D_floor·ν(1−e^{−x}) — which rises across the band, not
+  flat in κ. The bandwidth is the dominant assumption and all three choices
+  (Nyquist / the computed [1.1, 6000] range / the science band alone) are
+  reported.
+
+  **The answer, plainly: yes.** At the nine dilute cells only **0.8-4.8%** of the
+  1900-3100 cm⁻¹ transparency window clears 2× the floor (band cores 60-75%).
+  And it matters because that window carries the Rosseland mean: the harmonic
+  weighting puts **86-93%** of κ_R's integrand inside it at these cells (the
+  Planck mean, arithmetic, takes <8% from it). So FP κ_R at dilute densities is
+  set by a spectral region the dipole model does not resolve.
+
+  **But the control reverses the framing.** Running all 48 points: the window is
+  floor-dominated at *every one of the 34 cells with ρ ≤ 500* (window fraction
+  0.000-0.048), including the dense points the existing headline rests on, and
+  the nine dilute cells are if anything marginally *better* than the ρ = 100-500
+  ones. Only the hot dense corner (ρ ≳ 1300, T ≥ 2500) has windows clearly above
+  the floor, and it is also the only place the Rosseland window share drops
+  (0.35-0.75 for ρ > 1000). The defensible statement is therefore **not** "the
+  dilute points are unreliable" but "the transparency windows are the weak part
+  of the FP spectra everywhere" — which does not single out any point for
+  exclusion.
+
+  **Open question (blocks no computation; changes the manuscript's wording).** In
+  42 of 48 cells the delivered, *smoothed* κ sits BELOW this floor in the window
+  (median κ/floor down to 0.06). For an additive white residual that is
+  impossible — smoothing removes fluctuation, not bias, so E[κ] ≥ floor always.
+  So the data rules out this construction at the quoted power fraction. Two
+  limiting models bracket the truth: **(a)** white additive noise in the dipole
+  time series — the construction above, which the data contradicts; **(b)** a
+  dipole-*surface* fit error correlated with the configuration, whose spectral
+  signature tracks the signal, i.e. a ~21.5% **multiplicative** uncertainty at
+  every ν, which every cell clears trivially. Under (a) FP κ_R at ρ ≤ 500 is set
+  by unresolved windows; under (b) it is not. `compare_point_full.py` knows
+  which; this repository cannot. A third possibility is that the delivered
+  `sigma` was floor-subtracted before smoothing. **Asked of the owner in the run
+  summary; no number in Tasks 16-18 depends on the answer.**
+
 ## 2026-09-14 (relocating the structural demonstration)
 
 - **A41 — At the current fiducial the deep closure is decided by CLAMPED FP
