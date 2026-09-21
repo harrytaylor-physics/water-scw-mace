@@ -49,7 +49,9 @@ only — see `AMENDMENTS.md`). Install for development:
 Not committed. Configs default to `~/subneptune_data`:
 
     ~/subneptune_data/AQUA/Tables/aqua_eos_rhot_v1_0.dat
-    ~/subneptune_data/fp_opacity/T*_opacity.npz  (27 FP spectra)
+    ~/subneptune_data/fp_opacity/T*_opacity.npz  (48 FP spectra: the original
+                                                 27 + the 21-point extension;
+                                                 units fixed at source, A50)
     ~/subneptune_data/fp_opacity/grid.json
     ~/subneptune_data/fp_opacity/crossover_hitemp.json
 

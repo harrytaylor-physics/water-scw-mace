@@ -2,7 +2,7 @@
 
 ## Grid is scattered, not rectangular
 
-SPEC §3 prescribes "bilinear in (T, log ρ) on log κ." The 27 FP grid points do
+SPEC §3 prescribes "bilinear in (T, log ρ) on log κ." The 48 FP grid points do
 **not** form a tensor-product grid: T = 1000 K has a single ρ sample, and the ρ
 sampling differs at every T (see `~/subneptune_data/fp_opacity/grid.json`).
 Literal bilinear interpolation is therefore undefined here.

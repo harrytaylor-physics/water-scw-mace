@@ -8,7 +8,9 @@ only at T_int ≥ 50). The corrected picture (A28/A29) is below.
 Higher κ or higher T_int → convection starts shallower (grad_rad ∝ κ, L). So:
 
 - **Warm/young planets (T_int ≳ 50 K):** the radiative zone is dilute
-  (ρ ≲ 7 kg/m³), far below FP's grid floor (109 kg/m³). FP is irrelevant; the
+  (ρ ≲ 7 kg/m³), below FP's grid floor — which the extension campaign moved from
+  109 to 10 kg/m³ (A50), so this is now marginal rather than decisive. FP is
+  irrelevant here; the
   composite ≡ pure line list.
 - **Cold/old planets (T_int ≲ 30 K):** the RCB migrates deep — max radiative-zone
   ρ ≈ 60 (T_int=30), 120–450 (T_int=20), 140–680 (T_int=15) — into FP territory.
