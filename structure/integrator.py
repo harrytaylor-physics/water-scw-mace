@@ -58,9 +58,48 @@ def luminosity_int(radius_m: float, t_int_k: float) -> float:
 
 
 # --------------------------------------------------------------------------
+# Runaway guard (A57)
+# --------------------------------------------------------------------------
+class _EvalBudget:
+    """Cap the RHS evaluations one ``solve_ivp`` call may spend.
+
+    LSODA can grind indefinitely on a stiff or ill-posed segment: it keeps
+    halving its step instead of failing, so the call never returns and the whole
+    run hangs with no diagnostic. That cost Task 18 two multi-hour runs before it
+    was caught (A57). A hang is strictly worse than an error here — every caller
+    already handles a failed build (the domain scan skips and logs it, the
+    shooting solver re-brackets) — so the budget converts one into the other.
+
+    The cap is generous: a healthy integration uses well under 1000 evaluations,
+    so tripping it means the solver is not converging. Note that
+    ``structure.shooting`` swallows the error on its warm-start attempt and
+    falls back to the bracketed solve, so one bad node costs seconds, not a run.
+    """
+
+    __slots__ = ("limit", "used", "where")
+
+    def __init__(self, limit: int, where: str) -> None:
+        self.limit = int(limit)
+        self.used = 0
+        self.where = where
+
+    def spend(self) -> None:
+        self.used += 1
+        if self.used > self.limit:
+            raise RuntimeError(
+                f"{self.where}: exceeded {self.limit} right-hand-side evaluations "
+                f"without converging — the integration is not making progress. "
+                f"Raise numerics.max_rhs_evals only if a legitimate model needs "
+                f"more; a hang here used to be silent (A57)."
+            )
+
+
+# --------------------------------------------------------------------------
 # Outer (Guillot) region
 # --------------------------------------------------------------------------
-def _outer_rhs(ln_p, y, eos, opacity, t_int, t_irr, gamma):
+def _outer_rhs(ln_p, y, eos, opacity, t_int, t_irr, gamma, budget=None):
+    if budget is not None:
+        budget.spend()
     r, m, tau = y
     p = np.exp(ln_p)
     temperature = float(guillot_temperature(tau, t_int, t_irr, gamma))
@@ -75,7 +114,8 @@ def _outer_rhs(ln_p, y, eos, opacity, t_int, t_irr, gamma):
     return [dr, dm, dtau]
 
 
-def _outer_superadiabatic(ln_p, y, eos, opacity, t_int, t_irr, gamma):
+def _outer_superadiabatic(ln_p, y, eos, opacity, t_int, t_irr, gamma,
+                          budget=None):
     """grad_rad − grad_ad in the outer region (Schwarzschild RCB event, A13).
 
     L_int is 4π R_p² σ T_int⁴ with R_p the top radius (radius_top_m enters via
@@ -106,6 +146,7 @@ def integrate_outer(
     atol: float,
     solver: str,
     n_sample: int | None = None,
+    max_rhs_evals: int = 200_000,
 ) -> tuple[MatchState, dict, bool]:
     """Integrate the Guillot outer region from P_top down toward P_match.
 
@@ -118,6 +159,7 @@ def integrate_outer(
     """
     t_irr = t_irr_from_t_eq(t_eq_k)
     y0 = [radius_top_m, mass_p_kg, 0.0]
+    budget = _EvalBudget(max_rhs_evals, "outer (Guillot) integration")
     args = (eos, opacity, t_int_k, t_irr, gamma)
 
     event = lambda lp, y, *a: _outer_superadiabatic(lp, y, *a)  # noqa: E731
@@ -135,7 +177,7 @@ def integrate_outer(
     sol = solve_ivp(
         _outer_rhs, (np.log(p_top_pa), np.log(p_match_pa)), y0,
         method=solver, rtol=rtol, atol=atol, events=event,
-        dense_output=bool(n_sample), args=args,
+        dense_output=bool(n_sample), args=(*args, budget),
     )
     if not sol.success:
         raise RuntimeError(f"outer integration failed: {sol.message}")
@@ -166,7 +208,9 @@ def integrate_outer(
 # --------------------------------------------------------------------------
 # Interior region
 # --------------------------------------------------------------------------
-def _interior_rhs(m, y, eos, opacity, luminosity):
+def _interior_rhs(m, y, eos, opacity, luminosity, budget=None):
+    if budget is not None:
+        budget.spend()
     r, p, ln_t = y
     temperature = np.exp(ln_t)
     st = eos.state(p, temperature)
@@ -191,6 +235,7 @@ def integrate_interior(
     atol: float,
     solver: str,
     n_sample: int | None = None,
+    max_rhs_evals: int = 200_000,
 ) -> tuple[float, dict]:
     """Integrate inward in mass from the matching state to the core mass.
 
@@ -221,7 +266,8 @@ def integrate_interior(
         atol=atol,
         t_eval=t_eval,
         events=collapse,
-        args=(eos, opacity, luminosity),
+        args=(eos, opacity, luminosity,
+              _EvalBudget(max_rhs_evals, "interior integration")),
     )
     if not sol.success:
         raise RuntimeError(f"interior integration failed: {sol.message}")

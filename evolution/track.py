@@ -51,6 +51,12 @@ class CoolingTrack:
 
     energy_residual: float  # G6: |∫L dt − ΔE| / |ΔE|
 
+    # Deepest RCB density at each node, read off the structures this track
+    # already built (A56). Before, evolution.history rebuilt every structure a
+    # second time just to recover this, doubling the cost of every history
+    # comparison. None only for tracks constructed by hand in tests.
+    rcb_rho_si: np.ndarray | None = None
+
     # -- interpolators (age is monotone increasing as T_int decreases) --
     def _age_sorted(self):
         idx = np.argsort(self.age_gyr)
@@ -108,6 +114,8 @@ def cooling_track(
     lum = np.array([r.luminosity_w for r in rows])
     energy = np.array([r.envelope_energy_j for r in rows])
     rcb = np.array([max(r.rcb_pressures_pa) / 1e5 if r.rcb_pressures_pa else np.nan for r in rows])
+    rcb_rho = np.array([max(r.rcb_densities_si) if r.rcb_densities_si else 0.0
+                        for r in rows])
     band_used = rows[0].band_cm
 
     # Cooling: dt = dE/L. Age from the hot end via a 4th-order Simpson cumulative
@@ -131,7 +139,7 @@ def cooling_track(
         source=source_name, t_eq_k=t_eq_k, f_env=cfg.envelope.f_env, band_cm=band_used,
         t_int_k=t_int_grid_k, entropy_j_kg_k=entropy, radius_p_rearth=radius,
         luminosity_w=lum, energy_j=energy, rcb_bar=rcb, age_gyr=age_gyr,
-        energy_residual=energy_residual,
+        energy_residual=energy_residual, rcb_rho_si=rcb_rho,
     )
 
 

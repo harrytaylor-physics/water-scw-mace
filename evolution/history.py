@@ -149,7 +149,12 @@ class HistoryComparison:
 
 
 def _deepest_rcb_rho(track: CoolingTrack, eos: AquaEOS, cfg: Config) -> np.ndarray:
-    """Deepest RCB density at each track node (rebuild to read RCB densities)."""
+    """Deepest RCB density at each track node, by rebuilding the structures.
+
+    Fallback only: :func:`evolution.track.cooling_track` now records this as it
+    goes (``CoolingTrack.rcb_rho_si``). Rebuilding here doubled the cost of every
+    history comparison, which made Task 18's four-case run take hours (A56).
+    """
     from dataclasses import replace
 
     from structure import build_structure
@@ -184,8 +189,10 @@ def compare_histories(
     band = None  # each track uses its source's default (config) band
     ta = cooling_track(cfg, source_a, t_eq_k, eos=eos, t_int_grid_k=t_int_grid_k, n_sample=400)
     tb = cooling_track(cfg, source_b, t_eq_k, eos=eos, t_int_grid_k=t_int_grid_k, n_sample=400)
-    rho_a = _deepest_rcb_rho(ta, eos, cfg)
-    rho_b = _deepest_rcb_rho(tb, eos, cfg)
+    # The tracks already carry the deepest RCB density per node (A56); only fall
+    # back to rebuilding for a hand-constructed track that lacks it.
+    rho_a = ta.rcb_rho_si if ta.rcb_rho_si is not None else _deepest_rcb_rho(ta, eos, cfg)
+    rho_b = tb.rcb_rho_si if tb.rcb_rho_si is not None else _deepest_rcb_rho(tb, eos, cfg)
 
     # Common age grid spanning both tracks (log-spaced; cooling covers decades).
     lo = max(ta.age_gyr[ta.age_gyr > 0].min(), tb.age_gyr[tb.age_gyr > 0].min())

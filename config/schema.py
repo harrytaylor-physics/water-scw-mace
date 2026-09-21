@@ -168,6 +168,12 @@ class Numerics:
     atol: float = 1e-10
     shoot_rtol: float = 1e-6  # convergence on r(M_c) = R_c(M_c)
     max_shoot_iter: int = 100
+    # Cap on right-hand-side evaluations per solve_ivp call (A57). LSODA can
+    # grind indefinitely on a stiff segment rather than failing, which hangs
+    # the whole run with no diagnostic; this turns that into a clear error.
+    # A healthy integration spends well under 1000, so this is 200x headroom
+    # while still bounding a runaway structure to ~25 s instead of forever.
+    max_rhs_evals: int = 200_000
     # R_p search bracket, in Earth radii, for the shooting solver.
     rp_bracket_rearth: tuple[float, float] = (1.0, 15.0)
 
@@ -294,6 +300,8 @@ def _validate(cfg: Config) -> None:
         raise ValueError("anchor.radius_pressure_bar must be positive or null")
     if not 0.0 <= cfg.anchor.cmf < 1.0:
         raise ValueError(f"anchor.cmf must be in [0,1), got {cfg.anchor.cmf}")
+    if cfg.numerics.max_rhs_evals < 1000:
+        raise ValueError("numerics.max_rhs_evals must be at least 1000")
     if cfg.numerics.solver not in {"LSODA", "Radau", "BDF", "RK45"}:
         raise ValueError(f"unsupported numerics.solver {cfg.numerics.solver!r}")
     if not all(t > 0 for t in cfg.irradiation.t_eq_k):

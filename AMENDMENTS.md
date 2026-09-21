@@ -312,6 +312,72 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   depth rather than opacity. The boundaries move because FP has no transparency
   windows there. Whether that is physics or floor is A52's open question.
 
+- **A56 — Cooling on the new tables: the old fiducial's divergence is enormous
+  and radiogenically unreachable; the water worlds' is small and real.**
+  `figures/plot_s9_case_evolution.py`, composite vs HITEMP, T_int grid 12-450 K
+  at 44 and 88 nodes, `outputs/S9_case_evolution.csv`.
+
+  | case | ΔR@1 | ΔR@5 | ΔR@7 | ΔR@10 | Δs@10 | 44→88 |
+  |---|---|---|---|---|---|---|
+  | old fiducial (M_c 5, f_env 0.05) | 0.403% | 1.305% | 1.537% | **1.653%** | **35.08%** | converged |
+  | M_c 15, wmf 0.50 | −0.000% | −0.0004% | 0.022% | 0.078% | 0.96% | **sign flips — not a result** |
+  | M_c 10, wmf 0.50 | 0.000% | 0.010% | 0.045% | 0.121% | 1.35% | converged |
+  | M_c 5, wmf 0.50 | 0.000% | 0.030% | 0.103% | 0.237% | 2.15% | converged |
+
+  **Cooling-time ratio** (age to reach the line list's 5 Gyr interior entropy):
+  old fiducial **6.92×** — the composite needs 5 Gyr to reach what HITEMP
+  reaches at 0.723 Gyr. Water worlds 1.002 / 1.009 / 1.052×. Where the composite
+  never reaches the reference entropy inside the T_int grid the ratio is re-posed
+  on the composite's own entropy rather than reported as NaN.
+
+  **Convergence.** A44 found a 24→44 node change flipping the sign of a
+  sub-percent difference. Three of four cases now converge under 44→88, because
+  the differences are far larger than the age integral's noise. The exception is
+  M_c = 15, wmf = 0.50, whose ΔR@5 moves −0.0004% → +0.0024%: both are zero to
+  within the quadrature, and it is labelled "not a result" rather than quoted.
+
+  **Escape window (A40's null) survives**: max |ΔR/R| 3.1e-5 to 9.0e-5 %, max
+  |Δs/s| 1.3e-4 to 1.9e-4 % over the first 100 Myr, all four cases — matching
+  A40's 5.7e-5 % / 1.3e-4 % on the old tables. The mass-loss null is untouched by
+  the campaign.
+
+  **The decisive cut — radiogenic reachability (A30).** The old fiducial reaches
+  its radiogenic T_int floor at **0.386 Gyr**, where ΔR is **0.079%** and Δs
+  **0.705%**. Everything that makes it look spectacular — 1.65%, 35%, 6.92× —
+  accumulates *below* the floor, at internal temperatures core heating never lets
+  it reach. **The water worlds never reach their floor within the track at all**,
+  so their whole 10 Gyr history is physically available. This inverts the
+  structural ranking: wmf = 0.50 cells show the largest |ΔR_p| at fixed T_int
+  (0.67-0.89%, A55) but the smallest *evolutionary* divergence, because a thick
+  envelope buries the opacity-sensitive layer in a much larger energy budget —
+  and they are the only cases whose divergence is reachable.
+
+- **A57 — A structure build could hang forever; it now fails cleanly.** Task 18's
+  first two attempts ran 2.6 and 2.2 CPU-hours without finishing, on a job that
+  takes 15 minutes. Two causes, both fixed:
+
+  1. **Duplicated work.** `evolution.history.compare_histories` called
+     `_deepest_rcb_rho`, which rebuilt every structure the cooling track had
+     just built, purely to read back RCB densities. `CoolingTrack.rcb_rho_si`
+     now records them as the track is built; `_deepest_rcb_rho` survives only as
+     a fallback for hand-constructed tracks. Halves every history comparison.
+  2. **An unbounded ODE solve.** `scipy.solve_ivp` with LSODA can keep halving
+     its step on a stiff segment instead of failing, so the call never returns
+     and the run hangs with **no diagnostic at all** — no timeout, no iteration
+     cap, nothing. `structure.integrator._EvalBudget` now caps right-hand-side
+     evaluations per solve (`numerics.max_rhs_evals`, default 200 000 — a healthy
+     integration spends under 1000, so 200× headroom) and raises a clear
+     `RuntimeError` instead. Every caller already handles a failed build: the
+     domain scan skips and logs it, and the shooting solver swallows it on its
+     warm-start attempt and falls back to the bracketed solve, so one bad node
+     costs seconds rather than a run. With the guard in place the four-case job
+     completes in 894 s.
+
+  *Note for anyone who meets it:* `capi_return is NULL / Call-back
+  cb_f_in_lsoda__user__routines failed` on stderr is f2py reacting to *any*
+  Python exception raised inside the LSODA callback — including a deliberate
+  one. It is not itself evidence of a numerical fault.
+
 ## 2026-09-14 (relocating the structural demonstration)
 
 - **A41 — At the current fiducial the deep closure is decided by CLAMPED FP

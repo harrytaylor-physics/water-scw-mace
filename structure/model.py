@@ -232,11 +232,13 @@ def build_structure(
     match, outer, matched_at_rcb = integrate_outer(
         eos, opacity, shot.radius_p_m, mass_p, t_int_k, t_eq_k, gamma,
         p_top, p_match, num.rtol, num.atol, num.solver, n_sample=n_sample,
+        max_rhs_evals=num.max_rhs_evals,
     )
     lum = luminosity_int(shot.radius_p_m, t_int_k)
     _, interior = integrate_interior(
         eos, opacity, match, mass_core, radius_core, lum,
         num.rtol, num.atol, num.solver, n_sample=n_sample,
+        max_rhs_evals=num.max_rhs_evals,
     )
     clamp_fraction = opacity.clamp_fraction
     flat_rho_fraction = opacity.flat_rho_fraction
