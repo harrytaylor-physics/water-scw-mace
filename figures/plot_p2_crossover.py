@@ -267,10 +267,11 @@ def _print_cold_dense_shares(rows):
           f"above its\n    reference density (0.742 kg/m³) and ~350 K above its "
           f"reference temperature (296 K),\n    far outside the range it was fitted "
           f"over. Treat it as what a planetary model would\n    do, not as a "
-          f"measurement — and as an UPPER bound on the share, for the same reason "
-          f"the FP\n    ratios are lower bounds: the delivered spectra's 50 cm⁻¹ "
-          f"truncation double-counts the\n    25-50 cm⁻¹ region the continuum "
-          f"already contains (see the well-posedness table below).")
+          f"measurement. The share also carries an\n    undetermined line-shape "
+          f"systematic: the delivered spectra truncate at 50 cm⁻¹ and renormalise, "
+          f"so\n    they disagree with MT_CKD's 25 cm⁻¹ plinth-subtracted convention "
+          f"about which absorption is\n    already in the line list (see the "
+          f"well-posedness table below).")
 
 
 def _print_decomposition_caveat(rows):
@@ -295,12 +296,14 @@ def _print_decomposition_caveat(rows):
               f"{min(hw):>10.3g} - {max(hw):<9.4g} | {n_ok:>10d} / {len(these):<4d}")
     print(f"    {len(rows) - len(ok)} of {len(rows)} points have lines BROADER than the "
           f"truncation the continuum is defined\n    against, by one to two orders of "
-          f"magnitude. The delivered spectra truncate at 50 cm⁻¹ with no\n    plinth "
-          f"subtraction, so line + MT_CKD double-counts 25-50 cm⁻¹ — biasing the "
-          f"combined\n    opacity HIGH and the FP ratios LOW, i.e. the sub-unity "
-          f"points above are if anything\n    overstated. Read the continuum-inclusive "
-          f"column as 'what a planetary model would\n    compute following standard "
-          f"practice here', not as the physically correct opacity.")
+          f"magnitude. The delivered spectra truncate at 50 cm⁻¹ and\n    RENORMALISE "
+          f"the profile (line strength is conserved — measured to 1e-4 across a 1e4\n"
+          f"    pressure range), with no plinth subtraction, so they disagree with "
+          f"MT_CKD's convention\n    about the 25-50 cm⁻¹ region AND fold the far wing "
+          f"back into it. The mismatch is real;\n    its sign is not determined. Read "
+          f"the continuum-inclusive column as 'what a planetary\n    model would "
+          f"compute following standard practice here', not as the physically correct\n"
+          f"    opacity.")
 
 
 def _print_agreement(bare_rows):

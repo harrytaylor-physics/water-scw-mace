@@ -22,9 +22,11 @@ Two things are plotted, because they answer two different questions:
 
 Mass opacity is convention-independent by construction (κ = σ·N_A/M), so every
 difference here is a Voigt-width effect and nothing else. Lorentzian profiles are
-truncated at 50 cm⁻¹ from line centre, so the highest-pressure points under-count
-absorption and their ratios are lower bounds; the truncation is printed in the
-caption.
+truncated at 50 cm⁻¹ from line centre **and renormalised to unit area**, so line
+strength is conserved and the truncation redistributes far-wing absorption into
+the window rather than discarding it. The sign of that error on κ_R is not
+determined a priori, so these ratios are not bounds in either direction; the
+truncation is printed in the caption.
 
 Writes ``outputs/ED1_broadening.png``.
 """
@@ -142,7 +144,9 @@ def main(argv=None):
         f"wstep {data['wstep_cm']:g} cm⁻¹, lines loaded over "
         f"[{data['wavenum_range_cm'][0]:g}, {data['wavenum_range_cm'][1]:g}] cm⁻¹, "
         f"Lorentzian truncated at {data['truncation_cm']:g} cm⁻¹ from line centre "
-        f"(so the high-P points under-count: these are lower bounds)",
+        f"and renormalised (strength conserved; the far wings are redistributed into "
+        f"the window, so the high-P points carry a line-shape systematic of "
+        f"undetermined sign)",
         fontsize=9.5)
     path = save(fig, cfg, "ED1_broadening")
 

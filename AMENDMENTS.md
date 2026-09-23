@@ -147,11 +147,16 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   **45 of the 48 points have lines broader than the truncation the continuum is
   defined against**, by one to two orders of magnitude. Two consequences:
 
-  * The delivered HITEMP spectra are RADIS at `truncation = 50` cm⁻¹ with **no
-    plinth subtraction**, so line + MT_CKD **double-counts** the 25-50 cm⁻¹
-    region. That biases the combined opacity *high* and therefore
-    FP/(line+continuum) *low* — i.e. it works in the direction of finding (3), so
-    the eleven sub-unity points are if anything overstated, not understated.
+  * The delivered HITEMP spectra are RADIS at `truncation = 50` cm⁻¹, **with the
+    profile renormalised to unit area** (A59) and **no plinth subtraction**. So
+    the two conventions disagree about the 25-50 cm⁻¹ region twice over: MT_CKD
+    assumes it has been cut and its plinth removed, while RADIS retains it and
+    additionally folds the whole >50 cm⁻¹ wing back into it. The mismatch is real
+    and it is not small, but **its sign is not determined** — renormalisation
+    conserves strength, so this is a redistribution, not an excess, and whether
+    it raises or lowers κ_R depends on where the area lands relative to the
+    windows. An earlier draft of this amendment asserted it biased the combined
+    opacity high (and so the FP ratios low); that claim is withdrawn.
   * More fundamentally, at these pressures the band is a single merged profile and
     "which part is line and which is continuum" has no operational meaning. The
     right reading of the continuum-inclusive column is **"what a planetary model
@@ -220,13 +225,32 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   **The Lorentzian half-width cap the brief asks to be stated: RADIS's
   `truncation`, 50 cm⁻¹** (its default, and what the delivered spectra used). The
   nominal self-broadened HWHM at these pressures runs far past it — water is
-  ~0.4 cm⁻¹/atm at 296 K, so at ρ = 2229 kg/m³ it is O(10³) cm⁻¹ — and beyond the
-  cap the profile is cut. The retained Lorentzian area goes as
-  ~(2/π)·arctan(truncation/HWHM), so the high-pressure spectra **under-count**
-  absorption rather than over-count it: **every ratio reported here is a lower
-  bound on the convention's effect.** Any point RADIS refuses outright has its
-  refusal text recorded in the output, since that text is itself the answer to
-  "what half-width does RADIS accept".
+  ~0.46 cm⁻¹/atm at 296 K, so at ρ = 2229 kg/m³ it is O(10³) cm⁻¹.
+
+  **CORRECTION (same day, before any of this was quoted anywhere): the cap does
+  not discard absorption, it redistributes it.** An earlier draft of this
+  amendment said the high-pressure spectra under-count and that the ratios are
+  lower bounds. That is wrong. RADIS renormalises each truncated profile to unit
+  area (`radis/lbl/broadening.py::_calc_lorentzian_lineshape`, `lineshape /=
+  area`), so line strength is conserved exactly. Measured on the delivered
+  spectra, which settles it independently of reading the code: at T = 1000 K,
+  ∫κ(ν)dν over the delivered range is **constant to 1 part in 10⁴** from
+  ρ = 0.1 to 1000 kg/m³ — a 10⁴× range in broadening pressure (0.46 → 4615 bar).
+
+  What the truncation actually does is pile the area that physically belongs
+  beyond ±50 cm⁻¹ back into the window. Where HWHM ≫ 50 cm⁻¹ a line becomes, in
+  effect, a ~100 cm⁻¹-wide rectangle carrying its full strength — not a
+  Lorentzian. **The sign of that error on κ_R is not determined a priori**: it
+  depends on where the redistributed area lands relative to the transparency
+  windows, and κ_R is a harmonic mean dominated by exactly those windows. So the
+  ratios here are **not bounds in either direction**. They carry an unquantified
+  line-shape systematic wherever HWHM > 50 cm⁻¹ — which, by A58's half-width
+  table, is **45 of the 48 FP grid points**, and includes every point in the
+  delivered HITEMP tables at ρ ≳ 10. Gated by
+  `test_line_strength_is_conserved_across_broadening_pressure`.
+
+  Any point RADIS refuses outright has its refusal text recorded in the output,
+  since that text is itself the answer to "what half-width does RADIS accept".
 
   **Run environment (local, not ARC).** RADIS 0.16.3 and a 7.6 GB HITEMP cache are
   both on the Mac, so the brief's ARC fallback was not needed;

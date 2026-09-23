@@ -313,6 +313,44 @@ def test_the_line_continuum_decomposition_is_not_well_posed_on_most_of_the_grid(
     assert min(r["lorentz_hwhm_cm"] for r in cold) > LBLRTM_LINE_BOUND_CM
 
 
+def test_line_strength_is_conserved_across_broadening_pressure(cfg):
+    """RADIS renormalises truncated profiles — the truncation redistributes, not discards.
+
+    This is the measurement behind A59's correction. RADIS cuts each line at
+    ``truncation`` (50 cm⁻¹ here) and then divides by the truncated profile's own
+    area, so the integrated line strength survives. If it discarded the wings
+    instead, the integral of kappa would fall with pressure roughly as
+    (2/pi)*arctan(truncation/HWHM) — a factor ~4 across this range, not 1e-4.
+
+    Consequence, and the reason this is gated rather than left as a code reading:
+    the high-pressure spectra are NOT lower bounds on absorption. They carry a
+    line-shape systematic whose sign is undetermined, wherever the half-width
+    exceeds the truncation.
+    """
+    import numpy as np
+    from opacity.loaders import load_spectrum
+    from opacity.registry import get_spec
+
+    try:
+        from numpy import trapezoid as trapz
+    except ImportError:  # numpy < 2
+        from numpy import trapz
+
+    spec = get_spec("hitemp")
+    spectra = cfg.data_root_path / spec.subdir
+    integrals, pressures = [], []
+    for rho in (0.1, 1.0, 10.0, 100.0, 1000.0):
+        path = spectra / f"T1000_rho{rho:g}.npz"
+        rec = load_spectrum(path, spec, BAND)
+        integrals.append(trapz(rec.kappa_cm2_g, rec.wn_cm))
+        with np.load(path) as d:
+            pressures.append(float(d["p_bar"]))
+
+    integrals = np.asarray(integrals)
+    assert max(pressures) / min(pressures) > 1e3  # the range must be wide to bite
+    assert np.ptp(integrals) / integrals.mean() < 1e-3
+
+
 def test_a_spectrum_refuses_to_load_without_a_reference_table(cfg):
     """No silent fallback to bare line absorption if the table is missing."""
     from opacity.loaders import find_spectra, load_spectrum

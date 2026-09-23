@@ -32,12 +32,22 @@ Voigt widths — which is exactly the systematic being quantified.
 
 **The Lorentzian half-width cap.** RADIS truncates every line profile at
 ``truncation`` cm⁻¹ from line centre (default 50, used here). At these pressures
-the Lorentzian HWHM runs far past that: self-broadened water is ~0.4 cm⁻¹/atm at
-296 K, so at ρ = 2229 kg/m³ the nominal HWHM is O(10³) cm⁻¹. Beyond the cap the
-profile is cut, so the retained Lorentzian area is ~(2/π)·arctan(truncation/HWHM)
-→ the high-pressure spectra **under-count** absorption rather than over-count it,
-and the reported ratios are lower bounds on the convention's effect. The cap is
-recorded per run in the output.
+the Lorentzian HWHM runs far past that: self-broadened water is ~0.46 cm⁻¹/atm at
+296 K, so at ρ = 2229 kg/m³ the nominal HWHM is O(10³) cm⁻¹.
+
+**The truncation does not discard absorption — it redistributes it.** RADIS
+renormalises each truncated profile to unit area
+(``_calc_lorentzian_lineshape``: ``lineshape /= area``), so line strength is
+conserved exactly. Verified on the delivered spectra: at T = 1000 K, ∫κ(ν)dν is
+constant to 1 part in 10⁴ from ρ = 0.1 to 1000 kg/m³, i.e. across a 10⁴× range in
+broadening pressure (0.46 → 4615 bar). What the truncation does instead is pile
+the area that physically belongs beyond ±50 cm⁻¹ back into the window: where
+HWHM ≫ 50 cm⁻¹ a line becomes, in effect, a ~100 cm⁻¹-wide rectangle carrying its
+full strength. **The sign of that error on κ_R is not determined a priori** — it
+depends on where the redistributed area lands relative to the transparency
+windows — so the ratios reported here are *not* bounds in either direction. They
+carry an unquantified line-shape systematic wherever HWHM > 50 cm⁻¹, which is 45
+of the 48 FP grid points (A58). The cap is recorded per run in the output.
 
 Writes ``outputs/broadening_sensitivity.json`` (+ per-point npz spectra). Run
 ``figures/plot_ed1_broadening.py`` afterwards for the Extended Data panel. If
@@ -303,8 +313,13 @@ def _write(cfg, out_dir: Path, band, conventions, results, args) -> Path:
             "(the structure model's own EOS). Mass opacity is convention-independent "
             "by construction (kappa = sigma*N_A/M), so the broadening pressure moves "
             "only the Voigt widths. Lorentzian profiles are truncated at "
-            f"{TRUNCATION_CM:g} cm^-1 from line centre, so the high-pressure spectra "
-            "UNDER-count absorption and the reported ratios are lower bounds."
+            f"{TRUNCATION_CM:g} cm^-1 from line centre AND RENORMALISED to unit area, "
+            "so line strength is conserved (verified: at T = 1000 K the integral of "
+            "kappa over the delivered range is constant to 1e-4 across a 1e4 range in "
+            "broadening pressure). The truncation redistributes far-wing absorption "
+            "into the window rather than discarding it, and the sign of its effect on "
+            "kappa_R is NOT determined a priori, so these ratios are not bounds in "
+            "either direction."
         ),
         "band_cm": list(band),
         "rel_floor": cfg.opacity.rel_floor,

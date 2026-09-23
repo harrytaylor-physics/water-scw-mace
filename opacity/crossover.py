@@ -366,10 +366,12 @@ def write_v3_json(
             f"is false where the self-broadened Lorentz half-width exceeds LBLRTM's "
             f"{LBLRTM_LINE_BOUND_CM:g} cm^-1 line-by-line bound, which is the "
             f"convention MT_CKD is defined as the residual to: there 'line list + "
-            f"continuum' is not a decomposition of anything, and the delivered "
-            f"spectra (RADIS, truncated at 50 cm^-1, no plinth subtraction) "
-            f"double-count the 25-50 cm^-1 region on top, biasing the combined "
-            f"opacity HIGH and so the FP/(line+continuum) ratios LOW."
+            f"continuum' is not a decomposition of anything. The delivered spectra "
+            f"(RADIS, truncated at 50 cm^-1, profile RENORMALISED to unit area, no "
+            f"plinth subtraction) disagree with MT_CKD's convention about the "
+            f"25-50 cm^-1 region, and additionally fold the >50 cm^-1 wing back into "
+            f"it. The mismatch is real; its SIGN is not determined, because "
+            f"renormalisation conserves line strength (A59)."
         ),
         "band_cm": list(band_cm),
         "rel_floor": cfg.opacity.rel_floor,
