@@ -282,6 +282,27 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
     (3000 K, 2229) — that will decide whether the delivered tables need rebuilding
     on AQUA pressures, and those are still running.
 
+  **Unplanned by-product: the first direct test of A6's interpolation against
+  ground truth.** ρ = 129.7 is not on HITEMP's ρ grid (0.1, 1, 10, 30, 100, 300,
+  1000), so the table value there is triangulated in (T, log ρ) — the exact call
+  the structure model makes. The RADIS run computes that state *directly*:
+
+  | | κ_R [cm²/g] | κ_P [cm²/g] |
+  |---|---|---|
+  | interpolated (A6) | 4.6621 | 277.79 |
+  | RADIS, computed at (1000 K, 598.6 bar) | 4.660 | 277.8 |
+  | difference | **+0.044%** | **−0.005%** |
+
+  Every previous check of the interpolation was either self-consistency or against
+  the delivered JSON at points that were *on* the grid; this is the first against
+  an independently computed off-grid state. Read it for what it is, though: κ_R
+  only moves 2.6% between the bracketing nodes (4.634 at ρ = 100, 4.754 at 300),
+  so the scheme is not under strain here. The strong tests are still to come —
+  (1500 K, 471.3), which sits in the wide 300-1000 interval, and (3000 K, 2229),
+  which is **above** HITEMP's ρ ceiling and therefore nearest-neighbour clamped,
+  so it will measure directly the clamp error A53 could only bound at ~30% from
+  the delivered analysis.
+
   Timing note for whoever repeats this: the third spectrum at this point took
   1570 s against ~450 s for the first two at essentially the same pressure, so the
   ~7.3 min/spectrum figure is not reliable and the full run may take considerably
