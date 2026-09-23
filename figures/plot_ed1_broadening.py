@@ -14,11 +14,15 @@ use a fixed 1 bar reference — they do not, they use P = ρRT/M per cell):
 
 Two things are plotted, because they answer two different questions:
 
-  * **filled bars, left axis** — κ_R(convention) / κ_R(1 bar). How much the fixed
-    1 bar reference the brief asked about would have cost, had it been used.
-  * **open markers** — κ_R(AQUA) / κ_R(ideal). The residual systematic that is
-    actually present in the delivered tables, since they are built at ideal-gas P
-    and the structure model integrates on AQUA.
+  * **top panel, bars grown from the unity line** — κ_R(convention) / κ_R(1 bar).
+    How much the fixed 1 bar reference the brief asked about would have cost, had
+    it been used. Black dashes are κ_P under the same convention.
+  * **bottom panel, lollipops from the unity line** — κ_R(AQUA) / κ_R(ideal). The
+    residual systematic that is actually present in the delivered tables, since
+    they are built at ideal-gas P and the structure model integrates on AQUA.
+
+Both panels are anchored at 1 rather than at zero, because on a log axis a bar
+grown from zero has no visible base and ratios below unity vanish.
 
 Mass opacity is convention-independent by construction (κ = σ·N_A/M), so every
 difference here is a Voigt-width effect and nothing else. Lorentzian profiles are
@@ -95,8 +99,10 @@ def main(argv=None):
         if not have(key):
             continue
         drawn = True
-        ax.bar(x + offset, col(key), width, color=color, alpha=0.85,
-               edgecolor="k", linewidth=0.4, label=f"κ_R: {label}", zorder=3)
+        vals = col(key)
+        ax.bar(x + offset, np.abs(vals - 1.0), width, bottom=np.minimum(vals, 1.0),
+               color=color, alpha=0.85, edgecolor="k", linewidth=0.4,
+               label=f"κ_R: {label}", zorder=3)
         pkey = f"ratio_P_{conv}_over_ref1bar"
         if have(pkey):
             ax.plot(x + offset, col(pkey), ls="none", marker="_",
@@ -123,14 +129,21 @@ def main(argv=None):
     # --- bottom: the systematic actually present in the delivered tables ----
     key = "ratio_R_aqua_over_ideal"
     if have(key):
-        ax2.bar(x, col(key), 0.5, color=RESIDUAL_COLOR, alpha=0.85,
-                edgecolor="k", linewidth=0.4, zorder=3)
+        # Lollipops anchored at 1, not bars from zero: on a log axis a bar's base
+        # is off-scale, so ratios below 1 render as invisible stubs.
+        vals = col(key)
+        ax2.vlines(x, 1.0, vals, color=RESIDUAL_COLOR, lw=3.0, zorder=3)
+        ax2.plot(x, vals, ls="none", marker="o", ms=8, mfc=RESIDUAL_COLOR,
+                 mec="k", mew=0.5, zorder=4)
+        lo, hi = np.nanmin(vals), np.nanmax(vals)
+        pad = 1.35
+        ax2.set_ylim(min(lo, 1.0) / pad, max(hi, 1.0) * pad)
         for xi, r in zip(x, rows):
             if key not in r:
                 continue
             ax2.annotate(f"P: {r['p_aqua_pa'] / r['p_ideal_pa']:.2f}×",
                          (xi, r[key]), textcoords="offset points",
-                         xytext=(0, 4 if r[key] >= 1 else -12), ha="center", fontsize=7.5)
+                         xytext=(0, 9 if r[key] >= 1 else -16), ha="center", fontsize=7.5)
     ax2.axhline(1.0, color="k", lw=0.9, ls=":", zorder=2)
     ax2.set_yscale("log")
     ax2.set_ylabel("κ_R(AQUA) / κ_R(ideal)")
