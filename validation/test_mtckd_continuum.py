@@ -189,6 +189,76 @@ def test_xint_choice_does_not_move_the_band_limited_means(ref):
         assert abs(a / b - 1.0) < 0.01
 
 
+# -- the density scaling, end to end, against the same binary --------------
+# cntnm takes a pressure and converts it with its own ideal-gas Loschmidt
+# constant, so the state is specified by the pressure reproducing the cell's
+# number density. See validation/data/mtckd/README.md.
+_OPTDPT_CASES = {
+    "CNTNM.OPTDPT.T1000_rho129.744": (1000.0, 129.744),
+    "CNTNM.OPTDPT.T650_rho300": (650.0, 300.0),
+}
+# cntnm converts its input pressure to a column with its own hard-coded constants:
+#   WTOT = ALOSMT * (P_mb/1013) * (273/T) * L
+# Against CODATA (and 273.15 K) that column is low by ~3.1e-4, which is the whole
+# of the residual below. The *density ratio* term cancels exactly — cntnm forms it
+# from pressure as (P/1013)(296/T), and n/n_ref is the same expression — so this
+# single factor, not the ρ² scaling, is what the comparison is left with.
+CNTNM_ALOSMT = 2.68675e19  # molecules cm⁻³
+CNTNM_COLUMN_BIAS = CNTNM_ALOSMT * 1e6 * 273.0 * 1.380649e-23 / (1013.0 * 100.0)
+
+
+def _read_optdpt(path: Path) -> np.ndarray:
+    rows = []
+    for line in path.read_text(errors="ignore").splitlines():
+        fields = line.split()
+        if len(fields) != 2:
+            continue
+        try:
+            rows.append([float(x) for x in fields])
+        except ValueError:
+            continue
+    arr = np.array(rows)
+    i = len(arr) - 1
+    while i > 0 and arr[i - 1, 0] < arr[i, 0]:
+        i -= 1
+    return arr[i:]
+
+
+def test_cntnms_own_column_constants_are_low_by_five_parts_in_ten_thousand():
+    """Pin the known offset rather than absorb it into the tolerance below."""
+    assert CNTNM_COLUMN_BIAS == pytest.approx(0.99969, abs=1e-5)
+
+
+@pytest.mark.parametrize("name,state", sorted(_OPTDPT_CASES.items()),
+                         ids=lambda v: v if isinstance(v, str) else "")
+def test_density_scaling_reproduces_cntnm_at_envelope_densities(ref, name, state):
+    """The gate the WATER.COEF files cannot give: alpha ∝ rho² at 175x and 404x rho_ref.
+
+    With VMR = 1 and a 1 cm path, cntnm's printed optical depth is the self
+    continuum alone (W_dry = 0, so no foreign and no O2/N2/CO2), i.e. exactly
+    kappa_cont·rho·L. This exercises the number-density ratio, the temperature
+    power law, the radiation term and the units in one comparison, at densities
+    two to three orders of magnitude above anything MT_CKD was fitted to.
+    """
+    t_k, rho_si = state
+    arr = _read_optdpt(REF_DIR / name)
+    wn, tau = arr[:, 0], arr[:, 1]
+    in_band = (wn >= BAND[0]) & (wn <= BAND[1]) & (tau > 0)
+    assert in_band.sum() > 300
+
+    assert rho_si / ref.ref_rho_si > 100.0  # the extrapolation this is testing
+    ours = self_continuum_kappa(wn[in_band], t_k, rho_si, ref) * (rho_si * 1e-3)
+    dev = ours / tau[in_band] - 1.0
+    assert np.abs(dev).max() < GATE_TOL
+    assert np.abs(dev).max() < CNTNM_TOL
+    # The residual is a systematic offset, not scatter: it is positive at ~97% of
+    # wavenumbers and its median is cntnm's own column-constant bias (3.1e-4); the
+    # spread about it is the binary's single precision. If the density scaling were
+    # wrong this would be a power of rho/rho_ref — 175x or 404x — not 3e-4.
+    assert (dev > 0).mean() > 0.95
+    assert np.median(dev) == pytest.approx(1.0 / CNTNM_COLUMN_BIAS - 1.0, abs=1e-4)
+
+
 # -- the registered source ------------------------------------------------
 def test_hitemp_mtckd_is_a_registry_entry_over_the_same_spectra():
     """Adding the source was a registry entry, not a new data delivery (SPEC §3)."""

@@ -51,14 +51,24 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   **The gate is against AER's compiled binary, not against ourselves.** At the
   brief's stated gate state (296 K, ρ ≈ 0.7418 kg/m³ = 1 bar-equivalent) the
   density scaling is unity by construction, so that comparison alone tests
-  nothing. The real gate runs AER's `cntnm` v4.3 at **296, 650, 1000 and 2000 K**
-  and compares against its printed `WATER.COEF` reference coefficients, with and
-  without the radiation term, over the whole 100-4000 cm⁻¹ band — which exercises
-  the (296/T)^n(ν) path end to end. **Agreement is 4.8e-5**, i.e. the binary's
-  single-precision print limit, against a 1% requirement. The four reference
-  outputs are committed under `validation/data/mtckd/` with the exact stdin recipe
-  (`cntnm` reads its state from stdin and *ignores* the `INPUT` file its own
-  example ships — a trap worth recording).
+  nothing. Two gates against AER's `cntnm` v4.3 do the real work, both over the
+  whole 100-4000 cm⁻¹ band, against a 1% requirement:
+
+  | gate | what it exercises | agreement |
+  |---|---|---|
+  | `WATER.COEF` at **296, 650, 1000, 2000 K** | the reference table, (296/T)^n(ν), the radiation term | **4.8e-5** |
+  | `CNTNM.OPTDPT` at **(1000 K, 129.744)** and **(650 K, 300 kg/m³)** | all of the above *plus the ρ² density scaling*, at 175× and 404× ρ_ref | **8e-4** |
+
+  The second is the one that matters, because the density extrapolation is the
+  part of this model that is genuinely being pushed. Its 8e-4 residual is not
+  noise: it is positive at ~97% of wavenumbers with a median of 3.1e-4, which is
+  exactly cntnm's own column constant (`WTOT = ALOSMT·(P/1013)·(273/T)·L`, with
+  `ALOSMT = 2.68675e19` and 273 rather than 273.15) against CODATA. That
+  constant, and the fact that the *density ratio* cancels identically between the
+  two implementations, are pinned by their own gates rather than absorbed into a
+  tolerance. Six reference outputs are committed under `validation/data/mtckd/`
+  with the exact recipes (`cntnm` reads its state from **stdin** and *ignores* the
+  `INPUT` file its own example ships — a trap worth recording).
 
   **The continuum is extrapolated, hard, in both variables, and this is stated
   wherever the numbers are.** MT_CKD is fitted to terrestrial-atmosphere

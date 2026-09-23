@@ -41,3 +41,32 @@ no density scaling. That is exactly the quantity `opacity/mtckd.py`'s
 
 The 296 K file alone would be near-tautological — it is the state the reference
 table is defined at. The 650/1000/2000 K files are what make the gate bite.
+
+## The density-scaling fixtures
+
+`CNTNM.OPTDPT.T1000_rho129.744` and `CNTNM.OPTDPT.T650_rho300` are the *optical
+depth* output of the same binary at two envelope-like states, and they gate the
+part the `WATER.COEF` files cannot: the ρ² density scaling, at **175×** and **404×**
+MT_CKD's reference density.
+
+`cntnm` takes a pressure, not a density, and converts it with its own ideal-gas
+Loschmidt constant, `WTOT = ALOSMT·(P/1013)·(273/T)·L` with
+`ALOSMT = 2.68675e19`. So the pressure fed to it is the one that reproduces the
+cell's *number density*, `P = n k_B T`:
+
+| T [K] | ρ [kg/m³] | n [cm⁻³] | P fed to cntnm [bar] |
+|---|---|---|---|
+| 1000 | 129.744 | 4.3371e21 | 598.798 |
+|  650 | 300     | 1.0028e22 | 899.970 |
+
+With VMR = 1 and a 1 cm path the printed optical depth is the self-continuum
+alone (`W_dry = 0`, so no foreign and no O₂/N₂/CO₂ term), i.e. exactly
+`kappa_cont[cm²/g] · ρ[g/cm³] · L[cm]`. Agreement is 8e-4, and the residual is
+explained by `ALOSMT` differing from the CODATA value used here by 0.031% — which
+the gate asserts rather than absorbs into the tolerance.
+
+    for s in "1000 598.798" "650 899.970"; do
+      set -- $s; mkdir -p dens_$1 && ln -sf .../absco-ref_wv-mt-ckd.nc dens_$1/
+      printf '%s\n%s\n1.0\n1.0\n' "$(python -c "print($2*1000)")" "$1" \
+        | (cd dens_$1 && .../cntnm_v4.3_OS_X_gnu_sgl)
+    done
