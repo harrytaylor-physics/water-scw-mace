@@ -80,6 +80,57 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   re-asserted on its line-only twin instead. It does not currently trip
   (max κ_P = 1.74e4 cm²/g, at 500 K / 1000 kg/m³).
 
+  **THE RESULT (Task 20; `outputs/crossover_v3.json`, `figures/plot_p2_crossover.py`).**
+  The 48 points split into the three groups the campaigns delivered — the 27
+  original, the 12 cold-dense (T ≤ 1000 K, ρ = 100-500), the 9 dilute (ρ ≤ 60):
+
+  | group | n | FP/HITEMP Planck | FP/HITEMP Rosseland | FP/(H+MT) Planck | FP/(H+MT) Rosseland | MT_CKD share of κ_R |
+  |---|---|---|---|---|---|---|
+  | original   | 27 | 1.38-17.7 | 1.36-41.9 | 0.92-15.7 | 1.34-38.4 | 0.006-0.083 |
+  | cold-dense | 12 | 1.29-2.27 | **7.80-213** | **0.21-1.10** | **7.33-21.8** | **0.059-0.944** |
+  | dilute     |  9 | 1.32-1.53 | 1.08-7.99 | 1.21-1.44 | 1.08-7.65 | 0.001-0.043 |
+
+  Three things follow, and all three belong in the manuscript.
+
+  **(1) The continuum changes nothing away from the cold-dense corner.** At the 27
+  original points it carries 0.6-8.3% of κ_R, and at the 9 dilute points
+  0.1-4.3% — it is quadratic in density and those cells are thin. The published
+  ratios are unaffected there.
+
+  **(2) At the 12 cold-dense points the continuum IS the line-list opacity.** Its
+  share of κ_R runs to **94.4%** (650 K, 500 kg/m³): the line list's own absorption
+  is then a *minority* of what a planetary model would use. The FP/line-list
+  Rosseland ratio collapses from **7.8-213× to 7.3-21.8×** — A53's headline
+  "24-213× at the cold points" survives only against the bare line list. The sign
+  of the conclusion does not change (FP is still the more opaque), but the size of
+  the disagreement does, by up to an order of magnitude, and the reader must be
+  told which reference a quoted number is against.
+
+  **(3) Eleven of the 48 points have FP/(HITEMP+MT_CKD) < 1, all on the Planck
+  mean** — the extrapolated empirical continuum is *more* absorbing than the
+  first-principles calculation there. They are the 8 cold-dense points at
+  T = 650/800 K (ratios 0.21-0.83), the 2 at (1000 K, 300/500) and (1000 K, 129.7),
+  the last being an *original* grid point. No point falls below 1 on the Rosseland
+  mean. This has to be stated: it is the one place where "FP is more opaque" fails,
+  and it fails against a continuum model used ~674× above its reference density
+  and ~350 K above its reference temperature. Whether that inversion is physical or
+  an artefact of extrapolating MT_CKD cannot be settled here — the honest reading
+  is that at T ≤ 1000 K the *empirical continuum's extrapolation uncertainty is
+  comparable to the FP/line-list difference the manuscript is about*.
+
+  Interaction with the open A52 question: none numerically — the continuum is added
+  to the HITEMP side, and A52 concerns the FP side's noise floor — but the two
+  compound. The cold Rosseland ratio is simultaneously (a) possibly measuring FP's
+  unresolved windows (A52/A53) and (b) sensitive at the order-of-magnitude level to
+  whether the line-list reference carries an extrapolated continuum. Neither is
+  resolved in this repository.
+
+  The nine ρ > 1000 points keep the existing nearest-neighbour clamp (A53) rather
+  than a hybrid κ_line(clamped) + κ_cont(true ρ), which would be a third
+  convention and is not additive in the harmonic mean. The continuum is therefore
+  *under*-counted there by (ρ/1000)², up to 5.0× at (3000 K, 2229); the factor is
+  reported per point as `continuum_underscale`.
+
 ## 2026-09-20 (extension opacity campaign: units at source, enlarged domain)
 
 - **A50 — The FP factor-1000 error is fixed IN THE DATA; `sigma`/`sigma_raw`

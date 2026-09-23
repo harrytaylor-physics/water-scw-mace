@@ -186,8 +186,10 @@ def build_factory(wavenum_min_cm: float = WAVENUM_MIN_CM):
 
 def compute_kappa(sf, temperature_k: float, pressure_pa: float):
     """(wn [cm⁻¹], κ [cm²/g]) at one (T, P_broad); κ = σ·N_A/M, convention-free."""
-    sf.pressure = pressure_pa / 1e5  # RADIS takes bar
-    s = sf.eq_spectrum(Tgas=float(temperature_k))
+    # RADIS >= 0.16 made SpectrumFactory slotted: the pressure is a per-call
+    # argument now, not a settable attribute (generate_linelist_tables.py was
+    # written against the older API, which ARC still runs).
+    s = sf.eq_spectrum(Tgas=float(temperature_k), pressure=pressure_pa / 1e5)
     wn, abscoeff = s.get("abscoeff", wunit="cm-1")
     n_cm3 = (pressure_pa / (K_B * temperature_k)) * 1e-6
     rho_g_cm3 = n_cm3 * M_H2O_G_MOL / N_A
