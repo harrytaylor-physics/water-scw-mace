@@ -257,6 +257,28 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   Data panel: κ_R ratio against the 1 bar reference, and the residual AQUA/ideal
   systematic actually present in the delivered tables).
 
+  **RESULTS — PARTIAL, the run is still going.** 18 spectra at ~7.3 min each
+  (~2.2 h); the driver rewrites `outputs/broadening_sensitivity.json` after every
+  point and skips nothing, so `--only T,rho` resumes any gap. What has landed:
+
+  | T [K] | ρ [kg/m³] | κ_R (1 bar) | κ_R (ideal) | κ_R (AQUA) | κ_P (1 bar) | κ_P (ideal) |
+  |---|---|---|---|---|---|---|
+  | 1000 | 30 | 2.051 | 4.432 | *pending* | 277.4 | 277.5 |
+
+  Even this one point makes the shape of the answer clear, and it is the shape the
+  physics predicts: **the broadening convention is a Rosseland-mean effect and
+  essentially not a Planck-mean one.** κ_R more than doubles (2.16×) between 1 bar
+  and the delivered ideal-gas P; κ_P moves by 0.04%. Pressure broadening fills the
+  transparency windows, the harmonic Rosseland mean lives in those windows, and
+  the arithmetic Planck mean does not — the same mechanism A53 identified behind
+  the cold FP/HITEMP ratio. So a 1 bar-reference table, had one been used, would
+  have understated κ_R by a factor ~2 at ρ = 30 and more at higher density; and
+  the residual ideal-vs-AQUA systematic actually present in the delivered tables
+  is the number the manuscript needs, since AQUA/ideal ranges 0.25×-15.7×.
+
+  Fill this table by re-running `figures/plot_ed1_broadening.py config/fiducial.yaml`
+  once the driver finishes.
+
 ## 2026-09-20 (extension opacity campaign: units at source, enlarged domain)
 
 - **A50 — The FP factor-1000 error is fixed IN THE DATA; `sigma`/`sigma_raw`
