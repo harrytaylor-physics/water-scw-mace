@@ -290,6 +290,7 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | 1000 | 30 | 138.46 / 135.88 | 2.051 | 4.432 | 4.427 | **2.161** | 0.999 | 277.4 | 277.5 |
   | 1000 | 129.7 | 598.60 / 553.96 | 2.051 | 4.660 | 4.652 | **2.272** | 0.998 | 277.4 | 277.8 |
   | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | 0.6313 | **0.850** | **0.962** | 357.7 | 358.8 |
+  | 1500 | 471.3 | 3262.7 / 4275.7 | 12.54 | 22.07 | *pending* | **1.760** | — | 251.8 | 253.5 |
 
   **(650 K, 300) completes, and the pressure response has an interior minimum:**
   κ_R = 0.7715 (1 bar) → **0.6313** (227.7 bar) → 0.6561 (900 bar). It falls, then
@@ -347,6 +348,28 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   doubles across the interval. Together with the (1000 K, 129.7) ρ-interpolation
   check at 0.044%, A6's scheme is now validated against independently computed
   states in both coordinates.
+
+  A third check at (1500 K, 471.3) gives κ_R **+1.09%**, κ_P −0.03%. It was
+  expected to be the hardest ρ test, since 471.3 sits in HITEMP's widest ρ interval
+  (300 → 1000); it is not, because κ_R is nearly flat there — only ×1.06 across the
+  whole interval — so the 1.09% miss is ~17% of the interval's own spread. Worth
+  recording as the least favourable of the three, but the T test above remains the
+  stringent one. The genuinely demanding case is still to come: (3000 K, 2229) is
+  **above** HITEMP's ρ ceiling and therefore nearest-neighbour clamped.
+
+  **The pressure response tracks window depth, cleanly.** Contrast is quoted at
+  1 bar so the four points share a reference:
+
+  | point | contrast κ_P/κ_R at 1 bar | 1 bar → ideal P |
+  |---|---|---|
+  | (650 K, 300) | **463.6** | ×0.850 **falls** |
+  | (1000 K, 30) | 135.3 | ×2.161 rises |
+  | (1000 K, 129.7) | 135.3 | ×2.272 rises |
+  | (1500 K, 471.3) | 20.1 | ×1.760 rises |
+
+  The reversal happens only at the deep-window end, which is the cold-dense corner
+  — the same corner as A58's continuum result and A52's noise-floor question. Three
+  independent problems now converge on the same twelve points.
 
   This one complete point already fixes the shape of the answer, and it is the
   shape the physics predicts: **the broadening convention is a Rosseland-mean
