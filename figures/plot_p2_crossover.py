@@ -267,7 +267,10 @@ def _print_cold_dense_shares(rows):
           f"above its\n    reference density (0.742 kg/m³) and ~350 K above its "
           f"reference temperature (296 K),\n    far outside the range it was fitted "
           f"over. Treat it as what a planetary model would\n    do, not as a "
-          f"measurement.")
+          f"measurement — and as an UPPER bound on the share, for the same reason "
+          f"the FP\n    ratios are lower bounds: the delivered spectra's 50 cm⁻¹ "
+          f"truncation double-counts the\n    25-50 cm⁻¹ region the continuum "
+          f"already contains (see the well-posedness table below).")
 
 
 def _print_decomposition_caveat(rows):
