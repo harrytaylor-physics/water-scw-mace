@@ -128,6 +128,41 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   is that at T ≤ 1000 K the *empirical continuum's extrapolation uncertainty is
   comparable to the FP/line-list difference the manuscript is about*.
 
+  **THE CAVEAT THAT HAS TO TRAVEL WITH ALL OF IT — the decomposition is not well
+  posed on most of this grid.** MT_CKD is not "extra absorption" in the abstract.
+  It is *defined* as the residual beyond a line-by-line calculation done to
+  LBLRTM's convention: every line truncated at **25 cm⁻¹** from centre with the
+  Lorentz value at that bound (the "plinth") subtracted. That split only means
+  anything while the Lorentz half-width is small compared with 25 cm⁻¹. Taking
+  HITEMP's own broadening parameters — intensity-weighted over 2.8×10⁶ H2O lines
+  across 150-4150 cm⁻¹, γ_self = 0.455 cm⁻¹/atm at 296 K with exponent 0.529 —
+  and evaluating γ = γ_self·(P/1 atm)·(296/T)^n at each cell's ideal-gas pressure:
+
+  | group | n | γ [cm⁻¹] | inside the 25 cm⁻¹ bound |
+  |---|---|---|---|
+  | original   | 27 | 141 - 4070 | **0 / 27** |
+  | cold-dense | 12 | 88.9 - 544 | **0 / 12** |
+  | dilute     |  9 | 10.9 - 90.5 | 3 / 9 |
+
+  **45 of the 48 points have lines broader than the truncation the continuum is
+  defined against**, by one to two orders of magnitude. Two consequences:
+
+  * The delivered HITEMP spectra are RADIS at `truncation = 50` cm⁻¹ with **no
+    plinth subtraction**, so line + MT_CKD **double-counts** the 25-50 cm⁻¹
+    region. That biases the combined opacity *high* and therefore
+    FP/(line+continuum) *low* — i.e. it works in the direction of finding (3), so
+    the eleven sub-unity points are if anything overstated, not understated.
+  * More fundamentally, at these pressures the band is a single merged profile and
+    "which part is line and which is continuum" has no operational meaning. The
+    right reading of the continuum-inclusive column is **"what a planetary model
+    would compute if it followed standard practice here"**, not "the physically
+    correct opacity". Every output carries `lorentz_hwhm_cm` and
+    `decomposition_well_posed` per point so this cannot be quoted without it.
+
+  This is a caveat on the *reference*, not on FP, and it does not touch the bare
+  ratios. But it is the first thing a careful reader will ask, and it is gated
+  (`test_the_line_continuum_decomposition_is_not_well_posed_on_most_of_the_grid`).
+
   Interaction with the open A52 question: none numerically — the continuum is added
   to the HITEMP side, and A52 concerns the FP side's noise floor — but the two
   compound. The cold Rosseland ratio is simultaneously (a) possibly measuring FP's

@@ -209,3 +209,47 @@ def apply_continuum(
         ) from None
     ref = load_reference(ref_path)
     return kappa_cm2_g + model(wn_cm, temperature_k, rho_si, ref)
+
+
+# --------------------------------------------------------------------------
+# Is the line/continuum decomposition even well posed here? (A58)
+# --------------------------------------------------------------------------
+# MT_CKD is not "extra absorption" in the abstract: it is defined as the residual
+# beyond a line-by-line calculation done to LBLRTM's convention — every line
+# truncated at LBLRTM_LINE_BOUND_CM from centre, with the Lorentz value at that
+# bound ("the plinth") subtracted. That decomposition only means anything while
+# the Lorentz half-width is small compared with the bound. These constants let a
+# caller check whether it is, at the cell in question.
+#
+# gamma_self and its exponent are intensity-weighted means over 2.8e6 HITEMP H2O
+# lines sampled across 150-4150 cm^-1 (the `selbrd` and `Tdpair` columns of the
+# RADIS HITEMP2010 cache). Intensity weighting is the right one: strong lines set
+# the opacity. The unweighted medians are 0.172 cm^-1/atm and 0.41, so this is the
+# pessimistic end of a factor ~2.6 spread, and the estimate is an order-of-
+# magnitude diagnostic, not a line-shape calculation.
+LBLRTM_LINE_BOUND_CM = 25.0
+HITEMP_GAMMA_SELF_CM_ATM = 0.455  # at 296 K, intensity-weighted
+HITEMP_GAMMA_TEXP = 0.529
+ATM_PA = 101325.0
+
+
+def lorentz_hwhm_cm(temperature_k: float, pressure_pa: float) -> float:
+    """Representative self-broadened Lorentz half-width, cm⁻¹.
+
+    γ(T, P) = γ_self(296 K) · (P/1 atm) · (296/T)^n, the standard HITRAN form.
+    """
+    return float(
+        HITEMP_GAMMA_SELF_CM_ATM
+        * (float(pressure_pa) / ATM_PA)
+        * (296.0 / float(temperature_k)) ** HITEMP_GAMMA_TEXP
+    )
+
+
+def decomposition_is_well_posed(temperature_k: float, pressure_pa: float) -> bool:
+    """True where γ < LBLRTM's 25 cm⁻¹ line-by-line bound.
+
+    Where it is False, "line list + MT_CKD" is not a decomposition of anything:
+    the lines are broader than the truncation the continuum is defined against,
+    and the continuum's own fit says nothing about that regime.
+    """
+    return lorentz_hwhm_cm(temperature_k, pressure_pa) < LBLRTM_LINE_BOUND_CM

@@ -151,12 +151,15 @@ def main(argv=None):
     axp.legend(handles=handles, fontsize=7.2, loc="upper left")
 
     n_sub = len(summary["sub_unity_mtckd"])
+    n_illposed = sum(not r["decomposition_well_posed"] for r in rows)
     fig.suptitle(
         f"FP / {LINE_LIST.upper()} band-limited opacity ratio versus density, "
         f"{len(rows)}-point FP grid, {band_caption(band)}\n"
         f"against two references: bare line list, and line list + MT_CKD 4.3 self-"
         f"continuum (extrapolated in T and ρ; A58).  "
-        f"{n_sub} point{'s' if n_sub != 1 else ''} fall below unity with the continuum",
+        f"{n_sub} point{'s' if n_sub != 1 else ''} fall below unity with the continuum; "
+        f"{n_illposed}/{len(rows)} have Lorentz half-widths past the 25 cm⁻¹ bound the "
+        f"continuum is defined against",
         fontsize=9.5)
     path = save(fig, cfg, "P2_crossover")
 
@@ -168,6 +171,7 @@ def main(argv=None):
     _print_groups(summary)
     _print_sub_unity(summary)
     _print_cold_dense_shares(rows)
+    _print_decomposition_caveat(rows)
     _print_agreement(bare_rows)
     return path
 
@@ -264,6 +268,36 @@ def _print_cold_dense_shares(rows):
           f"reference temperature (296 K),\n    far outside the range it was fitted "
           f"over. Treat it as what a planetary model would\n    do, not as a "
           f"measurement.")
+
+
+def _print_decomposition_caveat(rows):
+    """Where "line list + continuum" is a decomposition of anything, and where not."""
+    from opacity.mtckd import LBLRTM_LINE_BOUND_CM
+
+    ok = [r for r in rows if r["decomposition_well_posed"]]
+    print(f"\n  IS THE SPLIT EVEN WELL POSED? MT_CKD is the residual beyond a "
+          f"line-by-line calculation\n  truncated at {LBLRTM_LINE_BOUND_CM:g} cm⁻¹ "
+          f"with the plinth removed, so it only means something while the Lorentz\n"
+          f"  half-width is small against that bound. Using HITEMP's own broadening "
+          f"parameters:")
+    head = (f"  {'group':<28s} {'n':>3s} | {'Lorentz HWHM [cm^-1]':>22s} | "
+            f"{'inside the bound':>17s}")
+    print(head)
+    print("  " + "-" * (len(head) - 2))
+    for group in GROUPS:
+        these = [r for r in rows if r["group"] == group]
+        hw = [r["lorentz_hwhm_cm"] for r in these]
+        n_ok = sum(r["decomposition_well_posed"] for r in these)
+        print(f"  {GROUP_LABEL[group]:<28s} {len(these):>3d} | "
+              f"{min(hw):>10.3g} - {max(hw):<9.4g} | {n_ok:>10d} / {len(these):<4d}")
+    print(f"    {len(rows) - len(ok)} of {len(rows)} points have lines BROADER than the "
+          f"truncation the continuum is defined\n    against, by one to two orders of "
+          f"magnitude. The delivered spectra truncate at 50 cm⁻¹ with no\n    plinth "
+          f"subtraction, so line + MT_CKD double-counts 25-50 cm⁻¹ — biasing the "
+          f"combined\n    opacity HIGH and the FP ratios LOW, i.e. the sub-unity "
+          f"points above are if anything\n    overstated. Read the continuum-inclusive "
+          f"column as 'what a planetary model would\n    compute following standard "
+          f"practice here', not as the physically correct opacity.")
 
 
 def _print_agreement(bare_rows):

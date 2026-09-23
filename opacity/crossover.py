@@ -37,6 +37,11 @@ import numpy as np
 
 from config import Config
 from opacity.build_tables import compute_point_means, get_source
+from opacity.mtckd import (
+    LBLRTM_LINE_BOUND_CM,
+    decomposition_is_well_posed,
+    lorentz_hwhm_cm,
+)
 from opacity.table import CM2_PER_G_TO_SI
 
 DILUTE_RHO_MAX = 60.0  # matches figures/plot_s7_dilute_floor.py (A52)
@@ -206,6 +211,14 @@ def agreement_summary(rows: list[dict]) -> dict:
 GROUPS = ("original", "cold_dense", "dilute")
 
 
+def _ideal_pressure_pa(temperature_k: float, rho_si: float) -> float:
+    """Ideal-gas P at the cell's density — the broadening pressure the delivered
+    HITEMP spectra were built at (A17, A59)."""
+    from constants import MMW_H2O
+
+    return float(rho_si) * 8.314462618 * float(temperature_k) / MMW_H2O
+
+
 def _group_of(row: dict) -> str:
     if row["is_dilute"]:
         return "dilute"
@@ -282,6 +295,15 @@ def crossover_v3_rows(
             # continuum's contribution is under-counted by rho/rho_ceiling, not
             # by its square (A58).
             "continuum_underscale": float(max(1.0, rho / rho_ceiling)),
+            # Whether "line list + continuum" is a decomposition of anything here.
+            # MT_CKD is the residual beyond a line-by-line calculation truncated at
+            # 25 cm^-1 with the plinth removed; where the Lorentz half-width exceeds
+            # that bound, the split is not well posed and the delivered spectra
+            # (RADIS, truncated at 50 cm^-1, no plinth subtraction) double-count the
+            # 25-50 cm^-1 region on top. See opacity/mtckd.py.
+            "lorentz_hwhm_cm": lorentz_hwhm_cm(t_k, _ideal_pressure_pa(t_k, rho)),
+            "decomposition_well_posed": decomposition_is_well_posed(
+                t_k, _ideal_pressure_pa(t_k, rho)),
         }
         row["group"] = _group_of(row)
         rows.append(row)
@@ -340,7 +362,14 @@ def write_v3_json(
             f"ceiling; kappa there is held at the ceiling, so the continuum's "
             f"contribution is UNDER-counted by continuum_underscale = rho/rho_ceiling "
             f"(linear, because the tabulated quantity is the MASS opacity kappa = "
-            f"alpha/rho, and alpha is the quadratic one)."
+            f"alpha/rho, and alpha is the quadratic one). decomposition_well_posed "
+            f"is false where the self-broadened Lorentz half-width exceeds LBLRTM's "
+            f"{LBLRTM_LINE_BOUND_CM:g} cm^-1 line-by-line bound, which is the "
+            f"convention MT_CKD is defined as the residual to: there 'line list + "
+            f"continuum' is not a decomposition of anything, and the delivered "
+            f"spectra (RADIS, truncated at 50 cm^-1, no plinth subtraction) "
+            f"double-count the 25-50 cm^-1 region on top, biasing the combined "
+            f"opacity HIGH and so the FP/(line+continuum) ratios LOW."
         ),
         "band_cm": list(band_cm),
         "rel_floor": cfg.opacity.rel_floor,

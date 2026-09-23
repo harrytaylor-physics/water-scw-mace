@@ -286,6 +286,33 @@ def test_the_continuum_dominates_the_cold_dense_corner_and_not_the_hot_one(cfg):
     assert share(1000.0, 10.0) < 0.05  # dilute: quadratic in ρ, so negligible
 
 
+def test_the_line_continuum_decomposition_is_not_well_posed_on_most_of_the_grid(cfg):
+    """MT_CKD is a residual to a 25 cm⁻¹-truncated line calculation. Check where
+    that premise survives — this is a caveat on the result, so it is pinned.
+
+    The self-broadened Lorentz half-width at the cell's own (ideal-gas) pressure
+    is compared with LBLRTM's line-by-line bound. Only the thinnest cells are
+    inside it; everywhere else the lines are broader than the truncation the
+    continuum is defined against.
+    """
+    from opacity.crossover import crossover_v3_rows
+    from opacity.mtckd import LBLRTM_LINE_BOUND_CM, lorentz_hwhm_cm
+
+    assert LBLRTM_LINE_BOUND_CM == 25.0
+    # sanity: the estimator is monotone in P and falls with T
+    assert lorentz_hwhm_cm(650.0, 1e7) > lorentz_hwhm_cm(650.0, 1e6)
+    assert lorentz_hwhm_cm(3000.0, 1e7) < lorentz_hwhm_cm(650.0, 1e7)
+
+    rows = crossover_v3_rows(cfg, BAND)
+    well_posed = [r for r in rows if r["decomposition_well_posed"]]
+    assert 0 < len(well_posed) <= 5  # a handful of dilute cells, no more
+    assert all(r["is_dilute"] for r in well_posed)
+    # and the cold-dense corner, where the continuum matters most, is not among them
+    cold = [r for r in rows if r["group"] == "cold_dense"]
+    assert not any(r["decomposition_well_posed"] for r in cold)
+    assert min(r["lorentz_hwhm_cm"] for r in cold) > LBLRTM_LINE_BOUND_CM
+
+
 def test_a_spectrum_refuses_to_load_without_a_reference_table(cfg):
     """No silent fallback to bare line absorption if the table is missing."""
     from opacity.loaders import find_spectra, load_spectrum
