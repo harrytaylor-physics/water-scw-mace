@@ -291,6 +291,25 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | 1000 | 129.7 | 598.60 / 553.96 | 2.051 | 4.660 | 4.652 | **2.272** | 0.998 | 277.4 | 277.8 |
   | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | 0.6313 | **0.850** | **0.962** | 357.7 | 358.8 |
   | 1500 | 471.3 | 3262.7 / 4275.7 | 12.54 | 22.07 | 22.32 | **1.760** | **1.011** | 251.8 | 253.5 |
+  | 2000 | 1200 | 11077 / 51080 | 34.23 | 50.64 | *pending* | **1.479** | — | 245.8 | 247.2 |
+
+  **A resolution caveat, and it falls on the 1 bar column — not the high-pressure
+  one.** RADIS raised exactly one accuracy warning in the whole run, during the
+  **T = 2000 K, 1 bar** spectrum: *"Some lines are too narrow (FWHM ~ 0.03 cm⁻¹)
+  for the current spectral grid (wstep = 0.01)"*. At 1 bar the narrowest lines are
+  resolved by only ~3 grid points. This is the reverse of the worry the brief
+  raises: nothing complained at 11 077 bar, where the lines are enormous. It
+  matters because κ_R is a harmonic mean and therefore sensitive to exactly the
+  narrow, deep structure that is being under-sampled.
+
+  Scope of the caveat: it touches **only the hypothetical 1 bar reference column**,
+  which answers the brief's literal question. It does not touch the `ideal` or
+  `aqua` columns (broad, well-resolved lines), and it does not touch the delivered
+  tables at all — every one of those is computed at its own cell pressure, so its
+  lines are broad. The wstep of 0.01 cm⁻¹ is inherited from
+  `generate_linelist_tables.py` deliberately, so the runs stay comparable with what
+  is on disk; re-running the 1 bar column at `wstep='auto'` is the follow-up if the
+  Extended Data panel is to quote those ratios precisely.
 
   **(650 K, 300) completes, and the pressure response has an interior minimum:**
   κ_R = 0.7715 (1 bar) → **0.6313** (227.7 bar) → 0.6561 (900 bar). It falls, then
