@@ -351,6 +351,30 @@ def test_line_strength_is_conserved_across_broadening_pressure(cfg):
     assert np.ptp(integrals) / integrals.mean() < 1e-3
 
 
+# Direct RADIS runs at the true density, computed by tools/broadening_sensitivity.py
+# (A59). These are what turn the rho-clamp from an assumed error into a measured one.
+_CLAMP_TRUTH = {(2000.0, 1200.0): 50.64, (3000.0, 2228.7): 103.7}
+
+
+@pytest.mark.parametrize("state,kappa_r_true", sorted(_CLAMP_TRUTH.items()))
+def test_the_density_clamp_costs_at_most_six_percent(cfg, state, kappa_r_true):
+    """Bound the rho-clamp against directly computed truth, not against itself.
+
+    Both states are above HITEMP's rho ceiling, so the table holds kappa at the
+    ceiling node. A53 attributed deviations of "up to 30%" from the delivered
+    crossover analysis to this clamp; measured, it is at most ~6% (A59), and the
+    20-30% outliers are the T-interpolated points instead.
+    """
+    from opacity.table import CM2_PER_G_TO_SI
+
+    t_k, rho = state
+    ll = get_source("hitemp", cfg, band=BAND)
+    assert rho > float(np.max(ll.table.rho_si))  # it really is clamped
+    clamped = ll.kappa_R(t_k, rho) / CM2_PER_G_TO_SI
+    error = clamped / kappa_r_true - 1.0
+    assert -0.06 < error < 0.0  # clamping to a lower density under-estimates
+
+
 def test_a_spectrum_refuses_to_load_without_a_reference_table(cfg):
     """No silent fallback to bare line absorption if the table is missing."""
     from opacity.loaders import find_spectra, load_spectrum

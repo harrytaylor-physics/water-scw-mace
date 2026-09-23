@@ -21,10 +21,18 @@ Agreement with the independent analysis, at the 27 legacy points (A53):
 
 * both coordinates on HITEMP's own grid  -> within **0.7%** on both means;
 * T interpolated (T = 2250, 2750)        -> within **3%**;
-* ρ clamped (ρ > 1000)                   -> up to **30%** on the Rosseland mean,
-  because RADIS computed those at the true density while we hold κ at ρ = 1000.
+* ρ clamped (ρ > 1000)                   -> up to **30%** on the Rosseland mean.
 
 The first line is the real cross-check and it reproduces A25's ~1% claim.
+
+The third line was originally attributed to the density clamp alone. A59 measured
+the clamp against direct RADIS runs at the true density — **-1.62%** at
+ρ/ρ_ceiling = 1.20 and **-5.89%** at 2.23, reproducing those points' deviations to
+better than 0.3 percentage points — so the clamp is a **<=6%** effect, not a 30%
+one. The two 20-30% outliers sit at T = 2250 and 2750 K, the only temperatures off
+HITEMP's own T grid, so they are T-interpolated as well as ρ-clamped; the residual
+is unexplained and this repository cannot separate an interpolation error from a
+difference in the delivered analysis at those states.
 """
 
 from __future__ import annotations

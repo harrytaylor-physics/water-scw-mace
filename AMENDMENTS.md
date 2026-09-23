@@ -292,6 +292,36 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | 0.6313 | **0.850** | **0.962** | 357.7 | 358.8 |
   | 1500 | 471.3 | 3262.7 / 4275.7 | 12.54 | 22.07 | 22.32 | **1.760** | **1.011** | 251.8 | 253.5 |
   | 2000 | 1200 | 11077 / 51080 | 34.23 | 50.64 | **112.3** | **1.479** | **2.218** | 245.8 | 247.2 |
+  | 3000 | 2228.7 | 30858 / 485710 | 86.35 | 103.7 | *pending* | **1.201** | — | 237.3 | 229.4 |
+
+  **The ρ-clamp error is now MEASURED, and A53's "up to 30%" was mis-attributed.**
+  Two of these points sit above HITEMP's ρ = 1000 ceiling, so the table holds κ at
+  the ceiling node while the RADIS run computes the true density directly. That is
+  the first direct measurement of the clamp:
+
+  | T [K] | ρ | ρ/ρ_ceiling | κ_R clamped | κ_R true | clamp error | deviation from the delivered analysis |
+  |---|---|---|---|---|---|---|
+  | 2000 | 1200 | 1.20 | 49.82 | 50.64 | **−1.62%** | +1.88% |
+  | 3000 | 2228.7 | 2.23 | 97.59 | 103.7 | **−5.89%** | +5.89% |
+
+  The measured clamp error reproduces the deviation from the owner's independent
+  RADIS crossover to **better than 0.3 percentage points at both points**, so A53's
+  mechanism is confirmed — where it applies. Across the nine clamped points
+  (ρ/ρ_ceiling = 1.04-2.23) the clamp is therefore a **≤6% effect on κ_R**, which
+  is negligible beside the FP/HITEMP ratios of 7-42× those points carry.
+
+  **What it does not explain.** A53 reported "ρ clamped → up to 30% on the
+  Rosseland mean" and attributed all of it to the clamp. The deviations are not
+  monotone in ρ/ρ_ceiling at all: 1.04 → +0.07%, 1.20 → +3.19% and +1.88%,
+  **1.26 → +29.65%**, 1.34 → +0.19%, 1.52 → +2.56%, 1.73 → +2.00%,
+  **1.84 → +19.91%**, 2.23 → +5.89%. The two outliers are at T = 2250 and 2750 K —
+  **the only two temperatures off HITEMP's own T grid**, so those points are
+  simultaneously ρ-clamped *and* T-interpolated. The clamp is worth a few percent
+  there, like everywhere else; the remaining ~25% is something about the
+  T = 2250/2750 K interpolation, or about the delivered analysis at those states,
+  and this repository cannot separate the two. **A53's sentence should read "the
+  clamp costs ≤6%, measured; the two 20-30% outliers are the T-interpolated points
+  and are unexplained".**
 
   **A resolution caveat, and it falls on the 1 bar column — not the high-pressure
   one.** RADIS raised exactly one accuracy warning in the whole run, during the
@@ -631,6 +661,13 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
   The first row is the real cross-check and it reproduces A25's ~1%. The last is
   expected — RADIS computed those at the true density, we hold κ at ρ = 1000.
+
+  **[Corrected 2026-09-23, A59.]** That last attribution is only partly right. The
+  clamp error has since been *measured* against direct RADIS runs at the true
+  density: −1.62% at ρ/ρ_ceiling = 1.20 and −5.89% at 2.23, reproducing the
+  deviations at those points to <0.3 pp. So the clamp is a ≤6% effect, not a 30%
+  one. The two 20-30% outliers are at T = 2250 and 2750 K, the only temperatures
+  off HITEMP's T grid, and remain unexplained. See A59.
 
   **The finding.** At the eight new cold points (T = 650, 800 K) the FP/HITEMP
   Rosseland ratio is **24-213×**, against 1.4-7× everywhere at T ≥ 1000, while

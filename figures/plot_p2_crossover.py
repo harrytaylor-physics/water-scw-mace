@@ -322,8 +322,13 @@ def _print_agreement(bare_rows):
               f"{s['max_abs_dev_planck_pct']:>6.2f}%  rosseland "
               f"{s['max_abs_dev_rosseland_pct']:>6.2f}%")
     print(f"    The first line is the real cross-check and it reproduces A25's ~1% "
-          f"agreement.\n    The last is expected: RADIS computed those at the true "
-          f"density, we hold κ at ρ = 1000.")
+          f"agreement.\n    The clamp's own cost has since been MEASURED against "
+          f"direct RADIS runs at the true\n    density: −1.62% at ρ/ρ_ceiling = 1.20 "
+          f"and −5.89% at 2.23, which reproduce the deviations\n    at those points "
+          f"to <0.3 pp. So the clamp is a ≤6% effect on κ_R across all nine clamped\n"
+          f"    points. It does NOT explain the two 20-30% outliers, which are at "
+          f"T = 2250 and 2750 K —\n    the only temperatures off HITEMP's own grid, "
+          f"so also T-interpolated. Those remain\n    unexplained (A59).")
 
 
 if __name__ == "__main__":
