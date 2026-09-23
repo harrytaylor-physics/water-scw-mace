@@ -4,6 +4,82 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-23 (line list + empirical continuum; broadening convention)
+
+- **A58 — MT_CKD 4.3 water SELF-continuum added as a fourth opacity source,
+  `hitemp_mtckd`, implemented from AER's own source and gated against AER's own
+  binary.** Fig. 2b's ratios are FP against *bare* HITEMP — line absorption, no
+  continuum. Every planetary radiative-transfer model adds an empirical continuum
+  on top of its line list, so both references are now computed.
+
+  **Provenance, and a deviation from the brief.** The brief said to read
+  `~/scw/mtckd_continuum.py` and `mtckd_ref.npz` from ARC and reimplement what
+  they do. **Neither file could be copied: `scp` to `htc-login.arc.ox.ac.uk`
+  requires an interactive password and this session cannot supply one.** Rather
+  than block, the model was implemented from the *upstream* source, which is
+  better provenance than a reimplementation of a reimplementation: AER's MT_CKD
+  release 4.3 at `~/software/MT_CKD` — `src/mt_ckd_h2o_module.f90` for the
+  formulation and `data/absco-ref_wv-mt-ckd.nc` (sha256 `69944eb8…87ddb3`) for
+  the coefficients. Every question the brief wanted the ARC read to settle is
+  settled here from the primary source. **What remains unverified is only whether
+  ARC's script agrees with AER's**; `mtckd_v4.3_self_ref.npz` is deliberately
+  *not* named `mtckd_ref.npz`, so Harry's later `scp` cannot overwrite it and a
+  one-line diff is possible.
+
+  **Which version, which terms.** MT_CKD **4.3**; **self only, with the radiation
+  term**; no foreign term. Self-only is not a modelling choice — AER's foreign
+  coefficient carries a factor (1 − x_H2O) and the envelope is pure steam, so the
+  foreign continuum is identically zero by composition. Implemented exactly as
+  the Fortran computes it (Mlawer et al. 2023 Eqs. 1-4):
+
+      C(ν,T)   = C_ref(ν) · (296/T)^n(ν)                       Eq. 2
+      α_cont   = n_H2O · C(ν,T) · (n_H2O/n_ref) · R(ν,T)       Eqs. 1, 3
+      κ_cont   = α_cont / ρ                                    [cm²/g]
+      R(ν,T)   = ν·tanh(hcν/2k_BT)                             Eq. 4 (LBLRTM RADFN)
+
+  with n_ref the number density of AER's reference state (1013 mb, 296 K;
+  ρ_ref = 0.7418 kg/m³). AER's Fortran scales by `(p/p_ref)·(T_ref/T)`, which *is*
+  n/n_ref for an ideal gas; steam at envelope densities is not ideal, so the
+  number-density ratio is formed directly and pressure is never used — which is
+  also what the brief specified. **α_cont is quadratic in density, so the mass
+  opacity κ_cont is linear in ρ**, unlike line absorption, whose mass opacity is
+  ρ-independent at fixed broadening. That is the whole reason it matters here.
+  AER's XINT 4-point interpolation off the 10 cm⁻¹ reference grid is reproduced
+  rather than replaced by a linear one; the choice is worth up to 11% pointwise
+  and <1% on the band-limited means (gated both ways).
+
+  **The gate is against AER's compiled binary, not against ourselves.** At the
+  brief's stated gate state (296 K, ρ ≈ 0.7418 kg/m³ = 1 bar-equivalent) the
+  density scaling is unity by construction, so that comparison alone tests
+  nothing. The real gate runs AER's `cntnm` v4.3 at **296, 650, 1000 and 2000 K**
+  and compares against its printed `WATER.COEF` reference coefficients, with and
+  without the radiation term, over the whole 100-4000 cm⁻¹ band — which exercises
+  the (296/T)^n(ν) path end to end. **Agreement is 4.8e-5**, i.e. the binary's
+  single-precision print limit, against a 1% requirement. The four reference
+  outputs are committed under `validation/data/mtckd/` with the exact stdin recipe
+  (`cntnm` reads its state from stdin and *ignores* the `INPUT` file its own
+  example ships — a trap worth recording).
+
+  **The continuum is extrapolated, hard, in both variables, and this is stated
+  wherever the numbers are.** MT_CKD is fitted to terrestrial-atmosphere
+  measurements: T ≈ 250-350 K, densities at or below the reference. It is used at
+  **T = 500-3000 K** (a power law in T fitted over ~100 K carried over ~2700 K,
+  with exponents n(ν) = 1.43-10.3) and **ρ = 0.1-1000 kg/m³, up to ~1350× the
+  reference density**. Nothing about that is endorsed by AER. It is done because
+  it is what a planetary model does, and the point is to show what that costs.
+
+  **Implementation.** `opacity/mtckd.py` (the model), `tools/extract_mtckd_ref.py`
+  (one-off netCDF → npz, so netCDF4 stays out of the runtime dependencies, SPEC
+  §1), a new `SourceSpec.continuum` field, and one registry entry pointing at the
+  *same* `hitemp_opacity/` spectra — adding the source needed no change to the
+  table builder, the interpolator or the structure driver (SPEC §3). The continuum
+  is added to κ(ν) **at load time, before any mean is taken**, so the harmonic
+  Rosseland mean sees one spectrum rather than a sum of two means. The SPEC §2
+  plausibility ceiling (κ_P ≤ 1e5 cm²/g) guards the delivered-data ×1000 error, not
+  a physically computed additive term; a continuum source that trips it is
+  re-asserted on its line-only twin instead. It does not currently trip
+  (max κ_P = 1.74e4 cm²/g, at 500 K / 1000 kg/m³).
+
 ## 2026-09-20 (extension opacity campaign: units at source, enlarged domain)
 
 - **A50 — The FP factor-1000 error is fixed IN THE DATA; `sigma`/`sigma_raw`

@@ -27,6 +27,10 @@ class Paths:
     # Opacity source subdirectories are governed by ``opacity.registry`` (adding
     # a source is a registry entry, SPEC §3), not by config.
     aqua_table: str = "AQUA/Tables/aqua_eos_rhot_v1_0.dat"
+    # AER's MT_CKD self-continuum reference table, converted once from their
+    # netCDF by tools/extract_mtckd_ref.py (A58). Only the continuum-inclusive
+    # sources read it.
+    mtckd_ref: str = "mtckd/mtckd_v4.3_self_ref.npz"
     output_dir: str = "outputs"
 
 
@@ -206,6 +210,10 @@ class Config:
     def fp_opacity_path(self) -> Path:
         """Where FP spectra + grid.json + crossover_hitemp.json live."""
         return self.data_root_path / "fp_opacity"
+
+    @property
+    def mtckd_ref_path(self) -> Path:
+        return _resolve_under(self.data_root_path, self.paths.mtckd_ref)
 
     @property
     def output_path(self) -> Path:

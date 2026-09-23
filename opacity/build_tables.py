@@ -130,7 +130,7 @@ def compute_point_means(
 
     temps, rhos, kappa_r, kappa_p = [], [], [], []
     for path in paths:
-        rec = load_spectrum(path, spec, band_cm)
+        rec = load_spectrum(path, spec, band_cm, mtckd_ref_path=cfg.mtckd_ref_path)
         kappa_p.append(planck_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band_cm, rel_floor))
         kappa_r.append(rosseland_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band_cm, rel_floor))
         temps.append(rec.temperature_k)
@@ -154,6 +154,23 @@ def _assert_plausible(name: str, spec: SourceSpec, kappa_p_cm2_g: np.ndarray) ->
             f"Applied scale={spec.scale:g} ({spec.scale_reason}). "
             f"A ~1e3 offset indicates the factor-1000 scaling is wrong."
         )
+
+
+def _line_only_name(name: str) -> str:
+    """The bare line-list source a continuum-inclusive source is built on.
+
+    Both read the same spectra directory; the continuum source differs only by
+    its ``continuum`` field, so the line-only twin is the one registered entry
+    with the same ``subdir`` and no continuum.
+    """
+    spec = get_spec(name)
+    for other, cand in REGISTRY.items():
+        if cand.subdir == spec.subdir and cand.continuum is None:
+            return other
+    raise KeyError(
+        f"source {name!r} declares a continuum but no bare line-list twin is "
+        f"registered for subdir {spec.subdir!r}"
+    )
 
 
 def build_composite(cfg: Config, band: tuple[float, float] | None = None) -> CompositeOpacitySource:
@@ -200,10 +217,25 @@ def build_source(name: str, cfg: Config, band: tuple[float, float] | None = None
     if name == "composite":
         return build_composite(cfg, band=band)
     band_cm = band or _default_band(name, cfg)
+    spec = get_spec(name)
     temps, rhos, kappa_r, kappa_p = compute_point_means(name, cfg, band_cm)
     # Plausibility is asserted on the *unperturbed* means: it guards the
     # factor-1000 data error (SPEC §2), not the deliberate fp_scale perturbation.
-    _assert_plausible(name, get_spec(name), kappa_p)
+    # A continuum-inclusive source (A58) adds a physically-computed term that
+    # legitimately carries kappa_P above the ceiling at high density, so the
+    # guard is applied to its LINE-ONLY part — which is the delivered data the
+    # guard exists to protect. The continuum itself is gated separately, against
+    # AER's own binary (validation/test_mtckd_continuum.py).
+    try:
+        _assert_plausible(name, spec, kappa_p)
+    except AssertionError:
+        if spec.continuum is None:
+            raise
+        # Re-assert on the line-only twin: the delivered spectra are what the
+        # guard protects, and an added continuum may legitimately carry the
+        # total past the ceiling at high density.
+        _assert_plausible(_line_only_name(name), spec,
+                          compute_point_means(_line_only_name(name), cfg, band_cm)[3])
     # fp_scale (A37): a constant perturbation of the FP table, applied to both
     # means here so it is already in place when the composite blends (or when FP
     # is used pure). No effect on any other source.
@@ -215,7 +247,7 @@ def build_source(name: str, cfg: Config, band: tuple[float, float] | None = None
         kappa_rosseland_si=kappa_r * CM2_PER_G_TO_SI * scale,
         kappa_planck_si=kappa_p * CM2_PER_G_TO_SI * scale,
         band_cm=band_cm,
-        dilute_flat=get_spec(name).dilute_flat,
+        dilute_flat=spec.dilute_flat,
     )
     return GridOpacitySource(name, table)
 

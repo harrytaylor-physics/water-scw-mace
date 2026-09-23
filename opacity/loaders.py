@@ -14,6 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
+from opacity.mtckd import apply_continuum
 from opacity.registry import SourceSpec
 
 
@@ -28,8 +29,20 @@ class SpectrumRecord:
     path: Path
 
 
-def load_spectrum(path: Path, spec: SourceSpec, band_cm: tuple[float, float]) -> SpectrumRecord:
-    """Load and scale one spectrum npz; assert it spans ``band_cm``."""
+def load_spectrum(
+    path: Path,
+    spec: SourceSpec,
+    band_cm: tuple[float, float],
+    mtckd_ref_path: Path | None = None,
+) -> SpectrumRecord:
+    """Load and scale one spectrum npz; assert it spans ``band_cm``.
+
+    If the source declares a ``continuum`` (A58), that model is evaluated at this
+    spectrum's own (T, ρ) and **added** to the monochromatic opacity here — before
+    any band-limited mean is taken, so the mean sees line + continuum as one
+    spectrum rather than a sum of two means (which would be wrong for the
+    harmonic Rosseland mean).
+    """
     with np.load(path) as d:
         if spec.units_marker is not None and spec.units_marker not in d.files:
             raise ValueError(
@@ -53,6 +66,16 @@ def load_spectrum(path: Path, spec: SourceSpec, band_cm: tuple[float, float]) ->
         )
     if not np.all(np.isfinite(kappa)) or np.any(kappa <= 0):
         raise ValueError(f"{path.name}: opacity must be finite and positive")
+
+    if spec.continuum is not None:
+        if mtckd_ref_path is None:
+            raise ValueError(
+                f"source {spec.name!r} declares continuum {spec.continuum!r} but no "
+                f"reference-table path was passed to load_spectrum()"
+            )
+        kappa = apply_continuum(
+            spec.continuum, wn, kappa, temperature_k, rho_si, mtckd_ref_path
+        )
 
     order = np.argsort(wn)  # trapz needs monotone abscissa
     return SpectrumRecord(

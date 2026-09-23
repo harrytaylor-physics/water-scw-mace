@@ -27,6 +27,11 @@ class SourceSpec:
     # were rewritten in correct units by tools/fix_fp_units.py, which stamps this
     # marker; an un-stamped file is a legacy ×1000 one and must never load.
     units_marker: str | None = None
+    # Additive continuum model applied to every loaded spectrum, by name in
+    # ``opacity.mtckd.CONTINUUM_MODELS``. None = bare line absorption. The
+    # continuum is a function of the spectrum's own (T, ρ), so it is applied at
+    # load time, before any band-limited mean is taken (A58).
+    continuum: str | None = None
     # Below the grid's ρ floor, hold κ flat in ρ (dilute limit): pressure
     # broadening is negligible so mass opacity becomes ρ-independent (A26). True
     # for line lists (physically justified in the dilute regime); False for FP,
@@ -57,6 +62,20 @@ REGISTRY: dict[str, SourceSpec] = {
         scale=1.0,
         scale_reason="line-list opacity already in correct units",
         dilute_flat=True,  # HITEMP delivered only for ρ≥0.1 (A26)
+    ),
+    # HITEMP line absorption PLUS the MT_CKD 4.3 water self-continuum evaluated
+    # at each spectrum's own (T, ρ) — the second reference Fig. 2b reports, and
+    # the one every planetary model actually uses (A58). Same spectra on disk as
+    # ``hitemp``; the continuum is added on load. The continuum is extrapolated
+    # far outside MT_CKD's fitted range in BOTH T and ρ — see opacity/mtckd.py.
+    "hitemp_mtckd": SourceSpec(
+        name="hitemp_mtckd",
+        subdir="hitemp_opacity",
+        glob="T*_rho*.npz",
+        scale=1.0,
+        scale_reason="line-list opacity already in correct units",
+        continuum="mtckd_self",
+        dilute_flat=True,
     ),
     "pokazatel": SourceSpec(
         name="pokazatel",

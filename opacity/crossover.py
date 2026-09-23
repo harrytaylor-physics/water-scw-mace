@@ -188,3 +188,163 @@ def agreement_summary(rows: list[dict]) -> dict:
                 (abs(r["dev_rosseland_pct"]) for r in these), default=0.0),
         }
     return out
+
+
+# --------------------------------------------------------------------------
+# v3: both references — bare line list, and line list + MT_CKD self-continuum
+# --------------------------------------------------------------------------
+# The 48 FP points split into three groups that are reported separately because
+# they were delivered by different campaigns and carry different caveats:
+#   "original"   — the 27 points of the legacy grid, the set the delivered RADIS
+#                  crossover analysis covers and the set the published headline
+#                  was written against;
+#   "cold_dense" — the 12 points at T <= 1000 K, rho = 100-500, added by the
+#                  extension campaign; the regime the structural claim lives in,
+#                  and where MT_CKD's (296/T)^n is least extrapolated;
+#   "dilute"     — the 9 points at rho <= 60, where A52 found the transparency
+#                  windows that carry kappa_R sit at or below the dipole floor.
+GROUPS = ("original", "cold_dense", "dilute")
+
+
+def _group_of(row: dict) -> str:
+    if row["is_dilute"]:
+        return "dilute"
+    return "original" if row["in_delivered_set"] else "cold_dense"
+
+
+def crossover_v3_rows(
+    cfg: Config,
+    band_cm: tuple[float, float],
+    fp_name: str = "fp",
+    line_list: str = "hitemp",
+    continuum_source: str = "hitemp_mtckd",
+) -> list[dict]:
+    """One row per FP point with BOTH references: bare line list and line+MT_CKD.
+
+    Everything is computed by the identical code path — same band, same
+    ``compute_point_means``, same triangulated (T, log rho) interpolation of the
+    line-list table onto the FP points — so the two ratio columns differ only by
+    the continuum (A58). kappa values are cm^2/g.
+
+    ``mtckd_share_kappa_R`` is 1 - kappa_R(line) / kappa_R(line+continuum). In
+    the grey limit kappa_R(line+cont) = kappa_l + kappa_c and this reduces
+    exactly to continuum / (line + continuum); away from it, it is the fraction
+    of the combined Rosseland mean the continuum is responsible for, which is the
+    quantity that matters for the structure model.
+    """
+    t_fp, rho_fp, kr_fp, kp_fp = compute_point_means(fp_name, cfg, band_cm)
+    order = np.lexsort((rho_fp, t_fp))
+    t_fp, rho_fp, kr_fp, kp_fp = (a[order] for a in (t_fp, rho_fp, kr_fp, kp_fp))
+
+    ll = get_source(line_list, cfg, band=band_cm)
+    mt = get_source(continuum_source, cfg, band=band_cm)
+    kr_ll = np.asarray(ll.kappa_R(t_fp, rho_fp)) / CM2_PER_G_TO_SI
+    kp_ll = np.asarray(ll.kappa_P(t_fp, rho_fp)) / CM2_PER_G_TO_SI
+    kr_mt = np.asarray(mt.kappa_R(t_fp, rho_fp)) / CM2_PER_G_TO_SI
+    kp_mt = np.asarray(mt.kappa_P(t_fp, rho_fp)) / CM2_PER_G_TO_SI
+    clamped = np.asarray(ll.clamped_mask(t_fp, rho_fp)).ravel()
+
+    t_grid = np.unique(np.asarray(ll.table.temperature_k, float))
+    rho_grid = np.unique(np.asarray(ll.table.rho_si, float))
+    rho_ceiling = float(rho_grid.max())
+    reference = _reference(cfg)
+
+    rows = []
+    for i in range(t_fp.size):
+        t_k, rho = float(t_fp[i]), float(rho_fp[i])
+        row = {
+            "T": t_k,
+            "rho": rho,
+            "kappa_R_fp_cm2_g": float(kr_fp[i]),
+            "kappa_P_fp_cm2_g": float(kp_fp[i]),
+            "kappa_R_line_cm2_g": float(kr_ll[i]),
+            "kappa_P_line_cm2_g": float(kp_ll[i]),
+            "kappa_R_line_mtckd_cm2_g": float(kr_mt[i]),
+            "kappa_P_line_mtckd_cm2_g": float(kp_mt[i]),
+            # FP / bare line list (the manuscript's present Fig. 2b)
+            "ratio_planck_bare": float(kp_fp[i] / kp_ll[i]),
+            "ratio_rosseland_bare": float(kr_fp[i] / kr_ll[i]),
+            # FP / (line list + MT_CKD self-continuum)
+            "ratio_planck_mtckd": float(kp_fp[i] / kp_mt[i]),
+            "ratio_rosseland_mtckd": float(kr_fp[i] / kr_mt[i]),
+            # what fraction of the combined mean the continuum carries
+            "mtckd_share_kappa_R": float(1.0 - kr_ll[i] / kr_mt[i]),
+            "mtckd_share_kappa_P": float(1.0 - kp_ll[i] / kp_mt[i]),
+            "ll_clamped": bool(clamped[i]),
+            "ll_on_grid": bool(np.any(np.isclose(t_grid, t_k, rtol=1e-9))
+                               and np.any(np.isclose(rho_grid, rho, rtol=1e-9))),
+            "is_dilute": rho <= DILUTE_RHO_MAX,
+            "is_extension_point": rho < LEGACY_GRID_RHO_MIN or t_k < 1000.0,
+            "in_delivered_set": _match(reference, t_k, rho) is not None,
+            # The continuum is quadratic in density, so a rho-clamped point holds
+            # it at the ceiling and UNDER-counts it by this factor (A58).
+            "continuum_underscale": float(max(1.0, rho / rho_ceiling) ** 2),
+        }
+        row["group"] = _group_of(row)
+        rows.append(row)
+    return rows
+
+
+def summarize_v3(rows: list[dict]) -> dict:
+    """Per-group min/max of each ratio, plus the sub-unity continuum-inclusive set."""
+    keys = ("ratio_planck_bare", "ratio_rosseland_bare",
+            "ratio_planck_mtckd", "ratio_rosseland_mtckd", "mtckd_share_kappa_R")
+    out = {"groups": {}, "all": {}}
+    for label, these in [(g, [r for r in rows if r["group"] == g]) for g in GROUPS] + [
+        ("all", rows)
+    ]:
+        stats = {"n": len(these)}
+        for key in keys:
+            vals = [r[key] for r in these]
+            stats[key] = {"min": min(vals), "max": max(vals)} if vals else None
+        if label == "all":
+            out["all"] = stats
+        else:
+            out["groups"][label] = stats
+    out["sub_unity_mtckd"] = [
+        {k: r[k] for k in ("T", "rho", "group", "ratio_planck_mtckd",
+                           "ratio_rosseland_mtckd", "mtckd_share_kappa_R", "ll_clamped")}
+        for r in rows
+        if r["ratio_planck_mtckd"] < 1.0 or r["ratio_rosseland_mtckd"] < 1.0
+    ]
+    return out
+
+
+def write_v3_json(
+    cfg: Config, rows: list[dict], band_cm: tuple[float, float],
+    line_list: str = "hitemp", continuum_source: str = "hitemp_mtckd",
+    name: str = "crossover_v3.json",
+) -> Path:
+    """Write the two-reference metrics + per-group summary to ``outputs/``."""
+    out_dir = cfg.output_path
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / name
+    payload = {
+        "meta": (
+            f"FP vs {line_list.upper()} on the 48-point FP grid, against TWO references "
+            f"(A58): the bare line list, and the line list plus the MT_CKD 4.3 water "
+            f"SELF-continuum evaluated at each spectrum's own (T, rho). Both are "
+            f"band-limited means over [{band_cm[0]:g}, {band_cm[1]:g}] cm^-1 computed by "
+            f"the identical code path, with the line-list table read by the same "
+            f"triangulated (T, log rho) interpolation the structure model uses, so the "
+            f"two ratio columns differ ONLY by the continuum. Foreign continuum is "
+            f"identically zero: it carries (1 - x_H2O) and the envelope is pure steam. "
+            f"The continuum is EXTRAPOLATED far outside MT_CKD's fitted range in both T "
+            f"(fitted ~250-350 K, used 500-3000 K) and density (used up to ~1350x the "
+            f"1013 mb / 296 K reference). mtckd_share_kappa_R = 1 - kappa_R(line) / "
+            f"kappa_R(line+continuum), which reduces to continuum/(line+continuum) in "
+            f"the grey limit. Points with ll_clamped=true sit above the line list's rho "
+            f"ceiling; the continuum there is held at the ceiling and so UNDER-counted "
+            f"by continuum_underscale."
+        ),
+        "band_cm": list(band_cm),
+        "rel_floor": cfg.opacity.rel_floor,
+        "line_list": line_list,
+        "continuum_source": continuum_source,
+        "mtckd_reference": str(cfg.mtckd_ref_path),
+        "n_points": len(rows),
+        "summary": summarize_v3(rows),
+        "results": rows,
+    }
+    path.write_text(json.dumps(payload, indent=1) + "\n")
+    return path
