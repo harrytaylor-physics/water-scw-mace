@@ -73,7 +73,12 @@ def main(argv=None):
     x = np.arange(len(rows))
     width = 0.38
 
-    have = lambda key: all(key in r for r in rows)  # noqa: E731
+    # A point whose RADIS run failed is simply absent from its series: NaN, so the
+    # rest of the series still draws. An all-or-nothing check would let one refused
+    # corner delete the whole convention from the panel.
+    col = lambda key: np.array([r.get(key, np.nan) for r in rows], dtype=float)  # noqa: E731
+    have = lambda key: np.isfinite(col(key)).any()  # noqa: E731
+
     fig, (ax, ax2) = plt.subplots(2, 1, figsize=(10.0, 7.4), sharex=True,
                                   gridspec_kw={"height_ratios": [2.0, 1.0]},
                                   constrained_layout=True)
@@ -88,13 +93,19 @@ def main(argv=None):
         if not have(key):
             continue
         drawn = True
-        ax.bar(x + offset, [r[key] for r in rows], width, color=color, alpha=0.85,
+        ax.bar(x + offset, col(key), width, color=color, alpha=0.85,
                edgecolor="k", linewidth=0.4, label=f"κ_R: {label}", zorder=3)
         pkey = f"ratio_P_{conv}_over_ref1bar"
         if have(pkey):
-            ax.plot(x + offset, [r[pkey] for r in rows], ls="none", marker="_",
+            ax.plot(x + offset, col(pkey), ls="none", marker="_",
                     ms=13, mew=2.0, color="k", zorder=5,
                     label="κ_P (same convention)" if offset < 0 else None)
+    for i, r in enumerate(rows):  # say so where a run failed, rather than leave a gap
+        missing = [c for c in ("ref1bar", "ideal", "aqua") if f"error_{c}" in r]
+        if missing:
+            ax.annotate("\n".join(f"{c}: failed" for c in missing), (i, 1.0),
+                        ha="center", va="center", fontsize=7, color="#B00020",
+                        rotation=90, zorder=6)
     if not drawn:
         raise SystemExit(
             "no 1 bar-referenced ratios in the results — rerun the driver without "
@@ -110,9 +121,11 @@ def main(argv=None):
     # --- bottom: the systematic actually present in the delivered tables ----
     key = "ratio_R_aqua_over_ideal"
     if have(key):
-        ax2.bar(x, [r[key] for r in rows], 0.5, color=RESIDUAL_COLOR, alpha=0.85,
+        ax2.bar(x, col(key), 0.5, color=RESIDUAL_COLOR, alpha=0.85,
                 edgecolor="k", linewidth=0.4, zorder=3)
         for xi, r in zip(x, rows):
+            if key not in r:
+                continue
             ax2.annotate(f"P: {r['p_aqua_pa'] / r['p_ideal_pa']:.2f}×",
                          (xi, r[key]), textcoords="offset points",
                          xytext=(0, 4 if r[key] >= 1 else -12), ha="center", fontsize=7.5)

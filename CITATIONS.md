@@ -18,6 +18,18 @@ one of these or to an explicit derivation in `docs/`.
 - **ExoMol POKAZATEL** — Polyansky et al. (2018), *MNRAS* 480, 2597. Line-list
   water opacity.
 - First-principles (FP) opacity — group data (see `docs/` for provenance).
+- **MT_CKD water-vapour continuum** — Mlawer, Turner, Masiello, Alvarado et al.
+  (2023), *JGR Atmospheres* 128, e2023JD038473 (the v4.0+ formulation: Eqs. 1-4,
+  the (T_ref/T)^n self-continuum temperature dependence, the reference-density
+  scaling and the radiation term); Mlawer et al. (2012), *Phil. Trans. R. Soc. A*
+  370, 2520 (AER's own general reference, and the one their data file cites).
+  Implementation is **release 4.3** of AER's distributed model and coefficients
+  (<https://github.com/AER-RC/MT_CKD>), used for the `hitemp_mtckd` source
+  (A58). **Self-continuum only** — the foreign term carries (1 − x_H2O) and the
+  envelope is pure steam — and **extrapolated far outside its fitted range** in
+  both T and density; see `opacity/mtckd.py` and AMENDMENTS A58.
+- **RADIS** — Pannier & Laux (2019), *JQSRT* 222, 12. Line-by-line code used to
+  generate the HITEMP spectra and the A59 broadening-convention study.
 
 ## Radiative structure & boundary
 - **Guillot (2010)**, *A&A* 520, A27. Analytic irradiated two-stream T(τ)
