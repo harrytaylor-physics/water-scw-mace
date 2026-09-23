@@ -291,7 +291,7 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | 1000 | 129.7 | 598.60 / 553.96 | 2.051 | 4.660 | 4.652 | **2.272** | 0.998 | 277.4 | 277.8 |
   | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | 0.6313 | **0.850** | **0.962** | 357.7 | 358.8 |
   | 1500 | 471.3 | 3262.7 / 4275.7 | 12.54 | 22.07 | 22.32 | **1.760** | **1.011** | 251.8 | 253.5 |
-  | 2000 | 1200 | 11077 / 51080 | 34.23 | 50.64 | *pending* | **1.479** | — | 245.8 | 247.2 |
+  | 2000 | 1200 | 11077 / 51080 | 34.23 | 50.64 | **112.3** | **1.479** | **2.218** | 245.8 | 247.2 |
 
   **A resolution caveat, and it falls on the 1 bar column — not the high-pressure
   one.** RADIS raised exactly one accuracy warning in the whole run, during the
@@ -320,11 +320,37 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   natural intuition ("more pressure → broader lines → filled windows → higher
   κ_R") is what the brief, and this amendment's first draft, both assumed.
 
-  **Ideal-vs-AQUA so far, over the four completed points: 0.962, 0.998, 0.999,
-  1.011 — i.e. within ±4% on κ_R everywhere, against pressure ratios of
-  0.25×-1.31×.** The provisional answer to Task 21's real question is therefore
-  that rebuilding the delivered tables on AQUA pressures would not move them
-  meaningfully; the two extreme-pressure points (ratios 4.61× and 15.7×) remain.
+  **Ideal-vs-AQUA splits sharply in two, and the earlier "within ±4%" reading was
+  wrong.** At the four moderate points (pressure ratios 0.25×-1.31×) κ_R moves by
+  0.962, 0.998, 0.999, 1.011 — negligible. At (2000 K, 1200), pressure ratio
+  4.61×, it moves by **×2.218**. An earlier draft of this amendment concluded from
+  the first four that "rebuilding the delivered tables on AQUA pressures would not
+  move them meaningfully", reasoning from the saturation measured at T = 1000 K
+  (d ln κ_R/d ln P = 0.034 between 138 and 599 bar). That reasoning does not
+  extrapolate: over the 11 077 → 51 080 bar step the same quantity is **0.521**,
+  fifteen times steeper. The conclusion is withdrawn.
+
+  **But the 2.2× is a convention artefact, not a physical result, and it must not
+  be quoted as one.** At these pressures the half-width dwarfs the truncation:
+
+  | state | HWHM [cm⁻¹] | × the 50 cm⁻¹ truncation | retained Lorentz area | profile scaled up by | κ_P/κ_R |
+  |---|---|---|---|---|---|
+  | 1 bar | 0.163 | 0.003 | 0.998 | ×1.002 | 7.18 |
+  | ideal, 11 077 bar | 1810 | 36 | 0.0176 | **×56.9** | 4.88 |
+  | AQUA, 51 080 bar | 8349 | 167 | 0.0038 | **×262** | **2.11** |
+
+  RADIS is renormalising each profile by up to a factor 262 to put the whole line
+  strength inside a ±50 cm⁻¹ box. The spectrum tends to a smooth pseudo-continuum,
+  the windows disappear, and κ_R climbs toward κ_P — the contrast falls from 7.2 to
+  2.1. That the true κ_R rises steeply here is physically reasonable (a genuine
+  γ = 8349 cm⁻¹ really would smear the band into a continuum), but **the magnitude
+  is set by an arbitrary 50 cm⁻¹ box, not by the line shape.**
+
+  The defensible statement is therefore: *the broadening convention is worth under
+  4% at ρ ≲ 500 and becomes the dominant uncertainty at ρ ≳ 1000, where the
+  computed line-list opacity is convention-dominated rather than resolved.* That
+  bears directly on the nine `ll_clamped` points of A58's table, which live in
+  exactly that regime and carry the largest FP/HITEMP ratios in the manuscript.
 
   The number the manuscript actually needs from the (650 K, 300) point is the
   **ideal-vs-AQUA systematic: −3.8% on κ_R** (0.6313 / 0.6561) and **+0.1% on κ_P**, despite the
