@@ -288,6 +288,48 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | T [K] | ρ [kg/m³] | P ideal / AQUA [bar] | κ_R 1 bar | κ_R ideal | κ_R AQUA | ideal/1 bar | AQUA/ideal | κ_P 1 bar | κ_P ideal |
   |---|---|---|---|---|---|---|---|---|---|
   | 1000 | 30 | 138.46 / 135.88 | 2.051 | 4.432 | 4.427 | **2.161** | 0.999 | 277.4 | 277.5 |
+  | 1000 | 129.7 | 598.60 / 553.96 | 2.051 | 4.660 | 4.652 | **2.272** | 0.998 | 277.4 | 277.8 |
+  | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | *pending* | **0.850** | — | 357.7 | 358.8 |
+
+  **κ_R is NOT monotonic in broadening pressure, and the sign flips with
+  temperature.** Both rows below are direct RADIS runs, like for like:
+
+  | point | 1 bar → ideal P | HWHM at ideal P | HITEMP contrast κ_P/κ_R |
+  |---|---|---|---|
+  | (1000 K, 30) | 2.051 → 4.432, **×2.16 up** | 32.7 cm⁻¹ | 60 |
+  | (1000 K, 129.7) | 2.051 → 4.660, **×2.27 up** | 141 cm⁻¹ | 60 |
+  | (650 K, 300) | 0.7715 → **0.6561**, ×0.85 **down** | 267 cm⁻¹ | 464 → 547 |
+
+  At 1000 K, broadening fills the windows and κ_R rises, as expected. At 650 K it
+  *falls* by 15%, and the spectral contrast *rises* from 464 to 547 — the
+  effective windows get **deeper** as the gas is compressed, which no real line
+  shape does. A simple "half-width past the truncation" threshold does not explain
+  it on its own: (1000 K, 129.7) also has HWHM ≫ 50 cm⁻¹ and still rises. What
+  separates the cases is window depth — at 650 K HITEMP's contrast is ~8× larger,
+  so κ_R, a harmonic mean, is far more sensitive to how far-wing absorption is
+  treated, and that is exactly what the truncation-plus-renormalisation mangles.
+
+  **No directional claim is made.** The measurement is that the response reverses;
+  the mechanism is entangled with the line-shape convention and cannot be
+  separated with the runs in hand. This is the concrete reason the ratios are not
+  bounds. It also means the *delivered* tables' cold-dense κ_R carries this
+  systematic, since they were built with the same truncation at these pressures —
+  which lands on the same 12 cold-dense points A58's continuum result lands on.
+
+  **Second, much stronger test of A6's interpolation.** (650 K, 300) is
+  interpolated in T across HITEMP's 600-700 K gap, over which κ_R **doubles**
+  (0.4599 → 0.9235). Against the direct run:
+
+  | | κ_R | κ_P |
+  |---|---|---|
+  | interpolated (A6) | 0.65172 | 359.97 |
+  | RADIS direct | 0.6561 | 358.8 |
+  | difference | **−0.67%** | **+0.33%** |
+
+  Log-linear interpolation in (T, log ρ) holds to under 1% even where the function
+  doubles across the interval. Together with the (1000 K, 129.7) ρ-interpolation
+  check at 0.044%, A6's scheme is now validated against independently computed
+  states in both coordinates.
 
   This one complete point already fixes the shape of the answer, and it is the
   shape the physics predicts: **the broadening convention is a Rosseland-mean
