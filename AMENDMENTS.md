@@ -281,9 +281,8 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   Data panel: κ_R ratio against the 1 bar reference, and the residual AQUA/ideal
   systematic actually present in the delivered tables).
 
-  **RESULTS — PARTIAL, the run is still going.** 18 spectra at ~7.3 min each
-  (~2.2 h); the driver rewrites `outputs/broadening_sensitivity.json` after every
-  point and skips nothing, so `--only T,rho` resumes any gap. What has landed:
+  **RESULTS — COMPLETE. All 18 spectra ran, none refused.** ~2.5 h wall on the Mac.
+  `outputs/broadening_sensitivity.json` + `outputs/ED1_broadening.png`.
 
   | T [K] | ρ [kg/m³] | P ideal / AQUA [bar] | κ_R 1 bar | κ_R ideal | κ_R AQUA | ideal/1 bar | AQUA/ideal | κ_P 1 bar | κ_P ideal |
   |---|---|---|---|---|---|---|---|---|---|
@@ -292,7 +291,10 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | 0.6313 | **0.850** | **0.962** | 357.7 | 358.8 |
   | 1500 | 471.3 | 3262.7 / 4275.7 | 12.54 | 22.07 | 22.32 | **1.760** | **1.011** | 251.8 | 253.5 |
   | 2000 | 1200 | 11077 / 51080 | 34.23 | 50.64 | **112.3** | **1.479** | **2.218** | 245.8 | 247.2 |
-  | 3000 | 2228.7 | 30858 / 485710 | 86.35 | 103.7 | *pending* | **1.201** | — | 237.3 | 229.4 |
+  | 3000 | 2228.7 | 30858 / 485710 | 86.35 | 103.7 | **98.06** | **1.201** | **0.945** | 237.3 | 229.4 |
+
+  Over the six points: κ_R(ideal)/κ_R(1 bar) = **0.850-2.272**, κ_R(AQUA)/κ_R(1 bar)
+  = **0.818-3.281**, κ_R(AQUA)/κ_R(ideal) = **0.945-2.218**.
 
   **The ρ-clamp error is now MEASURED, and A53's "up to 30%" was mis-attributed.**
   Two of these points sit above HITEMP's ρ = 1000 ceiling, so the table holds κ at
@@ -496,8 +498,25 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   longer than the 2.2 h it implies. The driver is resumable per point, so this is
   an inconvenience rather than a risk.
 
-  Fill this table by re-running `figures/plot_ed1_broadening.py config/fiducial.yaml`
-  once the driver finishes.
+  **The answer, in one paragraph.** The broadening-pressure convention is worth
+  **under 4% on κ_R at ρ ≲ 500 kg/m³** (ideal-vs-AQUA = 0.962, 0.998, 0.999, 1.011
+  at the four points there) and becomes the **dominant uncertainty at ρ ≳ 1000**
+  (×2.218 at (2000 K, 1200), ×0.945 at (3000 K, 2229)). The hypothetical 1 bar
+  reference the brief asked about would have been wrong by ×0.85-2.27 — but it is
+  hypothetical, because the delivered tables do not use it. On the Planck mean the
+  convention is negligible everywhere except the most extreme state, where κ_P
+  falls 28% (229.4 → 165.2).
+
+  **At ρ ≳ 1000 none of this is resolved physics.** At (3000 K, 2229) the AQUA
+  half-width is **64 000 cm⁻¹ — 1281× the truncation, and wider than AER's whole
+  0-20 000 cm⁻¹ reference range.** RADIS is packing each line's full strength into
+  a ±50 cm⁻¹ box, the spectrum goes grey (κ_P/κ_R falls from 2.75 at 1 bar to 1.68),
+  and both means are set by the box rather than by the line shape. The honest
+  summary is: **the line-list opacity at ρ ≳ 1000 kg/m³ is convention-dominated**,
+  and that is where the nine `ll_clamped` points of A58's table live.
+
+  Regenerate the panel and table with
+  `python figures/plot_ed1_broadening.py config/fiducial.yaml`.
 
 ## 2026-09-20 (extension opacity campaign: units at source, enlarged domain)
 
