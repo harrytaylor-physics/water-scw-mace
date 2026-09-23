@@ -66,13 +66,15 @@ M_H2O_G_MOL = MMW_H2O * 1.0e3
 
 # The six points the brief names: four FP grid points spanning the grid, plus the
 # cold-dense corner (650 K, 300) and a dilute one (1000 K, 30).
+# ...ordered by ascending worst-case broadening pressure, so the cheap points
+# land first and a failure in the extreme corner still leaves a usable run.
 POINTS = (
+    (1000.0, 30.0),
     (1000.0, 129.7),
+    (650.0, 300.0),
     (1500.0, 471.3),
     (2000.0, 1200.0),
     (3000.0, 2228.7),
-    (650.0, 300.0),
-    (1000.0, 30.0),
 )
 
 CONVENTIONS = ("ref1bar", "ideal", "aqua")
@@ -245,7 +247,18 @@ def main(argv=None) -> int:
         for conv in conventions:
             p_pa = r[f"p_{conv}_pa"]
             t0 = time.time()
-            wn, kappa = compute_kappa(sf, t_k, p_pa)
+            try:
+                wn, kappa = compute_kappa(sf, t_k, p_pa)
+            except Exception as exc:  # noqa: BLE001 - one bad corner must not end the run
+                # At (3000 K, 2229) the AQUA broadening pressure is ~4.9e5 bar and
+                # the nominal Lorentzian half-width is O(10^3) cm^-1. If RADIS
+                # refuses that, the refusal text IS the answer to "what half-width
+                # does RADIS accept" — so it is recorded, not swallowed.
+                entry[f"error_{conv}"] = f"{type(exc).__name__}: {exc}"
+                print(f"  T={t_k:g} rho={rho:g} {conv:<8s} P={p_pa / 1e5:>11.5g} bar  "
+                      f"FAILED after {time.time() - t0:.1f}s: {type(exc).__name__}: "
+                      f"{exc}", flush=True)
+                continue
             kr = rosseland_mean(wn, kappa, t_k, band, cfg.opacity.rel_floor)
             kp = planck_mean(wn, kappa, t_k, band, cfg.opacity.rel_floor)
             npz = out_dir / f"T{t_k:g}_rho{rho:g}_{conv}.npz"
@@ -260,7 +273,8 @@ def main(argv=None) -> int:
                   f"kR={kr:>10.4g}  kP={kp:>10.4g} cm^2/g  ({time.time() - t0:.1f}s)",
                   flush=True)
         for conv in conventions:
-            if conv != "ref1bar" and "kappa_R_ref1bar_cm2_g" in entry:
+            if (conv != "ref1bar" and "kappa_R_ref1bar_cm2_g" in entry
+                    and f"kappa_R_{conv}_cm2_g" in entry):
                 entry[f"ratio_R_{conv}_over_ref1bar"] = (
                     entry[f"kappa_R_{conv}_cm2_g"] / entry["kappa_R_ref1bar_cm2_g"])
                 entry[f"ratio_P_{conv}_over_ref1bar"] = (
@@ -271,7 +285,15 @@ def main(argv=None) -> int:
             entry["ratio_P_aqua_over_ideal"] = (
                 entry["kappa_P_aqua_cm2_g"] / entry["kappa_P_ideal_cm2_g"])
         results.append(entry)
+        _write(cfg, out_dir, band, conventions, results, args)  # crash-safe
 
+    path = _write(cfg, out_dir, band, conventions, results, args)
+    print(f"wrote {path}")
+    return 0
+
+
+def _write(cfg, out_dir: Path, band, conventions, results, args) -> Path:
+    """(Re)write the results JSON, merging a single-point rerun into the full set."""
     payload = {
         "meta": (
             "HITEMP broadening-convention sensitivity (A59). Three conventions at each "
@@ -289,20 +311,21 @@ def main(argv=None) -> int:
         "wstep_cm": WSTEP_CM,
         "truncation_cm": TRUNCATION_CM,
         "wavenum_range_cm": [args.wavenum_min, WAVENUM_MAX_CM],
+        "points": [list(pt) for pt in POINTS],
         "isotopes": ISOTOPES,
         "conventions": conventions,
         "results": results,
     }
     path = out_dir.parent / "broadening_sensitivity.json"
     existing = json.loads(path.read_text()) if path.exists() else None
-    if existing and args.only:  # merge a single-point rerun into the full set
+    if existing:  # keep points this invocation is not recomputing
         keep = [r for r in existing["results"]
                 if not any(abs(r["T"] - n["T"]) < 0.5 and abs(r["rho"] - n["rho"]) < 1e-6
                            for n in results)]
-        payload["results"] = sorted(keep + results, key=lambda r: (r["T"], r["rho"]))
+        payload["results"] = keep + results
+    payload["results"] = sorted(payload["results"], key=lambda r: (r["T"], r["rho"]))
     path.write_text(json.dumps(payload, indent=1) + "\n")
-    print(f"wrote {path}")
-    return 0
+    return path
 
 
 if __name__ == "__main__":

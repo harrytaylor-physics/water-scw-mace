@@ -54,6 +54,10 @@ Not committed. Configs default to `~/subneptune_data`:
                                                  units fixed at source, A50)
     ~/subneptune_data/fp_opacity/grid.json
     ~/subneptune_data/fp_opacity/crossover_hitemp.json
+    ~/subneptune_data/mtckd/mtckd_v4.3_self_ref.npz   (MT_CKD 4.3 self-continuum
+                                                 reference coefficients; generate
+                                                 once with tools/extract_mtckd_ref.py
+                                                 from AER's netCDF — A58)
 
 Override the root with `paths.data_root` in a config file.
 

@@ -137,9 +137,90 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
   The nine ρ > 1000 points keep the existing nearest-neighbour clamp (A53) rather
   than a hybrid κ_line(clamped) + κ_cont(true ρ), which would be a third
-  convention and is not additive in the harmonic mean. The continuum is therefore
-  *under*-counted there by (ρ/1000)², up to 5.0× at (3000 K, 2229); the factor is
-  reported per point as `continuum_underscale`.
+  convention and is not additive in the harmonic mean. The continuum's
+  contribution is therefore *under*-counted there by **ρ/1000** — linear, not
+  quadratic: the absorption coefficient α_cont goes as ρ², but the tabulated
+  quantity is the mass opacity κ = α/ρ, which goes as ρ. That is up to **2.23×**
+  at (3000 K, 2229), and the factor is reported per point as
+  `continuum_underscale`.
+
+- **A59 — Broadening-convention sensitivity: the brief's premise is wrong, the
+  delivered HITEMP spectra are NOT at a fixed 1 bar reference, and the real
+  question is ideal-gas P versus AQUA P.** Task 21 was written to quantify "the
+  effect of broadening at the cell's actual pressure" against "the 1 bar-reference
+  values" the bare HITEMP spectra were said to use. They do not use one.
+
+  **The evidence, three independent lines.** (a) Every delivered file carries
+  `pressure_mode = 'ideal'` and a `p_bar` equal to ρRT/M at its own density —
+  0.4615 bar at (1000 K, 0.1 kg/m³), 4615 bar at (1000 K, 1000). (b) κ(ν) at fixed
+  T differs by up to **143×** between ρ = 0.1 and ρ = 1000, which is impossible
+  under a ρ-independent broadening: κ = α/ρ would then be identical at every
+  density, since α ∝ n. (c) Re-running RADIS locally at the ideal-gas pressure
+  reproduces the delivered `T1000_rho30.npz` to **1e-6 on both means** and 3.5e-5
+  monochromatically across 100-4000 cm⁻¹. **A17 already recorded this for the
+  delivered POKAZATEL set** — the `HitempCalculator` *snippet* used a 1 bar
+  reference, the production run did not — and the HITEMP delivery followed the
+  same convention.
+
+  So the brief's comparison is not available, and the meaningful one is **ideal-gas
+  P (what the tables were built at) versus AQUA P(T, ρ) (what the structure model's
+  own EOS says)**. All three conventions are computed, so the brief's literal
+  question is answered as well:
+
+  | convention | P at the six points [bar] | what it is |
+  |---|---|---|
+  | `ref1bar` | 1 | the convention the brief assumed |
+  | `ideal` | 138 - 30 900 | P = ρRT/M, the delivered tables' convention |
+  | `aqua` | 136 - 486 000 | the structure model's EOS |
+
+  AQUA/ideal spans **0.253×** at (650 K, 300) — inside the vapour-liquid region,
+  where the EOS pins P far below ideal — to **15.7×** at (3000 K, 2229). Every
+  point sits in AQUA phase 5 except (1000 K, 30), which is phase 3.
+
+  **Mass opacity is convention-independent by construction.** RADIS returns α at
+  its own ideal number density n = P_broad/(k_BT), and the pipeline forms
+  κ = α/(n·M/N_A) ≡ σ·N_A/M. The broadening pressure therefore moves *only* the
+  Voigt widths. That is what makes this a clean one-variable experiment.
+
+  **The Lorentzian half-width cap the brief asks to be stated: RADIS's
+  `truncation`, 50 cm⁻¹** (its default, and what the delivered spectra used). The
+  nominal self-broadened HWHM at these pressures runs far past it — water is
+  ~0.4 cm⁻¹/atm at 296 K, so at ρ = 2229 kg/m³ it is O(10³) cm⁻¹ — and beyond the
+  cap the profile is cut. The retained Lorentzian area goes as
+  ~(2/π)·arctan(truncation/HWHM), so the high-pressure spectra **under-count**
+  absorption rather than over-count it: **every ratio reported here is a lower
+  bound on the convention's effect.** Any point RADIS refuses outright has its
+  refusal text recorded in the output, since that text is itself the answer to
+  "what half-width does RADIS accept".
+
+  **Run environment (local, not ARC).** RADIS 0.16.3 and a 7.6 GB HITEMP cache are
+  both on the Mac, so the brief's ARC fallback was not needed;
+  `tools/broadening_sensitivity.sbatch` is written anyway and is the route if the
+  run has to move. Two environment facts are worth recording because they will bite
+  again:
+
+  * **RADIS ≥ 0.16 made `SpectrumFactory` slotted.** `sf.pressure = ...` — what
+    `~/scw/hitemp_opacity.py` and `generate_linelist_tables.py` do between points —
+    now raises `AttributeError`. The pressure is a per-call `eq_spectrum(pressure=)`
+    argument. The new form works on the older API too, so no version branch.
+  * **`fetch_hitemp` aborts on a fully-cached offline load.** It calls
+    `HITEMPDatabaseManager.register()` whenever the databank is absent from
+    `~/radis.json`, and that method formats `self.wmin`/`self.wmax`, which are only
+    set when files are actually downloaded (`TypeError: unsupported format string
+    passed to NoneType`). Registration is pure bookkeeping, so the driver skips it
+    when nothing was downloaded rather than writing an entry into the user's home
+    config.
+  * The local cache lacks HITEMP's 0-50 cm⁻¹ file, so lines are loaded from
+    **50 cm⁻¹** rather than the delivered run's 10. With truncation = 50 a line
+    below 50 cm⁻¹ cannot reach past 100 cm⁻¹, so the science band [100, 4000] is
+    unaffected — which the 1e-6 reproduction above confirms empirically.
+    `--wavenum-min 10` restores the delivered convention exactly where the file
+    exists (the sbatch wrapper passes it).
+
+  `tools/broadening_sensitivity.py` (driver, resumable, per-point failure isolation,
+  JSON rewritten after every point), `figures/plot_ed1_broadening.py` (the Extended
+  Data panel: κ_R ratio against the 1 bar reference, and the residual AQUA/ideal
+  systematic actually present in the delivered tables).
 
 ## 2026-09-20 (extension opacity campaign: units at source, enlarged domain)
 

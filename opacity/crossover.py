@@ -276,9 +276,12 @@ def crossover_v3_rows(
             "is_dilute": rho <= DILUTE_RHO_MAX,
             "is_extension_point": rho < LEGACY_GRID_RHO_MIN or t_k < 1000.0,
             "in_delivered_set": _match(reference, t_k, rho) is not None,
-            # The continuum is quadratic in density, so a rho-clamped point holds
-            # it at the ceiling and UNDER-counts it by this factor (A58).
-            "continuum_underscale": float(max(1.0, rho / rho_ceiling) ** 2),
+            # A rho-clamped point holds kappa at the ceiling. The continuum's
+            # ABSORPTION is quadratic in density, but its MASS OPACITY is linear
+            # (kappa = alpha/rho), and it is kappa that is tabulated — so the
+            # continuum's contribution is under-counted by rho/rho_ceiling, not
+            # by its square (A58).
+            "continuum_underscale": float(max(1.0, rho / rho_ceiling)),
         }
         row["group"] = _group_of(row)
         rows.append(row)
@@ -334,8 +337,10 @@ def write_v3_json(
             f"1013 mb / 296 K reference). mtckd_share_kappa_R = 1 - kappa_R(line) / "
             f"kappa_R(line+continuum), which reduces to continuum/(line+continuum) in "
             f"the grey limit. Points with ll_clamped=true sit above the line list's rho "
-            f"ceiling; the continuum there is held at the ceiling and so UNDER-counted "
-            f"by continuum_underscale."
+            f"ceiling; kappa there is held at the ceiling, so the continuum's "
+            f"contribution is UNDER-counted by continuum_underscale = rho/rho_ceiling "
+            f"(linear, because the tabulated quantity is the MASS opacity kappa = "
+            f"alpha/rho, and alpha is the quadratic one)."
         ),
         "band_cm": list(band_cm),
         "rel_floor": cfg.opacity.rel_floor,
