@@ -289,7 +289,24 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   |---|---|---|---|---|---|---|---|---|---|
   | 1000 | 30 | 138.46 / 135.88 | 2.051 | 4.432 | 4.427 | **2.161** | 0.999 | 277.4 | 277.5 |
   | 1000 | 129.7 | 598.60 / 553.96 | 2.051 | 4.660 | 4.652 | **2.272** | 0.998 | 277.4 | 277.8 |
-  | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | *pending* | **0.850** | — | 357.7 | 358.8 |
+  | 650 | 300 | 899.97 / 227.67 | 0.7715 | 0.6561 | 0.6313 | **0.850** | **0.962** | 357.7 | 358.8 |
+
+  **(650 K, 300) completes, and the pressure response has an interior minimum:**
+  κ_R = 0.7715 (1 bar) → **0.6313** (227.7 bar) → 0.6561 (900 bar). It falls, then
+  rises. So the dependence on broadening pressure is not merely non-monotonic in
+  sign between points — it is non-monotonic *within* a single point, with a
+  turning point somewhere near a few hundred bar. No monotone reasoning about
+  broadening pressure survives that, which is worth stating plainly because the
+  natural intuition ("more pressure → broader lines → filled windows → higher
+  κ_R") is what the brief, and this amendment's first draft, both assumed.
+
+  The number the manuscript actually needs from this point is the **ideal-vs-AQUA
+  systematic: −3.8% on κ_R** (0.6313 / 0.6561) and **+0.1% on κ_P**, despite the
+  AQUA pressure being only **0.253×** the ideal-gas one. That is the largest
+  ideal-vs-AQUA effect so far (against 0.1-0.2% at the two T = 1000 K points) and
+  it is still small. The saturation seen at T = 1000 K — d ln κ_R / d ln P falling
+  from 0.156 over the first two decades to 0.034 over the next — is the reason: a
+  4× pressure error buys only a few percent in κ_R once past ~100 bar.
 
   **κ_R is NOT monotonic in broadening pressure, and the sign flips with
   temperature.** Both rows below are direct RADIS runs, like for like:
