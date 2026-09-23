@@ -227,6 +227,12 @@ def apply_continuum(
 # the opacity. The unweighted medians are 0.172 cm^-1/atm and 0.41, so this is the
 # pessimistic end of a factor ~2.6 spread, and the estimate is an order-of-
 # magnitude diagnostic, not a line-shape calculation.
+#
+# NOTE on the exponent: `Tdpair` is HITRAN's *air*-broadening temperature exponent.
+# HITRAN carries no separate self-broadening exponent, so using it for gamma_self
+# is the standard assumption (RADIS does the same). The conclusion this diagnostic
+# supports is insensitive to it: the half-widths exceed the 25 cm^-1 bound by one
+# to two orders of magnitude for any exponent in [0.3, 0.8].
 LBLRTM_LINE_BOUND_CM = 25.0
 HITEMP_GAMMA_SELF_CM_ATM = 0.455  # at 296 K, intensity-weighted
 HITEMP_GAMMA_TEXP = 0.529
