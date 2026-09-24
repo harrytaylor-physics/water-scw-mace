@@ -375,6 +375,39 @@ def test_the_density_clamp_costs_at_most_six_percent(cfg, state, kappa_r_true):
     assert -0.06 < error < 0.0  # clamping to a lower density under-estimates
 
 
+def test_the_arc_reference_is_the_same_coefficients(cfg):
+    """A58's one open question, closed (A63).
+
+    The continuum was built from AER's release 4.3 because ARC was unreachable.
+    ARC's own ``mtckd_ref.npz`` has since been copied across and is identical on
+    every array and scalar — so the model rests on exactly the coefficients ARC
+    uses. Skipped where that file is not present, since it is uncommitted data.
+    """
+    import sys
+
+    arc = cfg.data_root_path / "mtckd" / "mtckd_ref.npz"
+    if not arc.exists():
+        pytest.skip(f"{arc} not present on this machine")
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from tools.mtckd_ref_diff import _as_reference
+
+    theirs, keys = _as_reference(arc)
+    ours = load_reference(cfg.mtckd_ref_path)
+    assert set(keys) == {"wavenumbers", "self_absco_ref", "self_texp",
+                         "ref_press_mbar", "ref_temp_K"}
+    assert np.array_equal(theirs.wavenumber_cm, ours.wavenumber_cm)
+    assert np.array_equal(theirs.self_absco_ref, ours.self_absco_ref)
+    assert np.array_equal(theirs.self_texp, ours.self_texp)
+    assert theirs.ref_press_mb == ours.ref_press_mb
+    assert theirs.ref_temp_k == ours.ref_temp_k
+    # ...and therefore the derived coefficients, which is what kappa depends on
+    wn = np.linspace(100.0, 4000.0, 2001)
+    for t_k in (296.0, 650.0, 1000.0, 2000.0):
+        assert np.array_equal(self_continuum_coefficient(wn, t_k, theirs),
+                              self_continuum_coefficient(wn, t_k, ours))
+
+
 def test_a_spectrum_refuses_to_load_without_a_reference_table(cfg):
     """No silent fallback to bare line absorption if the table is missing."""
     from opacity.loaders import find_spectra, load_spectrum

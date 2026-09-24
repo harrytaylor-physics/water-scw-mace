@@ -40,6 +40,31 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   that belong to no grid at all. Every output and figure here was regenerated only
   after all 14 rows landed.
 
+- **A63 — ARC's MT_CKD reference is bit-for-bit the file A58 built, so A58's one
+  open question is closed.** A58 could not reach ARC (`scp` needs an interactive
+  password) and built the self-continuum from AER's release 4.3 instead — the
+  upstream primary source. The one thing that left open was whether ARC's
+  `mtckd_ref.npz` holds the same coefficients. It has since been copied across and
+  `tools/mtckd_ref_diff.py` compares them at three levels:
+
+  | | result |
+  |---|---|
+  | keys and shapes | names differ (`wavenumbers`/`ref_press_mbar`/`ref_temp_K` vs ours), content maps one to one; 2003 points either way |
+  | `wavenumber_cm`, `self_absco_ref`, `self_texp` | **max &#124;rel diff&#124; = 0** on all three |
+  | `ref_press_mb`, `ref_temp_k` | 1013 mb, 296 K in both |
+  | derived C(ν,T)·R(ν,T) at 296/650/1000/2000 K on [100, 4000] cm⁻¹ | **max &#124;rel diff&#124; = 0** at every temperature |
+
+  **Identical, not merely close.** Nothing in Tasks 19-23 changes, and A58's model
+  rests on exactly the coefficients ARC uses. ARC's file carries no version or
+  provenance string; ours carries AER's title and the sha256 of the netCDF.
+
+  **One honest limit on the version identification.** The *self* arrays alone
+  cannot separate MT_CKD 4.0 from 4.1-4.3: the self continuum was last revised in
+  4.0, and 4.1-4.3 changed only the **foreign** term, which neither file carries.
+  So "4.3" rests on our file's provenance, not on the numbers. For a pure-steam
+  envelope the distinction is empty anyway — the foreign term carries
+  (1 − x_H2O) = 0.
+
 - **A61 — The dilute FP/line-list excess is a frequency-dependent tilt, not an
   intensity scale.** At ρ = 10-60 the FP Planck mean exceeds bare HITEMP by
   1.32-1.53× while the Rosseland ratio falls to 1.08, and a band-integrated mean
