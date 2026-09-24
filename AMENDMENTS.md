@@ -35,10 +35,46 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 
   **A scattered-grid property worth knowing.** With one new row present
   (2250 K, 0.1 kg/m³) and thirteen still to come, the FP/HITEMP Rosseland ratio at
-  (650 K, 500) moved by 0.4%. Adding a point to a Delaunay triangulation can
-  change triangles well away from it, so a *partially* rebuilt grid gives numbers
-  that belong to no grid at all. Every output and figure here was regenerated only
-  after all 14 rows landed.
+  (650 K, 500) moved by 0.4%; with four present it was back to its original value.
+  Adding a point to a Delaunay triangulation can change triangles well away from
+  it, so a *partially* rebuilt grid gives numbers that belong to no grid at all —
+  and intermediate states do not converge towards the answer, they are just
+  different. Every output and figure here was regenerated only after all 14 rows
+  landed, and `tools/grid_extension_effect.py` refuses to run on a partial set.
+
+  **THE RESULT.** All 14 spectra ran, none failed (~2.7 h). The before/after is
+  captured by moving the added spectra aside and back, so both states come from
+  the same code on the same day:
+
+  | T [K] | ρ | FP/HITEMP Planck | FP/HITEMP Rosseland | FP/(H+MT) Planck | FP/(H+MT) Rosseland |
+  |---|---|---|---|---|---|
+  | 2250 | 175.5 | 1.407 → 1.407 | 1.413 → **1.370** | 1.334 → 1.327 | 1.399 → 1.356 |
+  | 2250 | 1256 | 4.110 → 4.155 | 14.081 → **11.032** | 2.887 → 3.198 | 13.422 → 10.402 |
+  | 2750 | 222.7 | 1.430 → 1.430 | 1.359 → **1.335** | 1.369 → 1.374 | 1.343 → 1.319 |
+  | 2750 | 1841 | 11.306 → 11.448 | 34.737 → **30.216** | 9.272 → 9.821 | 32.374 → 27.881 |
+
+  The Rosseland ratios fall by 1.8-21.7%; the bare Planck ratios move by at most
+  1.3%. **Nothing else on the grid moved at all** — the largest change at any point
+  not at an added temperature is 0.00%, so on the *complete* grid the effect is
+  exactly local, and the grid-wide ranges are unchanged (bare Planck 1.290-17.721,
+  bare Rosseland 1.077-213.432, continuum-inclusive Planck 0.212-15.708,
+  continuum-inclusive Rosseland 1.076-38.449).
+
+  **This closes the A53/A59 puzzle completely.** Deviation from the owner's
+  independent RADIS crossover, by how κ_LL was obtained:
+
+  | | n | Rosseland, before | Rosseland, after |
+  |---|---|---|---|
+  | both coordinates on the line-list grid | 3 | 0.24% | 0.24% |
+  | T interpolated | 15 | 2.98% | **0.77%** |
+  | ρ clamped | 9 | **29.65%** | **5.89%** |
+
+  A53 attributed the 30% to the density clamp; A59 measured the clamp at ≤6% and
+  identified the outliers as the two T-interpolated temperatures instead; removing
+  that interpolation removes the outliers. The worst residual, **5.89% at
+  (3000 K, 2229)**, is exactly the clamp error measured directly against a
+  line-by-line run at the true density (A59). Every remaining disagreement with the
+  independent analysis is now accounted for by a measured effect.
 
 - **A63 — ARC's MT_CKD reference is bit-for-bit the file A58 built, so A58's one
   open question is closed.** A58 could not reach ARC (`scp` needs an interactive

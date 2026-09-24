@@ -119,7 +119,7 @@
      "HITEMP": {
       "n_points": 48,
       "planck_range": [
-       1.2897897943048853,
+       1.2897318615713422,
        17.721249061854
       ],
       "rosseland_range": [
@@ -170,12 +170,12 @@
     "x_scale": "log",
     "y_scale": "log",
     "x_range": [
-     1.2482052413159628e-06,
-     14276.178398665956
+     1.2481999214101202e-06,
+     14277.456218326988
     ],
     "y_range": [
-     2.6998586428168676e-08,
-     112741.73309044701
+     2.6994887288888384e-08,
+     112888.0605596027
     ],
     "case": {
      "mass_core_mearth": 10.0,
@@ -187,22 +187,22 @@
     },
     "sampling_note": "the located boundary density shifts by ~1.5% between 1500 and 2000 profile samples; 1500 matches the domain scan and panel b",
     "composite": {
-     "radius_rearth": 2.957212523500838,
+     "radius_rearth": 2.9571667949985754,
      "rcb_densities_kg_m3": [
-      18.61304252888682
+      18.62641844140442
      ],
-     "deepest_rcb_kg_m3": 18.61304252888682,
-     "max_radiative_rho_kg_m3": 16.563255565387898
+     "deepest_rcb_kg_m3": 18.62641844140442,
+     "max_radiative_rho_kg_m3": 16.57578968869076
     },
     "hitemp": {
-     "radius_rearth": 2.9340613883717537,
+     "radius_rearth": 2.933956004255919,
      "rcb_densities_kg_m3": [
-      89.91486933619986
+      90.11480998943314
      ],
-     "deepest_rcb_kg_m3": 89.91486933619986,
-     "max_radiative_rho_kg_m3": 84.80315049943431
+     "deepest_rcb_kg_m3": 90.11480998943314,
+     "max_radiative_rho_kg_m3": 84.98712566417775
     },
-    "boundary_shift_dex": -0.6840141478375381
+    "boundary_shift_dex": -0.6846668161847733
    },
    "b": {
     "x_label": "Radiative-convective boundary (ordered by ratio)",
@@ -282,7 +282,7 @@
     ],
     "selection": "boundaries with first-principles data interpolated, not clamped",
     "input_vintage": "boundary locations and kappa ratios come from the stored boundary analysis, which predates the 2250/2750 K line-list rows",
-    "max_ratio_drift_since_stored": 0.0030862518034560082
+    "max_ratio_drift_since_stored": 0.0001402405671463436
    }
   }
  },
@@ -307,7 +307,7 @@
     "n_planets_in_scan": 108,
     "ratio_range_over_grid": [
      1.0766913384903856,
-     213.4315762325454
+     213.4315762325453
     ],
     "colourbar_range": [
      1.0793378498445705,
