@@ -1,13 +1,13 @@
 """FP vs line-list crossover metrics on the merged 48-point grid (A53).
 
-``crossover_hitemp.json`` holds the owner's independent RADIS analysis at the 27
-legacy FP points. This module recomputes the same M2 Planck/Rosseland ratios
-through *our* pipeline — the identical band-limited table builder used for every
-source (SPEC §3), so the differential is exact — and extends them to all 48
-points now that the extension campaign has landed.
+``crossover_hitemp.json`` holds the owner's independent RADIS analysis, which
+covers 27 of the 48 first-principles states. This module recomputes the same
+Planck/Rosseland ratios through *our* pipeline — the identical band-limited table
+builder used for every source (SPEC §3), so the differential is exact — over all
+48 points, which are treated throughout as one grid.
 
-How the line list is evaluated at an FP point. The extension grid is not a
-subset of HITEMP's (T = 650 and ρ = 60/150/500 have no HITEMP twin), so exact
+How the line list is evaluated at an FP point. The grid is not a subset of
+HITEMP's (T = 650 and ρ = 60/150/500 have no HITEMP twin), so exact
 (T, ρ) matching — what ``figures/plot_fx_opacity_compare.py`` does — cannot
 reach the new points. The line list is therefore evaluated through its own
 ``GridOpacitySource``, i.e. triangulated interpolation in (T, log ρ) on log κ,
@@ -17,7 +17,7 @@ but the nine with ρ > 1000 are interior in ρ; those nine keep the existing
 handling (nearest-neighbour clamp) and are flagged ``ll_clamped`` in every
 output rather than silently averaged in.
 
-Agreement with the independent analysis, at the 27 legacy points (A53):
+Agreement with the independent analysis, at the 27 shared states (A53):
 
 * both coordinates on HITEMP's own grid  -> within **0.7%** on both means;
 * T interpolated (T = 2250, 2750)        -> within **3%**;
@@ -53,7 +53,6 @@ from opacity.mtckd import (
 from opacity.table import CM2_PER_G_TO_SI
 
 DILUTE_RHO_MAX = 60.0  # matches figures/plot_s7_dilute_floor.py (A52)
-LEGACY_GRID_RHO_MIN = 108.796  # the 27-point grid's ρ floor: everything below is new
 
 
 def _reference(cfg: Config) -> dict:
@@ -139,7 +138,6 @@ def crossover_rows(
             "ll_clamped": bool(clamped[i]),
             "ll_on_grid": on_t and on_rho,
             "is_dilute": rho <= DILUTE_RHO_MAX,
-            "is_extension_point": rho < LEGACY_GRID_RHO_MIN or t_k < 1000.0,
         }
         ref = _match(reference, t_k, rho)
         if ref is not None:
@@ -206,17 +204,17 @@ def agreement_summary(rows: list[dict]) -> dict:
 # --------------------------------------------------------------------------
 # v3: both references — bare line list, and line list + MT_CKD self-continuum
 # --------------------------------------------------------------------------
-# The 48 FP points split into three groups that are reported separately because
-# they were delivered by different campaigns and carry different caveats:
-#   "original"   — the 27 points of the legacy grid, the set the delivered RADIS
-#                  crossover analysis covers and the set the published headline
-#                  was written against;
-#   "cold_dense" — the 12 points at T <= 1000 K, rho = 100-500, added by the
-#                  extension campaign; the regime the structural claim lives in,
-#                  and where MT_CKD's (296/T)^n is least extrapolated;
-#   "dilute"     — the 9 points at rho <= 60, where A52 found the transparency
-#                  windows that carry kappa_R sit at or below the dipole floor.
-GROUPS = ("original", "cold_dense", "dilute")
+# The 48 points are ONE grid. They are grouped by where they sit in (T, rho),
+# because the caveats differ by regime, not by when a point was computed (A62):
+#   "dilute"     — rho <= 60, where A52 found the transparency windows that carry
+#                  kappa_R sit at or below the dipole model's noise floor;
+#   "cold_dense" — T <= 1000 K and rho <= 500, the regime the structural claim
+#                  lives in and where the MT_CKD continuum dominates (A58);
+#   "dense"      — the rest: hotter, denser, and where the line list's own
+#                  broadening convention starts to dominate (A59).
+GROUPS = ("dilute", "cold_dense", "dense")
+COLD_DENSE_T_MAX = 1000.0
+COLD_DENSE_RHO_MAX = 500.0
 
 
 def _ideal_pressure_pa(temperature_k: float, rho_si: float) -> float:
@@ -230,7 +228,9 @@ def _ideal_pressure_pa(temperature_k: float, rho_si: float) -> float:
 def _group_of(row: dict) -> str:
     if row["is_dilute"]:
         return "dilute"
-    return "original" if row["in_delivered_set"] else "cold_dense"
+    if row["T"] <= COLD_DENSE_T_MAX and row["rho"] <= COLD_DENSE_RHO_MAX:
+        return "cold_dense"
+    return "dense"
 
 
 def crossover_v3_rows(
@@ -268,7 +268,6 @@ def crossover_v3_rows(
     t_grid = np.unique(np.asarray(ll.table.temperature_k, float))
     rho_grid = np.unique(np.asarray(ll.table.rho_si, float))
     rho_ceiling = float(rho_grid.max())
-    reference = _reference(cfg)
 
     rows = []
     for i in range(t_fp.size):
@@ -295,8 +294,6 @@ def crossover_v3_rows(
             "ll_on_grid": bool(np.any(np.isclose(t_grid, t_k, rtol=1e-9))
                                and np.any(np.isclose(rho_grid, rho, rtol=1e-9))),
             "is_dilute": rho <= DILUTE_RHO_MAX,
-            "is_extension_point": rho < LEGACY_GRID_RHO_MIN or t_k < 1000.0,
-            "in_delivered_set": _match(reference, t_k, rho) is not None,
             # A rho-clamped point holds kappa at the ceiling. The continuum's
             # ABSORPTION is quadratic in density, but its MASS OPACITY is linear
             # (kappa = alpha/rho), and it is kappa that is tabulated — so the

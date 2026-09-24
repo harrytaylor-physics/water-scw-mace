@@ -1,0 +1,337 @@
+{
+ "_meta": "Every number a reader could take off each panel: axis ranges as drawn, values marked or annotated, and point counts. Captions are checked against this file. Widths are 183 mm (double column); type is >= 7 pt at final size; the palette is Okabe-Ito.",
+ "width_mm": 183.0,
+ "min_font_pt": 7.0,
+ "fig1": {
+  "caption_hint": "a, pipeline from configuration sampling to kappa(nu). b, kappa(nu) at 2000 K, 1200 kg/m^3, first principles vs HITEMP at identical conditions (same ideal-gas broadening pressure).",
+  "panels": {
+   "a": {
+    "stages": [
+     "Configuration sampling",
+     "Hybrid DFT labels",
+     "MACE potential + dipole model",
+     "NVE molecular dynamics",
+     "Dipole autocorrelation",
+     "\u03ba(\u03bd)"
+    ],
+    "n_stages": 6,
+    "kind": "schematic (no data)"
+   },
+   "b": {
+    "x_label": "Wavenumber (cm^-1)",
+    "y_label": "Opacity (cm^2/g)",
+    "x_scale": "linear",
+    "y_scale": "log",
+    "x_range": [
+     100.0,
+     4000.0
+    ],
+    "y_range": [
+     3.732666384699996,
+     45847.81501623462
+    ],
+    "state": {
+     "T_K": 2000.0,
+     "rho_kg_m3": 1200.0,
+     "line_list_broadening_pressure_bar": 11076.553547740335
+    },
+    "marked_wavenumber_cm": 2550.0,
+    "marked_kappa_first_principles_cm2_g": 296.1387,
+    "marked_kappa_line_list_cm2_g": 9.5213,
+    "marked_ratio": 31.103,
+    "band_envelopes_cm": {
+     "libration": [
+      300.0,
+      1000.0
+     ],
+     "bend": [
+      1400.0,
+      1800.0
+     ],
+     "window": [
+      1900.0,
+      3100.0
+     ],
+     "stretch": [
+      3200.0,
+      4000.0
+     ]
+    },
+    "line_list_note": "direct line-by-line computation at the true density; 1200 kg/m^3 is above the tabulated ceiling of 1000, so the table would clamp",
+    "caption_correction": "a draft caption marked 4 and ~200 cm^2/g at 2550 cm^-1; at identical conditions the line-list value is 9.5, and 3.0 is what a 1 bar reference broadening gives"
+   }
+  }
+ },
+ "fig4": {
+  "caption_hint": "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio over the 48 first-principles points, with the line-list radiative-convective boundary of 108 scanned planets overlaid, coloured by T_eq. The outline is the first-principles grid extent.",
+  "panels": {
+   "": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "Temperature (K)",
+    "x_scale": "log",
+    "y_scale": "linear",
+    "x_range": [
+     0.967967216181502,
+     2246.3414874725686
+    ],
+    "y_range": [
+     232.23669616519172,
+     3003.466076696165
+    ],
+    "n_first_principles_points": 48,
+    "n_planets_plotted": 108,
+    "n_planets_in_scan": 108,
+    "ratio_range_over_grid": [
+     1.0766913384903856,
+     214.27173378708255
+    ],
+    "colourbar_range": [
+     1.0793378498445705,
+     213.5899007631687
+    ],
+    "boundary_T_range_K": [
+     364.2,
+     1850.0
+    ],
+    "boundary_rho_range_kg_m3": [
+     1.4,
+     357.4
+    ],
+    "t_eq_levels_K": [
+     300.0,
+     500.0,
+     700.0,
+     900.0,
+     1100.0,
+     1300.0
+    ],
+    "n_boundaries_inside_grid_extent": 43,
+    "grid_extent": "convex hull of the 48 points in (T, log10 rho)",
+    "band_cm": [
+     100.0,
+     4000.0
+    ]
+   }
+  }
+ },
+ "fig3": {
+  "caption_hint": "a, Schwarzschild ratio through a 20 M_earth water world for the line list and the composite, both boundaries marked. b, per boundary, the first-principles/line-list kappa_R ratio against the factor that would flip it.",
+  "panels": {
+   "a": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "grad_rad / grad_ad",
+    "x_scale": "log",
+    "y_scale": "log",
+    "x_range": [
+     1.2482009944874395e-06,
+     14277.198459890029
+    ],
+    "y_range": [
+     2.6995276738193882e-08,
+     112888.47728455326
+    ],
+    "case": {
+     "mass_core_mearth": 10.0,
+     "wmf": 0.5,
+     "t_eq_k": 500.0,
+     "t_int_k": 30.0,
+     "mass_planet_mearth": 20.0,
+     "n_profile_samples": 1500
+    },
+    "sampling_note": "the located boundary density shifts by ~1.5% between 1500 and 2000 profile samples; 1500 matches the domain scan and panel b",
+    "composite": {
+     "radius_rearth": 2.957166877413501,
+     "rcb_densities_kg_m3": [
+      18.626423239888556
+     ],
+     "deepest_rcb_kg_m3": 18.626423239888556,
+     "max_radiative_rho_kg_m3": 16.5757883651899
+    },
+    "hitemp": {
+     "radius_rearth": 2.933976452112145,
+     "rcb_densities_kg_m3": [
+      90.07503107612528
+     ],
+     "deepest_rcb_kg_m3": 90.07503107612528,
+     "max_radiative_rho_kg_m3": 84.95075300583862
+    },
+    "boundary_shift_dex": -0.6844749536169965
+   },
+   "b": {
+    "x_label": "Radiative-convective boundary (ordered by ratio)",
+    "y_label": "Factor",
+    "x_scale": "linear",
+    "y_scale": "log",
+    "x_range": [
+     -0.6525000000000001,
+     7.6525
+    ],
+    "y_range": [
+     0.85,
+     173.658648656349
+    ],
+    "n_boundaries": 8,
+    "kappa_ratio_range": [
+     6.196290827388516,
+     54.26832770510905
+    ],
+    "flip_threshold_range": [
+     1.0098262794557928,
+     1.2077545629358921
+    ],
+    "margin_range": [
+     5.208437718519377,
+     52.66463689430174
+    ],
+    "boundaries": [
+     {
+      "T_K": 1008.1293701785888,
+      "rho_kg_m3": 43.77480319827599,
+      "kappa_ratio": 6.196290827388516,
+      "flip_threshold": 1.1896639956654718
+     },
+     {
+      "T_K": 735.0212567361317,
+      "rho_kg_m3": 61.251899044057076,
+      "kappa_ratio": 41.23943271536575,
+      "flip_threshold": 1.0468261353480206
+     },
+     {
+      "T_K": 741.0288878813867,
+      "rho_kg_m3": 96.25544759567903,
+      "kappa_ratio": 44.16945852335605,
+      "flip_threshold": 1.0098262794557928
+     },
+     {
+      "T_K": 744.8007629595377,
+      "rho_kg_m3": 90.11473788908978,
+      "kappa_ratio": 45.80814621743164,
+      "flip_threshold": 1.0480776323254943
+     },
+     {
+      "T_K": 734.0982721842565,
+      "rho_kg_m3": 106.80657405802258,
+      "kappa_ratio": 48.151560954502116,
+      "flip_threshold": 1.0930380715706864
+     },
+     {
+      "T_K": 735.415444601319,
+      "rho_kg_m3": 81.86281175967713,
+      "kappa_ratio": 48.48833650934757,
+      "flip_threshold": 1.0843868580267562
+     },
+     {
+      "T_K": 726.0689374720554,
+      "rho_kg_m3": 110.38845271345271,
+      "kappa_ratio": 53.62336428286099,
+      "flip_threshold": 1.2077545629358921
+     },
+     {
+      "T_K": 736.4637989677399,
+      "rho_kg_m3": 124.14858252614896,
+      "kappa_ratio": 54.26832770510905,
+      "flip_threshold": 1.0304509991026032
+     }
+    ],
+    "selection": "boundaries with first-principles data interpolated, not clamped"
+   }
+  }
+ },
+ "fig2": {
+  "caption_hint": "a, Rosseland-mean opacity over the 48 first-principles points, interpolated as the structure model reads it. b, first-principles / line-list ratio against density, coloured by temperature; filled Planck, open Rosseland.",
+  "panels": {
+   "a": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "Temperature (K)",
+    "x_scale": "log",
+    "y_scale": "linear",
+    "x_range": [
+     9.914534951746937,
+     2247.437570230525
+    ],
+    "y_range": [
+     646.3166144200627,
+     3003.6833855799373
+    ],
+    "n_computed_points": 48,
+    "T_range_K": [
+     650.0,
+     3000.0
+    ],
+    "rho_range_kg_m3": [
+     10.0,
+     2228.71
+    ],
+    "kappa_R_range_cm2_g": [
+     11.669946543828715,
+     4093.538311910776
+    ],
+    "colour_scale": "viridis, log",
+    "colourbar_range_cm2_g": [
+     11.773891437517326,
+     4093.5383119107814
+    ],
+    "band_cm": [
+     100.0,
+     4000.0
+    ],
+    "blank_region": "outside the convex hull, where the model clamps"
+   },
+   "b": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "First-principles / line-list ratio",
+    "x_scale": "log",
+    "y_scale": "log",
+    "x_range": [
+     7.631278828475323,
+     2920.4934717937435
+    ],
+    "y_range": [
+     0.14598317697705465,
+     303.2203298043131
+    ],
+    "references": {
+     "HITEMP": {
+      "n_points": 48,
+      "planck_range": [
+       1.2897897943048846,
+       17.721249061854
+      ],
+      "rosseland_range": [
+       1.0766913384903856,
+       214.27173378708255
+      ]
+     },
+     "POKAZATEL": {
+      "n_points": 27,
+      "planck_range": [
+       1.3855470735196622,
+       18.63580378793758
+      ],
+      "rosseland_range": [
+       1.4979790814507705,
+       45.27587072811245
+      ]
+     },
+     "HITEMP + MT_CKD continuum": {
+      "n_points": 48,
+      "planck_range": [
+       0.206583790995266,
+       15.708414574022676
+      ],
+      "rosseland_range": [
+       1.0760706263945163,
+       38.44866147407262
+      ]
+     }
+    },
+    "unity_line": true,
+    "temperature_colour_range_K": [
+     650.0,
+     3000.0
+    ],
+    "colour_scale": "viridis, linear in T"
+   }
+  }
+ }
+}

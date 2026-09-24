@@ -244,7 +244,7 @@ def main(argv=None) -> int:
               and (wanted_rho is None or float(RHO_GRID_KGM3[irho]) in wanted_rho)]
     total = len(points)
     print(f"[generate] database={args.database} out={out_dir} pressure_mode={PRESSURE_MODE}", flush=True)
-    print(f"[generate] {total} grid points, wn=[{WAVENUM_MIN_CM},{WAVENUM_MAX_CM}] wstep={WSTEP_CM}", flush=True)
+    print(f"[generate] {total} grid points, wn=[{args.wavenum_min},{WAVENUM_MAX_CM}] wstep={WSTEP_CM}", flush=True)
 
     if args.dry_run:
         for k, (it, irho) in enumerate(points, 1):

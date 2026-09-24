@@ -16,15 +16,15 @@ Reading the figure. Each FP grid point appears twice, joined by a thin grey stem
   * **filled, temperature-coloured** — FP / bare HITEMP (line absorption only);
   * **open vermillion** — FP / (HITEMP + MT_CKD self-continuum).
 
-The marker *shape* carries which campaign delivered the point, because the caveats
-differ by campaign:
+The 48 points are one grid. The marker *shape* carries where a point sits in
+(T, ρ), because the caveats differ by regime:
 
-  * **circle**   — one of the 27 original grid points;
-  * **triangle** — one of the 12 cold-dense extension points (T ≤ 1000 K,
-                   ρ = 100-500), the regime the structural claim lives in;
-  * **diamond**  — one of the 9 dilute points (ρ ≤ 60), where A52 found the
-                   transparency windows that carry κ_R sit at or below the dipole
-                   model's noise floor;
+  * **diamond**  — dilute (ρ ≤ 60), where A52 found the transparency windows that
+                   carry κ_R sit at or below the dipole model's noise floor;
+  * **triangle** — cold-dense (T ≤ 1000 K, ρ ≤ 500), the regime the structural
+                   claim lives in and where the MT_CKD continuum dominates;
+  * **circle**   — the rest: hotter and denser, where the line list's own
+                   broadening convention starts to dominate (A59);
   * **grey ×**   — HITEMP clamped (ρ > 1000, outside its grid). The continuum is
                    quadratic in density, so at these points it is held at the
                    ceiling and *under*-counted.
@@ -68,14 +68,14 @@ CONT_COLOR = "#D55E00"  # vermillion (Okabe-Ito)
 
 # marker, size, label — keyed by the group the point belongs to
 GROUP_STYLE = {
-    "original": ("o", 46, "original 27-point grid"),
-    "cold_dense": ("^", 58, "cold-dense extension (T ≤ 1000 K, ρ = 100-500)"),
     "dilute": ("D", 40, "dilute (ρ ≤ 60): floor-limited κ_R (A52)"),
+    "cold_dense": ("^", 58, "cold-dense (T ≤ 1000 K, ρ ≤ 500)"),
+    "dense": ("o", 46, "dense (the rest of the grid)"),
 }
 GROUP_LABEL = {
-    "original": "27 original points",
-    "cold_dense": "12 cold-dense points",
-    "dilute": "9 dilute points",
+    "dilute": "dilute points",
+    "cold_dense": "cold-dense points",
+    "dense": "dense points",
 }
 
 
@@ -190,7 +190,7 @@ def _print_table(rows, band):
     print(sub)
     print("  " + "-" * (len(head) - 3))
     for r in rows:
-        notes = [GROUP_LABEL[r["group"]].split()[1]]
+        notes = [GROUP_LABEL[r["group"]].split()[0]]
         if r["ll_clamped"]:
             notes.append(f"CLAMPED /{r['continuum_underscale']:.1f}")
         flag = " <" if (r["ratio_planck_mtckd"] < 1.0
@@ -292,7 +292,7 @@ def _print_decomposition_caveat(rows):
         these = [r for r in rows if r["group"] == group]
         hw = [r["lorentz_hwhm_cm"] for r in these]
         n_ok = sum(r["decomposition_well_posed"] for r in these)
-        print(f"  {GROUP_LABEL[group]:<28s} {len(these):>3d} | "
+        print(f"  {GROUP_LABEL[group] + f' (n={len(these)})':<28s} {len(these):>3d} | "
               f"{min(hw):>10.3g} - {max(hw):<9.4g} | {n_ok:>10d} / {len(these):<4d}")
     print(f"    {len(rows) - len(ok)} of {len(rows)} points have lines BROADER than the "
           f"truncation the continuum is defined\n    against, by one to two orders of "

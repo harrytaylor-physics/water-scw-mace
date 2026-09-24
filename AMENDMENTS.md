@@ -4,6 +4,93 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-24 (one grid; band attribution; HITEMP rows at 2250/2750 K; manuscript figures)
+
+- **A60 — HITEMP grid extended to T = 2250 and 2750 K, and the new rows are
+  windowed to ν ≥ 50 cm⁻¹ because the 0-50 cm⁻¹ line file is not cached.** A59
+  showed the two 20-30% deviations from the delivered crossover analysis sit at
+  exactly the two temperatures absent from HITEMP's grid, so those points were
+  both ρ-clamped *and* T-interpolated. Adding the rows removes the T
+  interpolation. `generate_linelist_tables.py` now carries T = 2250 and 2750 in
+  `T_GRID_K` (13 temperatures), its `P_AQUA_PA` table is regenerated for the wider
+  grid (the 11 original columns reproduce the committed values to 4.7e-5), and it
+  gained `--temperatures`, `--densities` and `--wavenum-min` so a partial rebuild
+  is one command. Two RADIS-version fixes came with it, both from A59: the slotted
+  `SpectrumFactory` (pressure is a per-call argument now) and the registration
+  abort on a fully-cached offline load.
+
+  **The wavenumber floor is a deviation and is stated as one.** The delivered rows
+  were computed over [10, 11000] cm⁻¹. The local HITEMP cache has no 0-50 cm⁻¹
+  file and fetching one needs a HITRAN login, so the new rows are computed over
+  **[50, 11000]**. With `truncation = 50` a line below 50 cm⁻¹ cannot reach past
+  100 cm⁻¹, so the science band [100, 4000] is untouched — measured, not assumed:
+  ∫κ dν over [10, 4000] and [50, 4000] differ by 0.06% at (2000 K, 300), the
+  [100, 4000] integral is identical, and A59's [50, 11000] rerun reproduced a
+  delivered [10, 11000] spectrum to 1e-6 on both means. What it *does* change is
+  the auto-detected band: `detect_common_band(["fp", "hitemp"])` moves from
+  [10, 6000] to [50, 6000]. Nothing in the science path uses it (the band is pinned
+  to [100, 4000]), and the affected gate is updated with this reason rather than
+  loosened. Re-running with `--wavenum-min 10` on a machine that has the file
+  restores exact parity.
+
+  **A scattered-grid property worth knowing.** With one new row present
+  (2250 K, 0.1 kg/m³) and thirteen still to come, the FP/HITEMP Rosseland ratio at
+  (650 K, 500) moved by 0.4%. Adding a point to a Delaunay triangulation can
+  change triangles well away from it, so a *partially* rebuilt grid gives numbers
+  that belong to no grid at all. Every output and figure here was regenerated only
+  after all 14 rows landed.
+
+- **A61 — The dilute FP/line-list excess is a frequency-dependent tilt, not an
+  intensity scale.** At ρ = 10-60 the FP Planck mean exceeds bare HITEMP by
+  1.32-1.53× while the Rosseland ratio falls to 1.08, and a band-integrated mean
+  cannot say where that sits. `opacity/bands.py` integrates
+  A = ∫ ν(1 − e^{−hcν/k_BT}) κ(ν) dν over the libration (300-1000), bend
+  (1400-1800), window (1900-3100) and stretch (3200-4000) cm⁻¹ bands, each source
+  on its own delivered grid but with the integrand interpolated onto the exact band
+  edges so the limits are identical (FP is on 1 cm⁻¹, HITEMP on 0.01; a mask-only
+  integral would use different limits for each).
+
+  | T [K] | ρ | libration | bend | window | stretch |
+  |---|---|---|---|---|---|
+  | 1000 | 10 | 0.501 | 1.075 | 2.510 | 3.587 |
+  | 1000 | 30 | 0.405 | 1.122 | 2.154 | 3.935 |
+  | 1500 | 10 | 0.372 | 0.708 | 1.413 | 3.074 |
+  | 1500 | 30 | 0.399 | 0.809 | 1.387 | 2.804 |
+  | 2000 | 10 | 0.348 | 0.721 | 1.060 | 2.376 |
+  | 2000 | 30 | 0.445 | 0.706 | 1.136 | 2.524 |
+
+  **The ratio rises monotonically with band centre at every one of the six points
+  and crosses unity between the bend and the window.** None of the three outcomes
+  the brief anticipated fits: it is not near-uniform (so not an overall dipole-
+  surface intensity scale), and it is not an excess confined to the stretch on an
+  otherwise matching spectrum — there is a **deficit of 2-3× in the libration
+  band** as well. The scale-free statement is the same: FP's own stretch/bend
+  balance is 9.4-15.7 against the line list's 2.8-4.3, a factor **3.3-3.6**, which
+  no overall intensity factor can produce. Attribution therefore points at whatever
+  acts differently on high- and low-frequency modes — the classical dynamics plus
+  the harmonic quantum correction — rather than at the dipole surface. The window
+  column (1.06-2.51) is the collision-induced contribution and is expected to
+  exceed unity whatever the answer, since a line list has almost nothing there.
+
+- **A62 — The 48 points are one grid, in every output and figure.** The manuscript
+  makes no distinction between how or when a point was computed, so neither do the
+  outputs. `crossover_v3_rows` no longer emits `is_extension_point` or
+  `in_delivered_set`, and `GROUPS` is now defined by *where a point sits*:
+  `dilute` (ρ ≤ 60), `cold_dense` (T ≤ 1000 K and ρ ≤ 500), `dense` (the rest).
+  Counts move from 27/12/9 to **26/13/9** — (1000 K, 129.744) is cold-dense under a
+  physical definition and was only ever grouped elsewhere because it happened to be
+  in the delivered set. The delivered-JSON cross-check survives untouched: it is a
+  check on *our pipeline*, not a label on the grid.
+
+  `figures/_manuscript.py` holds the journal-fixed style (183 mm width, ≥ 7 pt
+  sans at final size, Okabe-Ito for categorical marks, vector PDF with live text)
+  and a ledger that writes `figs/fig_numbers.json` — every number a reader could
+  take off a panel, so a caption can be checked against the figure rather than
+  against memory. `save_pdf` refuses to write a figure whose text contains
+  "original", "extension" or "campaign", so the vocabulary rule is enforced at the
+  point of writing rather than in review. The two continuous colour scales use
+  viridis: Okabe-Ito is categorical and cannot carry a continuous variable.
+
 ## 2026-09-23 (line list + empirical continuum; broadening convention)
 
 - **A58 — MT_CKD 4.3 water SELF-continuum added as a fourth opacity source,
