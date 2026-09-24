@@ -62,56 +62,100 @@
    }
   }
  },
- "fig4": {
-  "caption_hint": "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio over the 48 first-principles points, with the line-list radiative-convective boundary of 108 scanned planets overlaid, coloured by T_eq. The outline is the first-principles grid extent.",
+ "fig2": {
+  "caption_hint": "a, Rosseland-mean opacity over the 48 first-principles points, interpolated as the structure model reads it. b, first-principles / line-list ratio against density, coloured by temperature; filled Planck, open Rosseland.",
   "panels": {
-   "": {
+   "a": {
     "x_label": "Density (kg/m^3)",
     "y_label": "Temperature (K)",
     "x_scale": "log",
     "y_scale": "linear",
     "x_range": [
-     0.967967216181502,
-     2246.3414874725686
+     9.914534951746937,
+     2247.437570230525
     ],
     "y_range": [
-     232.23669616519172,
-     3003.466076696165
+     646.3166144200627,
+     3003.6833855799373
     ],
-    "n_first_principles_points": 48,
-    "n_planets_plotted": 108,
-    "n_planets_in_scan": 108,
-    "ratio_range_over_grid": [
-     1.0766913384903856,
-     213.4315762325454
+    "n_computed_points": 48,
+    "T_range_K": [
+     650.0,
+     3000.0
     ],
-    "colourbar_range": [
-     1.0793378498445705,
-     212.75994879179206
+    "rho_range_kg_m3": [
+     10.0,
+     2228.71
     ],
-    "boundary_T_range_K": [
-     364.2,
-     1850.0
+    "kappa_R_range_cm2_g": [
+     11.669946543828715,
+     4093.538311910776
     ],
-    "boundary_rho_range_kg_m3": [
-     1.4,
-     357.4
+    "colour_scale": "viridis, log",
+    "colourbar_range_cm2_g": [
+     11.773891437517326,
+     4093.5383119107814
     ],
-    "t_eq_levels_K": [
-     300.0,
-     500.0,
-     700.0,
-     900.0,
-     1100.0,
-     1300.0
-    ],
-    "n_boundaries_inside_grid_extent": 43,
-    "grid_extent": "convex hull of the 48 points in (T, log10 rho)",
     "band_cm": [
      100.0,
      4000.0
     ],
-    "input_vintage": "boundary locations come from the stored domain scan, which predates the 2250/2750 K line-list rows; the shading is computed from the current tables. The boundaries lie at 364-1850 K, away from the added rows, and the measured sensitivity of the ratio at the analysed boundaries is recorded in fig3 panel b"
+    "blank_region": "outside the convex hull, where the model clamps"
+   },
+   "b": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "First-principles / line-list ratio",
+    "x_scale": "log",
+    "y_scale": "log",
+    "x_range": [
+     7.631278828475323,
+     2920.4934717937435
+    ],
+    "y_range": [
+     0.15011668938018402,
+     301.57366852941703
+    ],
+    "references": {
+     "HITEMP": {
+      "n_points": 48,
+      "planck_range": [
+       1.2897318615713416,
+       17.721249061854
+      ],
+      "rosseland_range": [
+       1.0766913384903856,
+       213.4315762325454
+      ]
+     },
+     "POKAZATEL": {
+      "n_points": 27,
+      "planck_range": [
+       1.3855470735196622,
+       18.63580378793758
+      ],
+      "rosseland_range": [
+       1.4979790814507705,
+       45.27587072811245
+      ]
+     },
+     "HITEMP + MT_CKD continuum": {
+      "n_points": 48,
+      "planck_range": [
+       0.21211126077496423,
+       15.708414574022676
+      ],
+      "rosseland_range": [
+       1.0760706263945163,
+       38.44866147407262
+      ]
+     }
+    },
+    "unity_line": true,
+    "temperature_colour_range_K": [
+     650.0,
+     3000.0
+    ],
+    "colour_scale": "viridis, linear in T"
    }
   }
  },
@@ -240,100 +284,56 @@
    }
   }
  },
- "fig2": {
-  "caption_hint": "a, Rosseland-mean opacity over the 48 first-principles points, interpolated as the structure model reads it. b, first-principles / line-list ratio against density, coloured by temperature; filled Planck, open Rosseland.",
+ "fig4": {
+  "caption_hint": "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio over the 48 first-principles points, with the line-list radiative-convective boundary of 108 scanned planets overlaid, coloured by T_eq. The outline is the first-principles grid extent.",
   "panels": {
-   "a": {
+   "": {
     "x_label": "Density (kg/m^3)",
     "y_label": "Temperature (K)",
     "x_scale": "log",
     "y_scale": "linear",
     "x_range": [
-     9.914534951746937,
-     2247.437570230525
+     0.967967216181502,
+     2246.3414874725686
     ],
     "y_range": [
-     646.3166144200627,
-     3003.6833855799373
+     232.23669616519172,
+     3003.466076696165
     ],
-    "n_computed_points": 48,
-    "T_range_K": [
-     650.0,
-     3000.0
+    "n_first_principles_points": 48,
+    "n_planets_plotted": 108,
+    "n_planets_in_scan": 108,
+    "ratio_range_over_grid": [
+     1.0766913384903856,
+     213.4315762325454
     ],
-    "rho_range_kg_m3": [
-     10.0,
-     2228.71
+    "colourbar_range": [
+     1.0793378498445705,
+     212.75994879179206
     ],
-    "kappa_R_range_cm2_g": [
-     11.669946543828715,
-     4093.538311910776
+    "boundary_T_range_K": [
+     364.2,
+     1850.0
     ],
-    "colour_scale": "viridis, log",
-    "colourbar_range_cm2_g": [
-     11.773891437517326,
-     4093.5383119107814
+    "boundary_rho_range_kg_m3": [
+     1.4,
+     357.4
     ],
+    "t_eq_levels_K": [
+     300.0,
+     500.0,
+     700.0,
+     900.0,
+     1100.0,
+     1300.0
+    ],
+    "n_boundaries_inside_grid_extent": 43,
+    "grid_extent": "convex hull of the 48 points in (T, log10 rho)",
     "band_cm": [
      100.0,
      4000.0
     ],
-    "blank_region": "outside the convex hull, where the model clamps"
-   },
-   "b": {
-    "x_label": "Density (kg/m^3)",
-    "y_label": "First-principles / line-list ratio",
-    "x_scale": "log",
-    "y_scale": "log",
-    "x_range": [
-     7.631278828475323,
-     2920.4934717937435
-    ],
-    "y_range": [
-     0.15011668938018402,
-     301.57366852941703
-    ],
-    "references": {
-     "HITEMP": {
-      "n_points": 48,
-      "planck_range": [
-       1.2897318615713416,
-       17.721249061854
-      ],
-      "rosseland_range": [
-       1.0766913384903856,
-       213.4315762325454
-      ]
-     },
-     "POKAZATEL": {
-      "n_points": 27,
-      "planck_range": [
-       1.3855470735196622,
-       18.63580378793758
-      ],
-      "rosseland_range": [
-       1.4979790814507705,
-       45.27587072811245
-      ]
-     },
-     "HITEMP + MT_CKD continuum": {
-      "n_points": 48,
-      "planck_range": [
-       0.21211126077496423,
-       15.708414574022676
-      ],
-      "rosseland_range": [
-       1.0760706263945163,
-       38.44866147407262
-      ]
-     }
-    },
-    "unity_line": true,
-    "temperature_colour_range_K": [
-     650.0,
-     3000.0
-    ],
-    "colour_scale": "viridis, linear in T"
+    "input_vintage": "boundary locations come from the stored domain scan, which predates the 2250/2750 K line-list rows; the shading is computed from the current tables. The boundaries lie at 364-1850 K, away from the added rows, and the measured sensitivity of the ratio at the analysed boundaries is recorded in fig3 panel b"
    }
   }
  }

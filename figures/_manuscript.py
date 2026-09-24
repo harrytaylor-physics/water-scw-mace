@@ -224,5 +224,10 @@ def merge_numbers(numbers: FigureNumbers) -> Path:
         "caption_hint": numbers.caption_hint,
         "panels": numbers.panels,
     }
-    path.write_text(json.dumps(doc, indent=1, sort_keys=False) + "\n")
+    # Deterministic order: the header keys first, then the figures by name, so the
+    # file diffs cleanly whatever order the scripts were run in.
+    header = {k: doc[k] for k in doc if k.startswith("_") or k in ("width_mm",
+                                                                  "min_font_pt")}
+    figures = {k: doc[k] for k in sorted(doc) if k not in header}
+    path.write_text(json.dumps({**header, **figures}, indent=1) + "\n")
     return path
