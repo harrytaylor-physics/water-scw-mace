@@ -170,7 +170,7 @@ def panel_b(ax, fig, cfg, rows, nums: FigureNumbers) -> None:
     ]
     # below the axes: the upper left carries the dilute points
     ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 1.005),
-              fontsize=6.8, ncol=2, borderaxespad=0.0, columnspacing=1.0)
+              fontsize=7.0, ncol=2, borderaxespad=0.0, columnspacing=1.0)
 
     nums.axes("b", ax, "Density (kg/m^3)", "First-principles / line-list ratio",
               xlog=True, ylog=True)

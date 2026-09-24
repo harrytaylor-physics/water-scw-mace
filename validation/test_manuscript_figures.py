@@ -83,6 +83,19 @@ def test_a_figure_naming_the_delivery_history_is_refused(tmp_path, word):
     assert not (FIGS / "should_not_exist.pdf").exists()
 
 
+def test_text_below_the_minimum_size_is_refused():
+    """rcParams are not enough — a per-call fontsize= overrides them silently."""
+    import matplotlib.pyplot as plt
+
+    set_manuscript_style()
+    fig, ax = plt.subplots()
+    ax.set_xlabel("a label", fontsize=MIN_PT - 0.4)
+    with pytest.raises(AssertionError, match="below 7 pt"):
+        save_pdf(fig, "should_not_exist")
+    plt.close(fig)
+    assert not (FIGS / "should_not_exist.pdf").exists()
+
+
 def test_a_clean_figure_is_written_as_vector_with_live_text(tmp_path):
     import matplotlib.pyplot as plt
 

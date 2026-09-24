@@ -83,11 +83,11 @@
     "n_planets_in_scan": 108,
     "ratio_range_over_grid": [
      1.0766913384903856,
-     213.4315762325453
+     213.43157623254515
     ],
     "colourbar_range": [
      1.0793378498445705,
-     212.75994879179206
+     212.75994879179183
     ],
     "boundary_T_range_K": [
      364.2,
@@ -124,12 +124,12 @@
     "x_scale": "log",
     "y_scale": "log",
     "x_range": [
-     1.2482005821774832e-06,
-     14277.29749818765
+     1.2482055619012997e-06,
+     14276.1013992047
     ],
     "y_range": [
-     2.6995117742844836e-08,
-     112889.24150892187
+     2.6998816360232634e-08,
+     112731.9797663809
     ],
     "case": {
      "mass_core_mearth": 10.0,
@@ -141,22 +141,22 @@
     },
     "sampling_note": "the located boundary density shifts by ~1.5% between 1500 and 2000 profile samples; 1500 matches the domain scan and panel b",
     "composite": {
-     "radius_rearth": 2.957166909038956,
+     "radius_rearth": 2.9572153393804617,
      "rcb_densities_kg_m3": [
-      18.626423992041566
+      18.61230950773872
      ],
-     "deepest_rcb_kg_m3": 18.626423992041566,
-     "max_radiative_rho_kg_m3": 16.575787856669276
+     "deepest_rcb_kg_m3": 18.61230950773872,
+     "max_radiative_rho_kg_m3": 16.562670086296873
     },
     "hitemp": {
-     "radius_rearth": 2.933968656057327,
+     "radius_rearth": 2.934067545278212,
      "rcb_densities_kg_m3": [
-      90.08935998254223
+      89.90288730128617
      ],
-     "deepest_rcb_kg_m3": 90.08935998254223,
-     "max_radiative_rho_kg_m3": 84.96271848928181
+     "deepest_rcb_kg_m3": 89.90288730128617,
+     "max_radiative_rho_kg_m3": 84.79223423185783
     },
-    "boundary_shift_dex": -0.6845440170448231
+    "boundary_shift_dex": -0.6839733737736886
    },
    "b": {
     "x_label": "Radiative-convective boundary (ordered by ratio)",
@@ -236,7 +236,7 @@
     ],
     "selection": "boundaries with first-principles data interpolated, not clamped",
     "input_vintage": "boundary locations and kappa ratios come from the stored boundary analysis, which predates the 2250/2750 K line-list rows",
-    "max_ratio_drift_since_stored": 0.0030862518034564523
+    "max_ratio_drift_since_stored": 0.0030862518034560082
    }
   }
  },
@@ -290,19 +290,19 @@
      2920.4934717937435
     ],
     "y_range": [
-     0.14598317697705465,
-     303.2203298043131
+     0.15011668938018427,
+     301.57366852941675
     ],
     "references": {
      "HITEMP": {
       "n_points": 48,
       "planck_range": [
-       1.2897897943048846,
+       1.2897897943048853,
        17.721249061854
       ],
       "rosseland_range": [
        1.0766913384903856,
-       214.27173378708255
+       213.43157623254515
       ]
      },
      "POKAZATEL": {
@@ -319,7 +319,7 @@
      "HITEMP + MT_CKD continuum": {
       "n_points": 48,
       "planck_range": [
-       0.206583790995266,
+       0.21211126077496448,
        15.708414574022676
       ],
       "rosseland_range": [

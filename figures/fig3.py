@@ -93,7 +93,7 @@ def panel_a(ax, cfg, nums: FigureNumbers) -> dict:
             ax.axvline(rho_rcb, color=colour, lw=0.7, ls=":", alpha=0.9, zorder=2)
             # at the foot of the axis, clear of the dex arrow at the top
             ax.annotate(f"{rho_rcb:.0f}", (rho_rcb, ax.get_ylim()[0]),
-                        textcoords="offset points", xytext=(2, 3), fontsize=6.6,
+                        textcoords="offset points", xytext=(2, 3), fontsize=7.0,
                         color=colour, zorder=6)
 
     ax.axhline(1.0, color="black", lw=0.7, ls=":", zorder=1)
@@ -155,13 +155,13 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
     ax.set_xticks(x)
     ax.set_xticklabels(
         [f"{float(r['t_k']):.0f}\n{float(r['rho_si']):.0f}" for r in rows],
-        fontsize=6.8)
+        fontsize=7.0)
     ax.set_xlabel("Boundary:  T (K)  /  ρ (kg m$^{-3}$)")
     ax.set_ylabel("Factor")
     ax.set_ylim(0.85, ratio.max() * 3.2)
     for xi, rr, th in zip(x, ratio, thresh):
         ax.annotate(f"×{rr / th:.0f}", (xi, rr), textcoords="offset points",
-                    xytext=(0, 6), ha="center", fontsize=6.6, zorder=5)
+                    xytext=(0, 6), ha="center", fontsize=7.0, zorder=5)
     ax.legend(loc="upper center", fontsize=7.0, ncol=1,
               bbox_to_anchor=(0.5, 1.0))
 

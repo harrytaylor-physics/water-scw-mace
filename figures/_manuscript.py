@@ -148,12 +148,30 @@ def _scan_text(fig) -> list[str]:
     return out
 
 
-def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
-    """Write ``figs/<stem>.pdf`` as vector, after the vocabulary check.
+def _too_small(fig) -> list[tuple[str, float]]:
+    """Every drawn string below the minimum type size, with its size."""
+    out = []
+    for t in fig.findobj(matplotlib.text.Text):
+        label = t.get_text()
+        if not label:
+            continue
+        size = float(t.get_fontsize())
+        if size < MIN_PT - 1e-9:
+            out.append((label.replace("\n", " ")[:40], size))
+    return out
 
-    The manuscript treats the 48 points as one grid, so a figure that says
-    "original", "extension" or "campaign" anywhere is a bug and fails here rather
-    than in review.
+
+def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
+    """Write ``figs/<stem>.pdf`` as vector, after the vocabulary and type checks.
+
+    Two rules are enforced here rather than in review, because both are invisible
+    once the figure is a PDF and expensive to discover late:
+
+    * the manuscript treats the 48 points as one grid, so a figure that says
+      "original", "extension" or "campaign" anywhere is a bug;
+    * nothing may be set below :data:`MIN_PT` at final size. Setting the rcParams
+      is not enough — a per-call ``fontsize=`` overrides them silently, which is
+      exactly how sub-minimum type gets into a figure.
     """
     offenders = [
         s for s in _scan_text(fig)
@@ -163,6 +181,12 @@ def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
         raise AssertionError(
             f"{stem}: figure text refers to the delivery history, which the "
             f"manuscript does not: {offenders}"
+        )
+    small = _too_small(fig)
+    if small:
+        raise AssertionError(
+            f"{stem}: {len(small)} text element(s) below {MIN_PT:g} pt at final "
+            f"size: " + ", ".join(f"{lab!r} at {sz:g} pt" for lab, sz in small[:6])
         )
     FIGS_DIR.mkdir(parents=True, exist_ok=True)
     path = FIGS_DIR / f"{stem}.pdf"
