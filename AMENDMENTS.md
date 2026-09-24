@@ -4,6 +4,51 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-24 (isolated-molecule dipole test; manuscript ledger; text checks)
+
+- **A64 — The dilute band tilt points at the dipole derivative, and the isolated
+  molecule is the test. `monomer_test/` is the ARC-ready bundle.** A61 found the
+  first-principles absorption at 0.35-0.50 of the line list's in the rotational
+  band, 0.7-1.1 in the bend and 2.4-3.9 in the stretch, with a stretch/bend
+  balance 3.3-3.6x the line list's — **and the same at 1000, 1500 and 2000 K**. A
+  ratio that is mode-dependent but temperature-independent is not a population
+  effect; it is what a wrong dμ/dQ looks like. `water_dipole_v3` was trained
+  almost entirely on dense configurations, so it may return a liquid-like dμ/dr
+  when a bond stretches in the gas, and band intensity goes as |dμ/dQ|², so a
+  stretch derivative too large by ~1.8x would produce the observed excess alone.
+
+  **13 geometries, two references.** Equilibrium (0.9572 Å, 104.52°), then ±
+  pairs for symmetric stretch (±0.01 Å), asymmetric stretch (±0.01 Å opposed) and
+  bend (±1.0°), about equilibrium *and* about **r_OH = 1.00 Å** — the length the
+  bonds sample at 1000 K. The second reference is not decoration: an error that is
+  anharmonic (right at equilibrium, wrong where the spectrum lives) shows only
+  there. Orientation is identical across all thirteen, so dipole *vectors*
+  compare, not just magnitudes.
+
+  **Both the model and CP2K are on ARC, so the deliverable is a bundle**, not a
+  result. What was nonetheless verified from here:
+
+  * all 13 geometries build, and `config_from_atoms` → `AtomicData.from_config` →
+    `DataLoader` → `batch.to_dict()` runs for every one of them
+    (`eval_model.py --dry-run`, which needs no checkpoint). **Only the forward
+    pass and the `"dipole"` key are untested locally** — `torch`, `mace` and `ase`
+    all import here, but `water_dipole_v3.model` does not exist on this machine.
+  * `compare.py`'s arithmetic was checked against synthetic inputs carrying a
+    known **1.8x** stretch bias: it recovered 1.800 on every stretch derivative,
+    1.000 on bend, and an intensity-proxy ratio of exactly **3.240 = 1.8²**.
+
+  Two safety properties are deliberate. `harvest_dft.py` obtains `dip()` by
+  *reading* `build_dipole_xyz_v3.py` and executing it **only up to `out=[]`**,
+  never importing it — everything after that marker is the harvest loop that
+  rewrites the training set. And `make_cp2k_inputs.py` edits the MLWF template in
+  exactly one place, the cell, with the same `re.sub(r"ABC\s+[\d. ]+", ...)` the
+  label builder uses; the template is not reproduced or guessed, because a
+  settings difference would surface as a model/DFT disagreement.
+
+  The sbatch array wrapper follows the resources the brief specifies but is **not**
+  copied from `htc_dipole_label3.sh`, which was not readable from here; the README
+  says so and says to prefer that file's partition, account and `srun` form.
+
 ## 2026-09-24 (one grid; band attribution; HITEMP rows at 2250/2750 K; manuscript figures)
 
 - **A60 — HITEMP grid extended to T = 2250 and 2750 K, and the new rows are

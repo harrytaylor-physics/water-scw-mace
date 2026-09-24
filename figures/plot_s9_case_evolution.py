@@ -117,6 +117,41 @@ def run_case(cfg, eos, spec, n_nodes: int) -> dict:
     out["escape"] = hist.escape_window_extrema(ESCAPE_WINDOW_GYR)
     out["cooling"] = cooling_time_ratio_at_entropy(hist)
     out["age_range_gyr"] = (float(hist.age_gyr.min()), float(hist.age_gyr.max()))
+
+    # Reachable bounds (A56, A66). A planet stops cooling at its radiogenic floor,
+    # so a difference that only accumulates after that age is not one any planet
+    # has. The reachable age is therefore min(floor crossing, end of track).
+    #
+    # Two numbers, because they are not the same and only one of them is the
+    # bound A56 quotes. The difference is NOT monotonic in age — the water worlds
+    # carry a large early transient — so the maximum over the reachable window
+    # (2.1% radius for M_c = 15) is not the difference the planet ends up with
+    # (0.08%). The bound is the value AT the reachable age; the maximum is
+    # reported beside it as the largest excursion while still cooling.
+    # Three things can end the reachable window, and the earliest wins:
+    #   - the radiogenic floor, where the planet stops cooling;
+    #   - the end of the integrated track;
+    #   - the reporting horizon. The tracks run to hundreds of Gyr (the T_int grid
+    #     reaches 12 K), so "end of track" is not an age any planet has; the
+    #     horizon is the oldest age the manuscript quotes.
+    floor_age = hist.radiogenic_floor_age_gyr(float(spec["mass_core_mearth"]))
+    track_end = float(hist.age_gyr.max())
+    reachable_age = min(track_end, max(REPORT_AGES_GYR))
+    if floor_age is not None:
+        reachable_age = min(reachable_age, float(floor_age))
+    reach = hist.age_gyr <= reachable_age
+    out["floor_age_gyr"] = float(floor_age) if floor_age is not None else float("nan")
+    out["floor_reached"] = floor_age is not None
+    out["reachable_age_gyr"] = reachable_age
+    out["track_end_gyr"] = track_end
+    out["dR_reachable"] = float(np.interp(reachable_age, hist.age_gyr,
+                                          hist.radius_frac_diff))
+    out["ds_reachable"] = float(np.interp(reachable_age, hist.age_gyr,
+                                          hist.entropy_frac_diff))
+    out["dR_max_while_cooling"] = (float(np.nanmax(np.abs(hist.radius_frac_diff[reach])))
+                                   if reach.any() else float("nan"))
+    out["ds_max_while_cooling"] = (float(np.nanmax(np.abs(hist.entropy_frac_diff[reach])))
+                                   if reach.any() else float("nan"))
     return out
 
 
@@ -148,7 +183,11 @@ def _write_csv(csv_path, results) -> None:
               + [f"dR_{a:g}" for a in REPORT_AGES_GYR]
               + [f"ds_{a:g}" for a in REPORT_AGES_GYR]
               + ["cooling_time_ratio", "reference_entropy_j_kg_k",
-                 "escape_max_abs_radius_frac", "escape_max_abs_entropy_frac"])
+                 "escape_max_abs_radius_frac", "escape_max_abs_entropy_frac",
+                 "floor_age_gyr", "floor_reached", "reachable_age_gyr",
+                 "track_end_gyr",
+                 "dR_reachable", "ds_reachable",
+                 "dR_max_while_cooling", "ds_max_while_cooling"])
     with csv_path.open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(fields)
@@ -161,7 +200,13 @@ def _write_csv(csv_path, results) -> None:
                 + [f"{r['cooling']['cooling_time_ratio']:.6f}",
                    f"{r['cooling']['reference_entropy_j_kg_k']:.6f}",
                    f"{r['escape']['max_abs_radius_frac']:.6e}",
-                   f"{r['escape']['max_abs_entropy_frac']:.6e}"])
+                   f"{r['escape']['max_abs_entropy_frac']:.6e}",
+                   f"{r['floor_age_gyr']:.6g}", r["floor_reached"],
+                   f"{r['reachable_age_gyr']:.6g}",
+                   f"{r['track_end_gyr']:.6g}",
+                   f"{r['dR_reachable']:.6e}", f"{r['ds_reachable']:.6e}",
+                   f"{r['dR_max_while_cooling']:.6e}",
+                   f"{r['ds_max_while_cooling']:.6e}"])
 
 
 def plot_cases(cfg, results, tag="S9_case_evolution"):
