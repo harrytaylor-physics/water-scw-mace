@@ -126,6 +126,17 @@ def _drop_probe_from_ledger() -> None:
 
 
 # -- the produced figures, when they are present ---------------------------
+def _media_box_mm(path: Path) -> tuple[float, float]:
+    import re
+
+    body = path.read_bytes()
+    m = re.search(rb"/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]",
+                  body)
+    assert m, f"{path.name}: no /MediaBox"
+    x0, y0, x1, y1 = (float(v) for v in m.groups())
+    return (x1 - x0) / 72.0 * 25.4, (y1 - y0) / 72.0 * 25.4
+
+
 @pytest.mark.parametrize("stem", FIGURES)
 def test_each_figure_is_a_vector_pdf(stem):
     path = FIGS / f"{stem}.pdf"
@@ -135,6 +146,22 @@ def test_each_figure_is_a_vector_pdf(stem):
     assert body[:5] == b"%PDF-"
     assert b"/FontFile2" in body or b"/TrueType" in body
     assert len(body) > 5_000
+
+
+@pytest.mark.parametrize("stem", FIGURES)
+def test_each_figure_is_exactly_the_column_width(stem):
+    """The canvas size is the deliverable, so it is checked on the file.
+
+    ``bbox_inches="tight"`` silently crops the page to the drawn content — it
+    produced 155-182 mm pages here — so the width has to be verified after the
+    fact, not assumed from the figsize.
+    """
+    path = FIGS / f"{stem}.pdf"
+    if not path.exists():
+        pytest.skip(f"{path} not built on this machine")
+    width_mm, height_mm = _media_box_mm(path)
+    assert width_mm == pytest.approx(WIDTH_MM, abs=0.5)
+    assert 40.0 < height_mm < 250.0
 
 
 @pytest.mark.parametrize("stem", FIGURES)

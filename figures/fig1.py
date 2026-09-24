@@ -186,7 +186,6 @@ def main(argv=None) -> int:
     panel_b(ax_b, cfg, nums)
     panel_label(ax_a, "a", dx=-0.045, dy=1.14)
     panel_label(ax_b, "b", dx=-0.045, dy=1.06)
-    fig.subplots_adjust(hspace=0.34)
 
     path = save_pdf(fig, "fig1", nums)
     print(f"wrote {path}")

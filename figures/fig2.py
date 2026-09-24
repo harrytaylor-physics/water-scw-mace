@@ -209,7 +209,7 @@ def main(argv=None) -> int:
             "Planck, open Rosseland."),
     )
     rows = crossover_v3_rows(cfg, BAND_CM)
-    fig, (ax_a, ax_b) = figure(92.0, ncols=2, layout="constrained")
+    fig, (ax_a, ax_b) = figure(92.0, ncols=2)
     panel_a(ax_a, fig, cfg, nums)
     panel_b(ax_b, fig, cfg, rows, nums)
     panel_label(ax_a, "a", dx=-0.17, dy=1.06)

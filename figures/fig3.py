@@ -225,7 +225,6 @@ def main(argv=None) -> int:
     panel_b(ax_b, cfg, nums)
     panel_label(ax_a, "a", dx=-0.15, dy=1.08)
     panel_label(ax_b, "b", dx=-0.15, dy=1.08)
-    fig.subplots_adjust(wspace=0.30)
 
     path = save_pdf(fig, "fig3", nums)
     print(f"wrote {path}")

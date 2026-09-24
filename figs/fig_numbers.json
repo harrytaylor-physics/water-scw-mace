@@ -83,11 +83,11 @@
     "n_planets_in_scan": 108,
     "ratio_range_over_grid": [
      1.0766913384903856,
-     213.43157623254515
+     213.4315762325454
     ],
     "colourbar_range": [
      1.0793378498445705,
-     212.75994879179183
+     212.75994879179206
     ],
     "boundary_T_range_K": [
      364.2,
@@ -124,12 +124,12 @@
     "x_scale": "log",
     "y_scale": "log",
     "x_range": [
-     1.2482055619012997e-06,
-     14276.1013992047
+     1.2482052413159628e-06,
+     14276.178398665956
     ],
     "y_range": [
-     2.6998816360232634e-08,
-     112731.9797663809
+     2.6998586428168676e-08,
+     112741.73309044701
     ],
     "case": {
      "mass_core_mearth": 10.0,
@@ -141,22 +141,22 @@
     },
     "sampling_note": "the located boundary density shifts by ~1.5% between 1500 and 2000 profile samples; 1500 matches the domain scan and panel b",
     "composite": {
-     "radius_rearth": 2.9572153393804617,
+     "radius_rearth": 2.957212523500838,
      "rcb_densities_kg_m3": [
-      18.61230950773872
+      18.61304252888682
      ],
-     "deepest_rcb_kg_m3": 18.61230950773872,
-     "max_radiative_rho_kg_m3": 16.562670086296873
+     "deepest_rcb_kg_m3": 18.61304252888682,
+     "max_radiative_rho_kg_m3": 16.563255565387898
     },
     "hitemp": {
-     "radius_rearth": 2.934067545278212,
+     "radius_rearth": 2.9340613883717537,
      "rcb_densities_kg_m3": [
-      89.90288730128617
+      89.91486933619986
      ],
-     "deepest_rcb_kg_m3": 89.90288730128617,
-     "max_radiative_rho_kg_m3": 84.79223423185783
+     "deepest_rcb_kg_m3": 89.91486933619986,
+     "max_radiative_rho_kg_m3": 84.80315049943431
     },
-    "boundary_shift_dex": -0.6839733737736886
+    "boundary_shift_dex": -0.6840141478375381
    },
    "b": {
     "x_label": "Radiative-convective boundary (ordered by ratio)",
@@ -290,19 +290,19 @@
      2920.4934717937435
     ],
     "y_range": [
-     0.15011668938018427,
-     301.57366852941675
+     0.15011668938018402,
+     301.57366852941703
     ],
     "references": {
      "HITEMP": {
       "n_points": 48,
       "planck_range": [
-       1.2897897943048853,
+       1.2897318615713416,
        17.721249061854
       ],
       "rosseland_range": [
        1.0766913384903856,
-       213.43157623254515
+       213.4315762325454
       ]
      },
      "POKAZATEL": {
@@ -319,7 +319,7 @@
      "HITEMP + MT_CKD continuum": {
       "n_points": 48,
       "planck_range": [
-       0.21211126077496448,
+       0.21211126077496423,
        15.708414574022676
       ],
       "rosseland_range": [

@@ -105,7 +105,12 @@ def panel_label(ax, letter: str, dx: float = -0.085, dy: float = 1.045) -> None:
 
 
 def figure(height_mm: float, **kwargs):
-    """A 183 mm-wide figure of the requested height."""
+    """A 183 mm-wide figure of the requested height, constrained by default.
+
+    Constrained layout is the default because the width is a deliverable: the
+    content must be fitted into the canvas, not the canvas cropped to the content.
+    """
+    kwargs.setdefault("layout", "constrained")
     return plt.subplots(figsize=(WIDTH_IN, height_mm * MM), **kwargs)
 
 
@@ -190,7 +195,11 @@ def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
         )
     FIGS_DIR.mkdir(parents=True, exist_ok=True)
     path = FIGS_DIR / f"{stem}.pdf"
-    fig.savefig(path, format="pdf", bbox_inches="tight", pad_inches=0.02)
+    # NOT bbox_inches="tight": that crops the page to the drawn content, so the
+    # PDF comes out 155-182 mm wide instead of the 183 mm the journal fixes. The
+    # canvas size is the deliverable, so the layout engine has to fit the content
+    # into it — every figure here is built with layout="constrained".
+    fig.savefig(path, format="pdf")
     plt.close(fig)
     if numbers is not None:
         merge_numbers(numbers)
