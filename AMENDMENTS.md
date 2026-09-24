@@ -49,6 +49,70 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   copied from `htc_dipole_label3.sh`, which was not readable from here; the README
   says so and says to prefer that file's partition, account and `srun` form.
 
+- **A65 — Two text numbers checked: the window value is right, and the band tilt
+  is indifferent to state.** `tools/text_checks.py`.
+
+  **(a)** At (2000 K, 1200 kg/m³), 2550 cm⁻¹: first principles **296.1** cm²/g
+  against **9.521** for the line list at identical conditions — **×31.1**. The
+  text's "9.5 vs ~300, ×31" is confirmed. The 1 bar-broadened line list gives
+  **3.013** there, which is where the draft caption's "4" came from and is not the
+  comparison the text should make (×98 against it). The first-principles spectrum
+  is the delivered one, smoothed to 20 cm⁻¹ on a 1 cm⁻¹ grid, exactly as plotted.
+
+  **(b)** The line list carries no ρ = 60 spectrum — its grid is 0.1, 1, 10, 30,
+  100, 300, 1000 — so three were computed by `tools/extra_linelist_points.py`,
+  which inherits its conventions from `generate_linelist_tables` **by import, not
+  by copy**. They live in a separate directory and are deliberately **not** part of
+  the production grid: a density column would change the triangulation and every
+  ratio, figure and gate downstream, for a diagnostic that needs spectra rather
+  than a table.
+
+  | band | min | max | mean | spread | monotone in ρ at every T? |
+  |---|---|---|---|---|---|
+  | libration | 0.348 | 0.510 | 0.411 | 1.47× | no |
+  | bend | 0.706 | 1.122 | 0.869 | 1.59× | no |
+  | window | 1.060 | 2.891 | 1.691 | 2.73× | no |
+  | stretch | 2.376 | 4.425 | 3.174 | 1.86× | no |
+
+  **The finding survives the extension and sharpens.** The ordering
+  libration < bend < window < stretch holds at all nine states; no band's ratio is
+  monotone in density at any temperature; each band scatters by only **1.5-2.7×**
+  about its own value over a six-fold density and two-fold temperature range,
+  while the bands stay **5.7-9.7× apart from one another** throughout. A tilt fixed
+  in frequency and indifferent to the state is what a wrong dipole derivative
+  gives; a population or collision effect would track T or ρ. The continuum changes
+  none of it — its largest share of any band here is **23.0%**, at (1000 K, 60).
+
+- **A66 — `outputs/manuscript_numbers.json`: one file, 303 entries, nothing
+  missing.** Every number the manuscript quotes from this repository, each with
+  the script that produced it, the file it is stored in, and the commit that last
+  touched that script — so a number traces to the code that made it rather than to
+  the day it was read. Sections: opacity ratios by group and over all 48 points,
+  the two direct computations, the six-point broadening sensitivity, continuum
+  shares, agreement with the independent crossover, the band diagnostic, G5
+  residuals, the 108-planet boundary ranges and the 10 analysed boundaries, the
+  water-world fiducial, evolution differences and escape maxima, radiogenic
+  floors, and every value in `figs/fig_numbers.json`.
+
+  **Two gaps were closed rather than recorded.** The scan CSV has no boundary
+  pressure column, but the boundary pressure *is* P(T_rcb, ρ_rcb) and AQUA is
+  tabulated on (ρ, T) with P as an output (A2) — a lookup, not a fit, so it is
+  computed. And the **reachable bounds** existed only in A56's prose; they are now
+  columns that `plot_s9_case_evolution.py` writes, because the floor crossing age
+  comes from the track and belongs with the track.
+
+  **The reachable bound needed two corrections before it was right**, both caught
+  before it reached the ledger. It is the difference **at** the last age the planet
+  is still cooling, which is the earliest of: the radiogenic floor crossing, the
+  end of the track, and the **10 Gyr reporting horizon**. Taking the *maximum* over
+  that window instead gives 2.1% radius for the M_c = 15 water world against the
+  0.08% it actually ends with — the difference is not monotonic in age. And
+  omitting the horizon lets "end of track" mean **549 Gyr**, since the T_int grid
+  reaches 12 K. With both fixed it reproduces A56 exactly: the water worlds at
+  **0.078 / 0.121 / 0.237%** in radius and **0.96 / 1.35 / 2.15%** in entropy, and
+  the old fiducial at **0.079% / 0.705%** by its 0.386 Gyr floor against
+  1.65% / 35% at 10 Gyr — the inversion that picked the recommended case.
+
 ## 2026-09-24 (one grid; band attribution; HITEMP rows at 2250/2750 K; manuscript figures)
 
 - **A60 — HITEMP grid extended to T = 2250 and 2750 K, and the new rows are
