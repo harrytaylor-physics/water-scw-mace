@@ -36,13 +36,18 @@ def test_one_row_per_fp_grid_point(rows):
 
 
 def test_hitemp_is_clamped_exactly_where_its_grid_ends(rows):
-    """Only rho > 1000 clamps; every new point is interior (A53)."""
+    """Only rho > 1000 clamps; the whole thin and cold part of the grid is interior.
+
+    The last assertion used to be phrased over the points added by a later
+    delivery. The 48 points are one grid now (A62), so it is phrased over where
+    the points sit instead — which is what it always meant: nothing dilute and
+    nothing cold is outside the line list's range.
+    """
     clamped = [r for r in rows if r["ll_clamped"]]
     assert len(clamped) == N_CLAMPED
     assert all(r["rho"] > 1000.0 for r in clamped)
     assert all(not r["ll_clamped"] for r in rows if r["rho"] <= 1000.0)
-    # Every extension point is inside HITEMP's range, so none of them clamp.
-    assert all(not r["ll_clamped"] for r in rows if r["is_extension_point"])
+    assert all(not r["ll_clamped"] for r in rows if r["is_dilute"] or r["T"] <= 1000.0)
 
 
 def test_agreement_with_the_delivered_analysis(rows):
@@ -56,10 +61,17 @@ def test_agreement_with_the_delivered_analysis(rows):
     assert on_grid["n"] >= 3
     assert on_grid["max_abs_dev_planck_pct"] < 1.0
     assert on_grid["max_abs_dev_rosseland_pct"] < 1.0
-    # T-interpolated points are looser but still close.
-    assert summary["interpolated"]["max_abs_dev_rosseland_pct"] < 5.0
-    # Clamped ones are expected to disagree — RADIS had the true density.
-    assert summary["clamped"]["max_abs_dev_rosseland_pct"] > 10.0
+    # T-interpolated points. This was < 5% until A60 put line-list rows at 2250 and
+    # 2750 K, the only two temperatures that needed interpolating; now it is < 1%,
+    # and the bound is tightened rather than left where it was.
+    assert summary["interpolated"]["max_abs_dev_rosseland_pct"] < 1.0
+    # Clamped ones still disagree — RADIS had the true density and we hold kappa at
+    # the ceiling — but by the amount A59 MEASURED against a line-by-line run at
+    # that density (5.89% at the most extreme point), not by the ~30% A53 reported.
+    # That 30% was the two T-interpolated points, and A60 removed it. The assertion
+    # used to require > 10%, i.e. it pinned the pathology as expected behaviour.
+    clamped = summary["clamped"]["max_abs_dev_rosseland_pct"]
+    assert 1.0 < clamped < 6.5
 
 
 def test_dilute_rows_carry_their_noise_floor_fractions(cfg, rows):

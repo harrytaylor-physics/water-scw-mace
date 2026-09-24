@@ -140,11 +140,17 @@ def test_unknown_source_raises():
 
 
 def test_line_list_sources_build(cfg):
-    """Delivered POKAZATEL (27, FP grid) and HITEMP (76, 11×11 grid) both build."""
+    """POKAZATEL (27 points) and HITEMP (90) both build.
+
+    HITEMP was 76 = 11 T × 7 ρ − 1 (T = 500, ρ = 0.1 was never produced) until A60
+    added the T = 2250 and 2750 K rows at all seven densities, making 13 × 7 − 1.
+    """
     pk = build_source("pokazatel", cfg)
     assert pk.n_points == 27
     ht = build_source("hitemp", cfg)
-    assert ht.n_points == 76  # 11 T × 7 ρ − 1 (T=500,ρ=0.1 missing)
+    assert ht.n_points == 90  # 13 T × 7 ρ − 1 (T=500, ρ=0.1 missing)
+    t_grid = set(np.unique(ht.table.temperature_k).tolist())
+    assert {2250.0, 2750.0} <= t_grid
     for src in (pk, ht):
         kr = src.kappa_R(1500.0, 300.0)  # a shared grid point
         assert kr > 0 and kr < 1e5
