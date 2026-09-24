@@ -51,22 +51,25 @@ M_H2O_KG_MOL = 18.01528e-3  # kg/mol
 M_H2O_G_MOL = 18.01528  # g/mol
 
 # --- baked grid (docs/linelist_tables.md) ----------------------------------
-T_GRID_K = [500, 600, 700, 800, 900, 1000, 1250, 1500, 2000, 2500, 3000]
+# 2250 and 2750 were added by A60: the FP grid has points at those temperatures
+# and interpolating HITEMP across the 2000-2500 and 2500-3000 gaps was worth
+# 20-30% there (A59).
+T_GRID_K = [500, 600, 700, 800, 900, 1000, 1250, 1500, 2000, 2250, 2500, 2750, 3000]
 RHO_GRID_KGM3 = [1e-5, 1e-4, 1e-3, 1e-2, 0.1, 1.0, 10.0, 30.0, 100.0, 300.0, 1000.0]
 
 # AQUA P(T, rho) in Pa; rows = RHO_GRID_KGM3, cols = T_GRID_K.
 P_AQUA_PA = [
-    [2.3077e00, 2.7692e00, 3.2307e00, 3.6922e00, 4.1538e00, 4.6155e00, 5.7706e00, 6.9407e00, 1.0196e01, 2.6016e01, 4.1074e01],
-    [2.3077e01, 2.7692e01, 3.2307e01, 3.6923e01, 4.1538e01, 4.6155e01, 5.7700e01, 6.9313e01, 9.5833e01, 1.7236e02, 3.7486e02],
-    [2.3076e02, 2.7692e02, 3.2307e02, 3.6922e02, 4.1538e02, 4.6155e02, 5.7697e02, 6.9270e02, 9.3726e02, 1.3468e03, 2.6358e03],
-    [2.3074e03, 2.7690e03, 3.2306e03, 3.6922e03, 4.1537e03, 4.6154e03, 5.7695e03, 6.9249e03, 9.2918e03, 1.2230e04, 1.8341e04],
-    [2.3055e04, 2.7676e04, 3.2295e04, 3.6913e04, 4.1531e04, 4.6152e04, 5.7696e04, 6.9242e04, 9.2585e04, 1.1812e05, 1.5407e05],
-    [2.2858e05, 2.7538e05, 3.2191e05, 3.6832e05, 4.1468e05, 4.6125e05, 5.7694e05, 6.9237e05, 9.2435e05, 1.1654e06, 1.4435e06],
-    [2.0778e06, 2.6139e06, 3.1149e06, 3.6028e06, 4.0840e06, 4.5863e06, 5.7695e06, 6.9236e06, 9.2369e06, 1.1590e07, 1.4088e07],
-    [2.6416e06, 6.9092e06, 8.6625e06, 1.0284e07, 1.1843e07, 1.3588e07, 1.7309e07, 2.0771e07, 2.7706e07, 3.4723e07, 4.2025e07],
-    [2.6416e06, 1.2354e07, 2.1958e07, 2.8898e07, 3.5282e07, 4.3557e07, 5.7695e07, 6.9234e07, 9.2338e07, 1.1562e08, 1.3952e08],
-    [2.6416e06, 1.2354e07, 3.5817e07, 6.2126e07, 8.7856e07, 1.1633e08, 1.7247e08, 2.2279e08, 3.1794e08, 4.0698e08, 4.9238e08],
-    [3.5614e08, 5.7727e08, 7.9708e08, 1.0103e09, 1.2155e09, 1.4118e09, 1.8652e09, 2.2773e09, 3.0120e09, 3.6646e09, 4.2617e09],
+    [2.3077e+00, 2.7692e+00, 3.2307e+00, 3.6922e+00, 4.1538e+00, 4.6155e+00, 5.7706e+00, 6.9407e+00, 1.0196e+01, 1.5124e+01, 2.6016e+01, 3.5978e+01, 4.1074e+01],
+    [2.3077e+01, 2.7692e+01, 3.2307e+01, 3.6923e+01, 4.1538e+01, 4.6155e+01, 5.7700e+01, 6.9313e+01, 9.5833e+01, 1.1976e+02, 1.7236e+02, 2.7180e+02, 3.7486e+02],
+    [2.3076e+02, 2.7692e+02, 3.2307e+02, 3.6922e+02, 4.1538e+02, 4.6155e+02, 5.7697e+02, 6.9270e+02, 9.3726e+02, 1.0953e+03, 1.3468e+03, 1.8184e+03, 2.6358e+03],
+    [2.3074e+03, 2.7690e+03, 3.2306e+03, 3.6922e+03, 4.1537e+03, 4.6154e+03, 5.7695e+03, 6.9249e+03, 9.2918e+03, 1.0609e+04, 1.2230e+04, 1.4567e+04, 1.8341e+04],
+    [2.3055e+04, 2.7676e+04, 3.2295e+04, 3.6913e+04, 4.1531e+04, 4.6152e+04, 5.7696e+04, 6.9242e+04, 9.2585e+04, 1.0480e+05, 1.1812e+05, 1.3378e+05, 1.5407e+05],
+    [2.2858e+05, 2.7538e+05, 3.2191e+05, 3.6832e+05, 4.1468e+05, 4.6125e+05, 5.7694e+05, 6.9237e+05, 9.2435e+05, 1.0427e+06, 1.1654e+06, 1.2967e+06, 1.4435e+06],
+    [2.0778e+06, 2.6139e+06, 3.1149e+06, 3.6028e+06, 4.0840e+06, 4.5863e+06, 5.7695e+06, 6.9236e+06, 9.2369e+06, 1.0404e+07, 1.1590e+07, 1.2811e+07, 1.4088e+07],
+    [2.6416e+06, 6.9092e+06, 8.6625e+06, 1.0284e+07, 1.1843e+07, 1.3588e+07, 1.7309e+07, 2.0771e+07, 2.7706e+07, 3.1195e+07, 3.4723e+07, 3.8318e+07, 4.2025e+07],
+    [2.6416e+06, 1.2354e+07, 2.1958e+07, 2.8898e+07, 3.5282e+07, 4.3557e+07, 5.7695e+07, 6.9234e+07, 9.2338e+07, 1.0394e+08, 1.1562e+08, 1.2745e+08, 1.3952e+08],
+    [2.6416e+06, 1.2354e+07, 3.5817e+07, 6.2126e+07, 8.7856e+07, 1.1633e+08, 1.7247e+08, 2.2279e+08, 3.1794e+08, 3.6307e+08, 4.0698e+08, 4.4999e+08, 4.9238e+08],
+    [3.5614e+08, 5.7727e+08, 7.9708e+08, 1.0103e+09, 1.2155e+09, 1.4118e+09, 1.8652e+09, 2.2773e+09, 3.0120e+09, 3.3466e+09, 3.6646e+09, 3.9689e+09, 4.2617e+09],
 ]
 
 PRESSURE_MODE = "ideal"  # "ideal" | "aqua"
@@ -116,7 +119,7 @@ def _fetch_databank(sf, database: str) -> None:
     raise RuntimeError("could not load POKAZATEL databank; tried:\n  " + "\n  ".join(errors))
 
 
-def build_factory(database: str):
+def build_factory(database: str, wavenum_min_cm: float = WAVENUM_MIN_CM):
     """Create a RADIS SpectrumFactory and load the databank ONCE (offline).
 
     Locked to HitempCalculator's SpectrumFactory signature; pressure/Tgas are
@@ -134,8 +137,9 @@ def build_factory(database: str):
         print(f"[generate] WARNING: ${RADISDB_ENV} unset; using RADIS default cache path",
               flush=True)
 
+    skip_radis_registration()
     sf = SpectrumFactory(
-        wavenum_min=WAVENUM_MIN_CM,
+        wavenum_min=wavenum_min_cm,
         wavenum_max=WAVENUM_MAX_CM,
         molecule="H2O",
         isotope=ISOTOPES[database],
@@ -148,14 +152,42 @@ def build_factory(database: str):
     return sf
 
 
+def skip_radis_registration() -> None:
+    """Let a fully-cached, offline databank load succeed (A59).
+
+    ``fetch_hitemp`` calls ``HITEMPDatabaseManager.register()`` when the databank
+    is absent from ``~/radis.json``, and that method formats ``self.wmin``, which
+    is only set when files are actually downloaded. Registration is bookkeeping;
+    the line data load regardless. Skipped when nothing was downloaded, so the
+    user's home config is left alone.
+    """
+    try:
+        from radis.api.hitempapi import HITEMPDatabaseManager as _Mgr
+    except ImportError:  # older RADIS: no shim needed
+        return
+    if getattr(_Mgr.register, "_subneptune_shim", False):
+        return
+    original = _Mgr.register
+
+    def register(self, download):
+        if not download and (self.wmin is None or self.wmax is None):
+            return
+        return original(self, download)
+
+    register._subneptune_shim = True
+    _Mgr.register = register
+
+
 def compute_point(sf, temperature_k: float, pressure_pa: float):
     """Return (wn[cm^-1], kappa[cm^2/g]) for one (T, P_broad) point.
 
     Locked to HitempCalculator.kappa: kappa = abscoeff / rho_g_cm3 with
     rho_g_cm3 = n_cm3 * M / N_A, n_cm3 = P/(k_B T). Identically sigma*N_A/M.
     """
-    sf.pressure = pressure_pa / 1e5  # RADIS SpectrumFactory pressure in bar
-    s = sf.eq_spectrum(Tgas=float(temperature_k))
+    # RADIS >= 0.16 made SpectrumFactory slotted: `sf.pressure = ...` raises, and
+    # the pressure is a per-call argument. The kwarg form works on older RADIS too,
+    # so no version branch (A59).
+    s = sf.eq_spectrum(Tgas=float(temperature_k), pressure=pressure_pa / 1e5)
     wn, abscoeff = s.get("abscoeff", wunit="cm-1")  # abscoeff [cm^-1]
     n_cm3 = (pressure_pa / (K_B * temperature_k)) * 1e-6  # molecules / cm^3
     rho_g_cm3 = n_cm3 * M_H2O_G_MOL / N_A
@@ -174,6 +206,17 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True, type=Path, help="output directory")
     ap.add_argument("--pressure-mode", choices=["ideal", "aqua"], default=None,
                     help="override the module PRESSURE_MODE")
+    ap.add_argument("--temperatures", default=None,
+                    help="comma-separated subset of T_GRID_K to compute (default: all)")
+    ap.add_argument("--densities", default=None,
+                    help="comma-separated subset of RHO_GRID_KGM3 to compute. The "
+                         "delivered grid covers only 0.1-1000; the four thinner rows "
+                         "were never produced (default: all)")
+    ap.add_argument("--wavenum-min", type=float, default=WAVENUM_MIN_CM,
+                    help=f"line-loading lower edge, cm^-1 (default {WAVENUM_MIN_CM:g}). "
+                         f"The local HITEMP cache starts at 50; with truncation 50 a "
+                         f"line below 50 cannot reach past 100, so the science band "
+                         f"[100, 4000] is unaffected either way (A60)")
     ap.add_argument("--dry-run", action="store_true",
                     help="list points and pressures without running RADIS")
     args = ap.parse_args(argv)
@@ -184,7 +227,21 @@ def main(argv=None) -> int:
 
     out_dir: Path = args.out
     out_dir.mkdir(parents=True, exist_ok=True)
-    points = [(it, irho) for irho in range(len(RHO_GRID_KGM3)) for it in range(len(T_GRID_K))]
+    wanted = None
+    if args.temperatures:
+        wanted = {float(x) for x in args.temperatures.split(",")}
+        unknown = wanted - set(map(float, T_GRID_K))
+        if unknown:
+            raise SystemExit(f"--temperatures {sorted(unknown)} not in T_GRID_K={T_GRID_K}")
+    wanted_rho = None
+    if args.densities:
+        wanted_rho = {float(x) for x in args.densities.split(",")}
+        unknown = wanted_rho - set(map(float, RHO_GRID_KGM3))
+        if unknown:
+            raise SystemExit(f"--densities {sorted(unknown)} not in RHO_GRID_KGM3")
+    points = [(it, irho) for irho in range(len(RHO_GRID_KGM3)) for it in range(len(T_GRID_K))
+              if (wanted is None or float(T_GRID_K[it]) in wanted)
+              and (wanted_rho is None or float(RHO_GRID_KGM3[irho]) in wanted_rho)]
     total = len(points)
     print(f"[generate] database={args.database} out={out_dir} pressure_mode={PRESSURE_MODE}", flush=True)
     print(f"[generate] {total} grid points, wn=[{WAVENUM_MIN_CM},{WAVENUM_MAX_CM}] wstep={WSTEP_CM}", flush=True)
@@ -198,7 +255,7 @@ def main(argv=None) -> int:
                   f"  {'(exists, skip)' if exists else ''}")
         return 0
 
-    sf = build_factory(args.database)  # databank loaded once
+    sf = build_factory(args.database, args.wavenum_min)  # databank loaded once
 
     done = skipped = failed = 0
     for k, (it, irho) in enumerate(points, 1):
@@ -232,6 +289,7 @@ def main(argv=None) -> int:
             isotopes=ISOTOPES[args.database],
             pressure_mode=PRESSURE_MODE,
             wstep_cm=WSTEP_CM,
+            wavenum_min_cm=args.wavenum_min,
         )
         tmp.replace(path)
         done += 1
