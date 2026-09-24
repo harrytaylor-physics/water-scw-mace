@@ -248,8 +248,8 @@ def main(argv=None):
               + " ".join(f"{100 * r[f'ds_{a:g}']:>8.4f}%" for a in REPORT_AGES_GYR))
 
     print(f"\n  CONVERGENCE — does the {N_NODES}->{2 * N_NODES} node doubling preserve "
-          f"the 5 and 7 Gyr numbers, in sign and size? (A44 found it did not, "
-          f"pre-campaign)")
+          f"the 5 and 7 Gyr numbers, in sign and size? (A44 found it did not, on "
+          f"the 27-point opacity grid)")
     head = (f"  {'case':<52s} | {'ΔR@5':>10s} {'ΔR@5 (2x)':>10s} {'ΔR@7':>10s} "
             f"{'ΔR@7 (2x)':>10s} | {'verdict':<28s}")
     print(head)

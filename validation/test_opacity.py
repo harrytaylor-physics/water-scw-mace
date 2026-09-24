@@ -186,8 +186,16 @@ def test_per_comparison_bands(cfg):
     assert fp_only[0] == pytest.approx(1.336, abs=0.05)  # FP's own full band
     assert fp_only[1] == pytest.approx(6000.11, abs=1.0)
     assert both_pk == pytest.approx((50.0, 4499.95), abs=1.0)  # POKAZATEL caps it
-    # HITEMP [10,11000] does NOT cap FP at 4500; FP∩HITEMP = [10, 6000].
-    assert both_ht[0] == pytest.approx(10.0, abs=1.0)
+    # HITEMP does NOT cap FP at 4500; FP∩HITEMP = [50, 6000].
+    #
+    # The lower edge was 10 until A60 added the T = 2250 and 2750 K rows. Those
+    # were computed from 50 cm⁻¹ because the 0-50 cm⁻¹ HITEMP line file is not in
+    # the local cache and fetching it needs a HITRAN login, so the grid's
+    # max-of-minima moved 10 -> 50. This is a band-detection change only: the
+    # science band is pinned at [100, 4000] (A25), and with truncation = 50 a line
+    # below 50 cm⁻¹ cannot reach past 100, so no mean moves. Re-running the two
+    # rows with `--wavenum-min 10` where that file exists restores 10.
+    assert both_ht[0] == pytest.approx(50.0, abs=1.0)
     assert both_ht[1] == pytest.approx(6000.0, abs=2.0)
 
 
