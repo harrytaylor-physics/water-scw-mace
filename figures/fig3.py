@@ -127,7 +127,7 @@ def panel_a(ax, cfg, nums: FigureNumbers) -> dict:
     return marked
 
 
-def panel_b(ax, cfg, nums: FigureNumbers) -> None:
+def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
     path = cfg.output_path / "S8_rcb_flip.csv"
     if not path.exists():
         raise SystemExit(
@@ -165,6 +165,23 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:
     ax.legend(loc="upper center", fontsize=7.0, ncol=1,
               bbox_to_anchor=(0.5, 1.0))
 
+    # The stored boundary analysis predates the T = 2250/2750 K line-list rows
+    # (A60). Those are far from these boundaries (726-1008 K), but a Delaunay
+    # triangulation is not local, so the sensitivity is measured rather than
+    # assumed: re-evaluate the ratio at each boundary with the current tables.
+    from opacity.build_tables import get_source
+    from opacity.table import CM2_PER_G_TO_SI
+
+    band = comparison_band(cfg, ["fp", "hitemp"])
+    fp_src = get_source("fp", cfg, band=band)
+    ll_src = get_source("hitemp", cfg, band=band)
+    drift = []
+    for r in rows:
+        t_k, rho_si = float(r["t_k"]), float(r["rho_si"])
+        now = (fp_src.kappa_R(t_k, rho_si) / ll_src.kappa_R(t_k, rho_si))
+        drift.append(abs(now / float(r["fp_over_hitemp"]) - 1.0))
+    max_drift = max(drift)
+
     nums.axes("b", ax, "Radiative-convective boundary (ordered by ratio)", "Factor",
               ylog=True)
     nums.panel(
@@ -177,7 +194,13 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:
                      "kappa_ratio": float(r["fp_over_hitemp"]),
                      "flip_threshold": float(r["threshold_factor"])} for r in rows],
         selection="boundaries with first-principles data interpolated, not clamped",
+        input_vintage=(
+            "boundary locations and kappa ratios come from the stored boundary "
+            "analysis, which predates the 2250/2750 K line-list rows"),
+        max_ratio_drift_since_stored=float(max_drift),
     )
+    print(f"  stored-vs-current kappa ratio at these boundaries: max drift "
+          f"{100 * max_drift:.2f}%")
 
 
 def main(argv=None) -> int:

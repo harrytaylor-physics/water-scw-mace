@@ -160,6 +160,12 @@ def main(argv=None) -> int:
         n_boundaries_inside_grid_extent=int(inside.sum()),
         grid_extent="convex hull of the 48 points in (T, log10 rho)",
         band_cm=list(BAND_CM),
+        input_vintage=(
+            "boundary locations come from the stored domain scan, which predates "
+            "the 2250/2750 K line-list rows; the shading is computed from the "
+            "current tables. The boundaries lie at 364-1850 K, away from the added "
+            "rows, and the measured sensitivity of the ratio at the analysed "
+            "boundaries is recorded in fig3 panel b"),
     )
 
     path = save_pdf(fig, "fig4", nums)
