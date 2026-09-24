@@ -112,19 +112,19 @@
      2920.4934717937435
     ],
     "y_range": [
-     0.15011668938018402,
+     0.15011668938018427,
      301.57366852941703
     ],
     "references": {
      "HITEMP": {
       "n_points": 48,
       "planck_range": [
-       1.2897318615713416,
+       1.2897897943048853,
        17.721249061854
       ],
       "rosseland_range": [
        1.0766913384903856,
-       213.4315762325454
+       213.4315762325453
       ]
      },
      "POKAZATEL": {
@@ -141,7 +141,7 @@
      "HITEMP + MT_CKD continuum": {
       "n_points": 48,
       "planck_range": [
-       0.21211126077496423,
+       0.21211126077496448,
        15.708414574022676
       ],
       "rosseland_range": [
@@ -155,7 +155,9 @@
      650.0,
      3000.0
     ],
-    "colour_scale": "viridis, linear in T"
+    "colour_scale": "viridis, linear in T",
+    "line_list_asymmetry": "the two line lists are not matched in isotopologue coverage: the HITEMP spectra carry isotopologues 1, 2 and 3, the POKAZATEL spectra the main one only. Both use the same ideal-gas broadening pressure and the same band. The minor isotopologues sit mostly in the windows, so they bear on the Rosseland ratio more than the Planck one; the size of that is not measured here and a caption should not imply the two references differ only in their line data",
+    "pokazatel_matching": "matched state by state, not interpolated: POKAZATEL sits on 27 of the 48 first-principles states exactly"
    }
   }
  },

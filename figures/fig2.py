@@ -186,9 +186,22 @@ def panel_b(ax, fig, cfg, rows, nums: FigureNumbers) -> None:
             "rosseland_range": [min(d["rosseland"] for d in data),
                                 max(d["rosseland"] for d in data)],
         }
-    nums.panel("b", references=stats, unity_line=True,
-               temperature_colour_range_K=[T_VMIN, T_VMAX],
-               colour_scale="viridis, linear in T")
+    nums.panel(
+        "b", references=stats, unity_line=True,
+        temperature_colour_range_K=[T_VMIN, T_VMAX],
+        colour_scale="viridis, linear in T",
+        line_list_asymmetry=(
+            "the two line lists are not matched in isotopologue coverage: the "
+            "HITEMP spectra carry isotopologues 1, 2 and 3, the POKAZATEL spectra "
+            "the main one only. Both use the same ideal-gas broadening pressure "
+            "and the same band. The minor isotopologues sit mostly in the windows, "
+            "so they bear on the Rosseland ratio more than the Planck one; the "
+            "size of that is not measured here and a caption should not imply the "
+            "two references differ only in their line data"),
+        pokazatel_matching=(
+            "matched state by state, not interpolated: POKAZATEL sits on 27 of the "
+            "48 first-principles states exactly"),
+    )
 
 
 def main(argv=None) -> int:
