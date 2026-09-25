@@ -329,6 +329,13 @@
      1100.0,
      1300.0
     ],
+    "counts_by_category": {
+     "on computed data": 43,
+     "T below the grid": 18,
+     "\u03c1 below the grid": 41,
+     "between computed points": 6
+    },
+    "category_rule": "filled where the opacity table's own triangulation contains the point, open where the model clamps, with the clamp cause distinguished \u2014 the same four categories as ED Fig. 6a",
     "n_boundaries_inside_grid_extent": 43,
     "grid_extent": "convex hull of the 48 points in (T, log10 rho)",
     "band_cm": [

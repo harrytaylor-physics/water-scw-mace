@@ -12,6 +12,7 @@ gated.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,9 @@ from figures._manuscript import (
 ROOT = Path(__file__).resolve().parents[1]
 FIGS = ROOT / "figs"
 FIGURES = ("fig1", "fig2", "fig3", "fig4")
+# The Extended Data items are the same deliverable and carry the same rules; only
+# the ledger they record into differs, so the file-level gates cover them too.
+ED_FIGURES = tuple(f"ed/ed_fig{i}" for i in range(1, 9))
 
 
 @pytest.fixture(scope="module")
@@ -137,7 +141,7 @@ def _media_box_mm(path: Path) -> tuple[float, float]:
     return (x1 - x0) / 72.0 * 25.4, (y1 - y0) / 72.0 * 25.4
 
 
-@pytest.mark.parametrize("stem", FIGURES)
+@pytest.mark.parametrize("stem", FIGURES + ED_FIGURES)
 def test_each_figure_is_a_vector_pdf(stem):
     path = FIGS / f"{stem}.pdf"
     if not path.exists():
@@ -148,7 +152,7 @@ def test_each_figure_is_a_vector_pdf(stem):
     assert len(body) > 5_000
 
 
-@pytest.mark.parametrize("stem", FIGURES)
+@pytest.mark.parametrize("stem", FIGURES + ED_FIGURES)
 def test_each_figure_is_exactly_the_column_width(stem):
     """The canvas size is the deliverable, so it is checked on the file.
 
@@ -181,6 +185,41 @@ def test_the_ledger_never_names_the_delivery_history(numbers):
     blob = json.dumps(numbers).lower()
     for word in ("original", "extension", "campaign"):
         assert word not in blob, f"figs/fig_numbers.json says {word!r}"
+
+
+ED_LEDGERS = ("ed_numbers.json", "ed_index.json")
+
+
+def _prose_tokens(blob: str) -> list[str]:
+    """The words that are the author's rather than a file name.
+
+    A ledger has to be able to say which file a number came from — a path like
+    ``.../docs/LDA_CAMPAIGN.md`` names the source and is not the manuscript
+    adopting the word. Anything with a separator or a source extension is a path.
+    """
+    out = []
+    for tok in re.split(r"[\s,;:()\[\]{}\"']+", blob):
+        if "/" in tok or tok.endswith((".md", ".py", ".json", ".csv", ".npz",
+                                       ".sh", ".tex", ".pdf")):
+            continue
+        out.append(tok.lower())
+    return out
+
+
+@pytest.mark.parametrize("name", ED_LEDGERS)
+def test_the_extended_data_ledgers_never_name_the_delivery_history(name):
+    """The save_pdf guard reads the figure, not the ledger beside it.
+
+    Every ED number is merged into outputs/manuscript_numbers.json, so a note in
+    the ledger reaches the manuscript read-through exactly as a figure label would.
+    """
+    path = FIGS / "ed" / name
+    if not path.exists():
+        pytest.skip(f"figs/ed/{name} not built on this machine")
+    toks = _prose_tokens(path.read_text())
+    for word in ("original", "extension", "campaign"):
+        hits = sorted({t for t in toks if word in t})
+        assert not hits, f"figs/ed/{name} says {hits[:4]}"
 
 
 def test_the_ledger_agrees_with_the_grid_size(numbers):

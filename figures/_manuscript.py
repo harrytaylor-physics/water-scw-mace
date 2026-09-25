@@ -33,9 +33,11 @@ matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt  # noqa: E402
 
 FIGS_DIR = Path(__file__).resolve().parents[1] / "figs"
+ED_DIR = FIGS_DIR / "ed"  # Extended Data items
 
 MM = 1.0 / 25.4  # millimetres -> inches
 WIDTH_MM = 183.0  # Nature double column
+SINGLE_WIDTH_MM = 89.0  # Nature single column, where one panel suffices
 WIDTH_IN = WIDTH_MM * MM
 
 # Okabe-Ito, colourblind-safe. Named by role, not by hue, so a figure that
@@ -104,14 +106,33 @@ def panel_label(ax, letter: str, dx: float = -0.085, dy: float = 1.045) -> None:
             fontweight="bold", va="top", ha="left")
 
 
-def figure(height_mm: float, **kwargs):
-    """A 183 mm-wide figure of the requested height, constrained by default.
+def figure(height_mm: float, width_mm: float = WIDTH_MM, **kwargs):
+    """A figure of the requested height at a journal column width.
 
     Constrained layout is the default because the width is a deliverable: the
     content must be fitted into the canvas, not the canvas cropped to the content.
+    ``width_mm`` is 183 (double column) or 89 (single, where one panel suffices).
     """
+    if width_mm not in (WIDTH_MM, SINGLE_WIDTH_MM):
+        raise ValueError(
+            f"width {width_mm} mm is neither the double-column {WIDTH_MM:g} nor the "
+            f"single-column {SINGLE_WIDTH_MM:g}")
     kwargs.setdefault("layout", "constrained")
-    return plt.subplots(figsize=(WIDTH_IN, height_mm * MM), **kwargs)
+    return plt.subplots(figsize=(width_mm * MM, height_mm * MM), **kwargs)
+
+
+def mosaic(height_mm: float, layout, width_mm: float = WIDTH_MM, **kwargs):
+    """A journal-width figure laid out by ``subplot_mosaic``.
+
+    For panels that are not all the same size — a wide one over two narrow ones,
+    say. Mixing ``add_subplot`` into a grid built by ``subplots`` fights the
+    constrained-layout engine and overlaps the axes; a mosaic does not.
+    """
+    if width_mm not in (WIDTH_MM, SINGLE_WIDTH_MM):
+        raise ValueError(f"width {width_mm} mm is not a journal column width")
+    kwargs.setdefault("layout", "constrained")
+    fig = plt.figure(figsize=(width_mm * MM, height_mm * MM), **kwargs)
+    return fig, fig.subplot_mosaic(layout)
 
 
 @dataclass
@@ -166,7 +187,8 @@ def _too_small(fig) -> list[tuple[str, float]]:
     return out
 
 
-def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
+def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None,
+             out_dir: Path | None = None, ledger_name: str = "fig_numbers.json") -> Path:
     """Write ``figs/<stem>.pdf`` as vector, after the vocabulary and type checks.
 
     Two rules are enforced here rather than in review, because both are invisible
@@ -193,8 +215,9 @@ def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
             f"{stem}: {len(small)} text element(s) below {MIN_PT:g} pt at final "
             f"size: " + ", ".join(f"{lab!r} at {sz:g} pt" for lab, sz in small[:6])
         )
-    FIGS_DIR.mkdir(parents=True, exist_ok=True)
-    path = FIGS_DIR / f"{stem}.pdf"
+    out_dir = FIGS_DIR if out_dir is None else out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{stem}.pdf"
     # NOT bbox_inches="tight": that crops the page to the drawn content, so the
     # PDF comes out 155-182 mm wide instead of the 183 mm the journal fixes. The
     # canvas size is the deliverable, so the layout engine has to fit the content
@@ -202,14 +225,16 @@ def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None) -> Path:
     fig.savefig(path, format="pdf")
     plt.close(fig)
     if numbers is not None:
-        merge_numbers(numbers)
+        merge_numbers(numbers, out_dir=out_dir, name=ledger_name)
     return path
 
 
-def merge_numbers(numbers: FigureNumbers) -> Path:
-    """Merge one figure's ledger into ``figs/fig_numbers.json``."""
-    FIGS_DIR.mkdir(parents=True, exist_ok=True)
-    path = FIGS_DIR / "fig_numbers.json"
+def merge_numbers(numbers: FigureNumbers, out_dir: Path | None = None,
+                  name: str = "fig_numbers.json") -> Path:
+    """Merge one figure's ledger into ``<out_dir>/<name>``."""
+    out_dir = FIGS_DIR if out_dir is None else out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / name
     doc = json.loads(path.read_text()) if path.exists() else {
         "_meta": (
             "Every number a reader could take off each panel: axis ranges as "

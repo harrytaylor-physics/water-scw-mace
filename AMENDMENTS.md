@@ -4,6 +4,137 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-25 (Extended Data; the Fig. 4 categories; what the ARC pull does and does not contain)
+
+- **A67 — Extended Data: 8 figures and 2 tables, built from what the repository
+  and the ARC pull actually hold.** `figures/ed_items.py`, `figures/ed_tables.py`,
+  `figures/ed_index.py` → `figs/ed/`. Same `save_pdf` guard as the main figures, so
+  the vocabulary rule, the 7 pt floor and the exact width are enforced here too —
+  it caught four 6.9 pt labels of mine in ED Fig. 5 before they reached a PDF.
+
+  **What the ARC pull contains is mostly code, not data.** 92 files: scripts,
+  READMEs, campaign documentation and 33 PNGs, and exactly **four** data files —
+  `scw/lagtest_v2.json`, `scw/md_pressure.csv`, `scw/opacity_surface_means.csv`
+  and `benchmarks/reference/reference.json`. That decides which ED panels exist.
+  Two notes on the CSVs, neither of which is used here: `opacity_surface_means.csv`
+  carries **legacy ×1000 units** and full-band rather than common-band means (A50),
+  and `md_pressure.csv` is MD-vs-AQUA pressure per state point, which is not the
+  finite-size check ED Fig. 1c asks for.
+
+  **Three disagreements between the text and the data, all in ED Fig. 1.**
+
+  1. The text describes the 41 / 58 meV Å⁻¹ force parity as against **held-out**
+     labels. Both `benchmarks/README.md` and `reference.json` state the opposite:
+     these are *training-set* parity by regime, "optimistic vs true held-out
+     error", with T > 3000 K frames excluded. The only held-out parity in the pull
+     is **12.3 / 20.2** meV Å⁻¹ and it belongs to the **LDA** model, not this one.
+     The values 41/58 are right; the description of them is not.
+  2. The ~49 and ~376 meV Å⁻¹ of ED Fig. 1b appear **nowhere** in the pull. Panel
+     b is a labelled placeholder.
+  3. The finite-size sweep (ED Fig. 1c) has no output in the pull — only
+     `finite_size.py` and the README's verdict ("flat over a 32× volume range,
+     64 → 2048; 6400 OOM'd on 44 GB GPUs"). Panel c is a labelled placeholder.
+
+  ED Fig. 1d is a **bound, not a distribution**: the pull records |drift| ≤ 0.017
+  meV atom⁻¹ ps⁻¹ over 21 NVE runs of the LDA campaign against a gate of 2, not a
+  value per state point.
+
+  **ED Fig. 5 settles Task 26's question, and the answer is yes.** The monomer test
+  has been run (`monomer_test/pyscf_monomer.json`, revPBE0 = 0.25 HF + 0.75 revPBE
+  exchange + PBE correlation, three bases). Model / revPBE0 dipole-derivative ratio
+  at aug-cc-pVTZ:
+
+  | mode | at r_OH = 0.957 Å | at 1.00 Å |
+  |---|---|---|
+  | symmetric stretch | **2.84** | **4.01** |
+  | antisymmetric stretch | 1.24 | 1.72 |
+  | bend | 1.12 | 1.15 |
+
+  The permanent dipole is fine — model 1.822 D against revPBE0 1.847 and
+  experiment 1.855 — and the **bend** derivative is fine. The **symmetric stretch**
+  derivative is nearly 3× too large at equilibrium and **4× too large at 1.00 Å**,
+  the length the bonds sample at 1000 K. Band intensity goes as |dμ/dQ|², and the
+  intensity proxy the campaign reports moves from **1.69 to 2.97** between the two
+  references. That is the A61/A65 stretch excess, and it is anharmonic — worse
+  where the spectrum lives than at equilibrium, which is exactly why the stretched
+  reference was included in the geometry set (A64).
+
+  **ED Fig. 7 qualifies a number the text quotes.** The anchor residuals are
+  **8 of 8 negative**: the median *signed* residual is −0.0844, not ±0.0844. The
+  model is systematically 4-18% smaller than the published relation, so
+  "median |rel| 0.084" describes a one-sided bias, not scatter about the anchor.
+  The worst is 0.179 and the 1-100 bar matching-pressure spread is 0.35%, both as
+  the text has them.
+
+  **ED Fig. 6b shows fewer boundaries than asked, for a stated reason.** The flip
+  threshold ∇_ad/∇_rad needs both gradients at the point, and the scan CSV stores
+  neither; only the ten profiled boundaries have it. The dispute ratio is available
+  for all 43 on computed data. Panel b therefore shows the ten. With the brief's
+  conservative divisor of 4.4 applied, the ratio still exceeds the flip threshold
+  at **all ten** (bound 1.41-12.33 against thresholds 1.010-1.208).
+
+  **Main Fig. 4 now carries the same four categories** as ED Fig. 6a — filled where
+  the opacity table's own triangulation contains the boundary, open where the model
+  clamps, with the clamp cause distinguished, and the counts in the legend:
+  **43 on computed data, 18 T below the grid, 41 ρ below the grid, 6 between
+  computed points.**
+
+  **The vocabulary guard now covers the ledgers, not just the figures.**
+  `save_pdf` scans the drawn text; it cannot see the JSON written beside it, and
+  every ED number is merged into `outputs/manuscript_numbers.json`, so a note in
+  the ledger reaches the read-through exactly as a figure label would. Four notes
+  had gone round the guard that way. They are reworded, and
+  `test_the_extended_data_ledgers_never_name_the_delivery_history` now gates both
+  ED ledgers, exempting only tokens that are file paths — a ledger has to be able
+  to say a number came from `docs/LDA_CAMPAIGN.md` without that counting as the
+  manuscript adopting the word.
+
+  **Five layout defects found by rendering each figure rather than reading its
+  code.** The 7 pt floor and the width are checked on the file; overlap is not, and
+  it is invisible in a thumbnail. ED Fig. 1d and ED Fig. 4a had the bold panel
+  letter printed on top of a long y-label; ED Fig. 6a had it inside the legend;
+  ED Fig. 5 had the two displacement axis labels running into each other, a y-label
+  overflowing its panel, six two-line tick labels colliding, an annotation clipped
+  at the panel edge, and no legend at all for its four sources and three modes.
+  ED Fig. 5a,b now also share one y-scale, because the point of the pair is that
+  the slopes grow with r_OH and separate autoscales hid it.
+
+  **ED Fig. 7b drew a line that implied the opposite of the finding.** It marked
+  both +8.4% and -8.4%, which reads as scatter about the anchor. Every residual is
+  negative, so it now marks the signed median once, labelled "median -8.4% (8/8
+  below)".
+
+  **ED Table 1 and 2 keep trailing zeros at three significant figures** (1.30, not
+  1.3), round rather than pad between 10^3 and 10^5 (4180, not 4182.78 and not
+  `4.18e+03`), and use a mantissa and a power beyond that, because `%.3g` on a
+  pressure of 2.83e7 prints all eight digits, which is not three significant
+  figures. ED Table 2's LaTeX provenance column now names the clamp cause with the
+  same words as ED Fig. 6a and main Fig. 4 ("clamped, between pts"), not just
+  "clamped".
+
+  **The file-level figure gates now cover the ED items.** `test_each_figure_is_a
+  _vector_pdf` and `test_each_figure_is_exactly_the_column_width` ran over the four
+  main figures only. Extending them caught six ED PDFs written without
+  `set_manuscript_style()` — Type 3 text, default metrics — from an interactive
+  rebuild of mine; they are rebuilt through the CLI. All eight ED pages measure
+  183.00 mm.
+
+- **A68 — Functional sensitivity: band positions only; the means cannot be
+  quoted.** From `docs/LDA_CAMPAIGN.md`: the stretch band is red-shifted under LDA
+  by **146 cm⁻¹ at 1000 K (3654 vs ~3800)** and **200 cm⁻¹ at 2000 K (3550 vs
+  ~3750)**. The third campaign point, 3000 K / 108.8 kg m⁻³, has **no stretch-peak
+  pair in the pull**; its thermostat handoff failed three draws and the shipped run
+  achieved **2807 K**, used in the quantum correction and the Planck weighting.
+
+  **κ_P and κ_R under each functional are not reported, for two independent
+  reasons.** No spectra are in the pull — `lda_campaign` holds only scripts. And
+  the campaign documentation states that LDA absolute band intensities and κ_R are
+  **floor-limited and are not quoted**: the measured white floor is 0.6-2.6% of
+  peak spectral density, and only band positions and the libration region (40-60×
+  floor) are quotable. Computing a mean from a floor-limited spectrum would produce
+  a number the campaign itself declines to quote. The files that would be needed
+  are named in `outputs/manuscript_numbers.json` under `ed.functional_sensitivity`.
+
 ## 2026-09-24 (isolated-molecule dipole test; manuscript ledger; text checks)
 
 - **A64 — The dilute band tilt points at the dipole derivative, and the isolated

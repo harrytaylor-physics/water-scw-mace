@@ -124,16 +124,39 @@ def main(argv=None) -> int:
         t_eq.append(float(r["t_eq_k"]))
     rcb_rho, rcb_t, t_eq = np.array(rcb_rho), np.array(rcb_t), np.array(t_eq)
 
+    # Category by how the model reads the opacity there, exactly as ED Fig. 6a
+    # splits it: filled where the point is inside the table's own triangulation,
+    # open where it is clamped, with the clamp cause distinguished.
+    from figures.ed_items import boundary_table
+
+    bnds = boundary_table(cfg)
+    by_state = {(round(b["T"], 6), round(b["rho"], 6)): b["category"] for b in bnds}
+    cats = np.array([by_state.get((round(t, 6), round(r, 6)), "on computed data")
+                     for t, r in zip(rcb_t, rcb_rho)])
+    cat_style = {
+        "on computed data": ("#000000", True),
+        "T below the grid": ("#D55E00", False),
+        "ρ below the grid": ("#E69F00", False),
+        "between computed points": ("#CC79A7", False),
+    }
     teq_levels = sorted(set(t_eq.tolist()))
     markers = ["o", "s", "^", "D", "v", "P", "X", "*"]
-    from matplotlib import colormaps
-
-    cmap_teq = colormaps["plasma"]
+    counts = {c: int((cats == c).sum()) for c in cat_style}
+    for cat, (col, filled) in cat_style.items():
+        for i, lvl in enumerate(teq_levels):
+            m = (t_eq == lvl) & (cats == cat)
+            if not m.any():
+                continue
+            ax.scatter(rcb_rho[m], rcb_t[m], marker=markers[i % len(markers)], s=19.0,
+                       facecolor=col if filled else "none", edgecolor=col,
+                       linewidth=0.8, zorder=6)
+    for cat, (col, filled) in cat_style.items():
+        ax.scatter([], [], marker="o", s=19.0,
+                   facecolor=col if filled else "none", edgecolor=col, linewidth=0.8,
+                   label=f"{cat} ({counts[cat]})")
     for i, lvl in enumerate(teq_levels):
-        m = t_eq == lvl
-        ax.scatter(rcb_rho[m], rcb_t[m], marker=markers[i % len(markers)], s=17.0,
-                   facecolor=cmap_teq(i / max(1, len(teq_levels) - 1)),
-                   edgecolor="black", linewidth=0.35, zorder=6,
+        ax.scatter([], [], marker=markers[i % len(markers)], s=19.0,
+                   facecolor="none", edgecolor="#555555", linewidth=0.7,
                    label=f"T$_{{eq}}$ = {lvl:.0f} K")
 
     ax.set_xscale("log")
@@ -142,7 +165,7 @@ def main(argv=None) -> int:
     handles, labels = ax.get_legend_handles_labels()
     # Above the axes: every corner of this panel carries data.
     ax.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 1.005),
-              fontsize=7.0, ncol=4, borderaxespad=0.0, columnspacing=1.2)
+              fontsize=7.0, ncol=5, borderaxespad=0.0, columnspacing=0.9)
 
     nums.axes("", ax, "Density (kg/m^3)", "Temperature (K)", xlog=True)
     inside = np.isfinite(lin(np.column_stack([rcb_t, np.log10(rcb_rho)])))
@@ -157,6 +180,10 @@ def main(argv=None) -> int:
         boundary_T_range_K=[float(rcb_t.min()), float(rcb_t.max())],
         boundary_rho_range_kg_m3=[float(rcb_rho.min()), float(rcb_rho.max())],
         t_eq_levels_K=[float(v) for v in teq_levels],
+        counts_by_category=counts,
+        category_rule=("filled where the opacity table's own triangulation contains "
+                       "the point, open where the model clamps, with the clamp cause "
+                       "distinguished — the same four categories as ED Fig. 6a"),
         n_boundaries_inside_grid_extent=int(inside.sum()),
         grid_extent="convex hull of the 48 points in (T, log10 rho)",
         band_cm=list(BAND_CM),
