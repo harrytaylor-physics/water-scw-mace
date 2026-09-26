@@ -4,6 +4,242 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-26 (rho^2 scaling; wing cut-off; the AQUA entropy typo; release tables)
+
+- **A70 — The absorption is faster than rho^2 in the window, and only there.**
+  `tools/rho_scaling.py` -> `outputs/rho_scaling.json`, ED Fig. 9.
+  Every continuum model on offer is a pair quantity, so alpha ~ rho^2 and
+  alpha/rho^2 = kappa/rho is flat. Fitting d ln alpha / d ln rho over rho >= 100
+  along each isotherm with at least three densities:
+
+  | source | 2550 cm^-1 window | rotation-bend gap | kappa_R |
+  |---|---|---|---|
+  | HITEMP | 0.64-1.01 | 1.07-1.10 | 0.99-1.04 |
+  | HITEMP + MT_CKD | 0.65-1.99 | 1.07-1.95 | 1.02-1.97 |
+  | first principles | **1.58-2.76** | 1.53-2.06 | 1.53-2.22 |
+
+  The two line-list rows are the control and they behave: bare HITEMP is rho^1
+  everywhere (isolated lines), and MT_CKD's continuum is rho^2 at 500 K and falls
+  to rho^1 by 1250 K, which is where it stops dominating. Against that, the
+  first-principles absorption at 2550 cm^-1 reaches **2.76 +- 0.20 at 2500 K** and
+  2.42 +- 0.13 at 3000 K — **3.7 and 3.1 sigma above 2** (errors from the pooled
+  sigma). Nothing else comes close: kappa_R's largest excess is 2.22 +- 0.12 at
+  2500 K, 1.9 sigma, and the rotation-bend gap never exceeds 2 by more than 0.5
+  sigma. The excess is specific to the transparency window, which is where a
+  continuum shows itself and where a line list has least to say.
+
+  **Scatter, two ways.** The brief's estimator is the 729.344/810.382 kg m^-3 pair
+  at 3000 K, the closest-spaced pair on the grid, which gives
+  sigma_ln_alpha = 0.33 for kappa_R and 0.59 at 2550 cm^-1 — on one degree of
+  freedom. Pooling the residuals of a quadratic in ln rho over every isotherm with
+  four or more densities gives 0.19 and 0.33 on 23. The pair is the more
+  pessimistic of the two for kappa_R and for the 2550 cm^-1 window — the two the
+  claims rest on — and is used for the per-pair breakdown; the pooled value is
+  used for the fitted slopes, and both are recorded. It is **not** conservative
+  for the rotation-bend gap (0.118 against a pooled 0.141), which is harmless
+  because no breakdown density is quoted for that diagnostic, and is pinned by a
+  gate so the exception stays visible.
+
+  **Per-isotherm breakdown density** (first adjacent pair whose index exceeds 2 by
+  more than the pair-derived noise at that spacing), kappa_R: 650, 800, 1000 and
+  2000 K, not within the grid; 1500 K at 1200 kg m^-3; 2500 K at 1521; 3000 K at
+  1044. At 2550 cm^-1: 1500 and 2000 K at 1200, 2500 K at 1521, 3000 K at 1044.
+
+  **Two run parameters are not uniform over the 48 points**, which matters for a
+  window measurement: N = 216 molecules at rho <= 60 on the 1000, 1500 and 2000 K
+  isotherms and 64 elsewhere, and the spectral smoothing is 15 cm^-1 at four of
+  the 1500 K points and 20 cm^-1 at the rest. Restricting the fits to rho >= 100
+  removes the N split; the smoothing split survives on the **1500 K** isotherm
+  alone, which is flagged in the output. Neither of the significant results
+  (2500 and 3000 K) sits on a mixed isotherm.
+
+  **Lambda depends on density and not at all on temperature.** With
+  lambda_mfp = 1/(sqrt(2) n sigma), sigma = pi d^2 and d = 2.8 A,
+  Lambda = 1/(sqrt(2) pi d^3 n): **Lambda = 1 at rho = 307 kg m^-3** and
+  Lambda = 0.1 at 3067. They are vertical lines on the (T, rho) plane, drawn as
+  such. Converted through AQUA, the published tables stop well short of them:
+  Freedman et al. (2014) at 300 bar reaches rho = 68 kg m^-3 at 1000 K and 32 at
+  2000 K (Lambda 4.5 and 9.4); Kempton et al. (2023) at 1000 bar reaches 254 and
+  108 (Lambda 1.2 and 2.8). Interpolating each limit linearly in T between those
+  two isotherms and holding it flat outside them, **41 of the 48 computed points
+  and 18 of the 108 boundaries are denser than the Freedman limit**, and 31 and 6
+  respectively are denser than the Kempton limit — so the states this study
+  computes are mostly outside the documented range of the tables the field uses,
+  while the boundaries themselves mostly are not.
+
+- **A71 — The line-wing cut-off is worth more than the broadening convention.**
+  `tools/wing_cutoff.py` -> `outputs/wing_cutoff.json`, ED Fig. 3d.
+  RADIS truncates each line profile at `truncation` cm^-1 and renormalises the
+  remainder to unit area, so strength is conserved and shape is not. Varying only
+  that cut-off — 25, 50 (delivered), 100, 300, 500 cm^-1, everything else at the
+  delivered convention — the 50 cm^-1 row reproduces the delivered kappa_R
+  **exactly** at four of the six points and to 1e-9 at a fifth, which is what
+  makes the rest of the scan a measurement rather than a re-derivation. The
+  sixth agrees to 1.0e-3, for the reason below.
+
+  Two efficiencies worth recording, one of which is not quite free. The spectral
+  range is cut to [50, 4600] cm^-1, which is 3.4x faster; with
+  `neighbour_lines = 0` a line above 4000 + truncation cannot reach the band, so
+  no *line* is lost for truncation <= 500. It is not exact all the same: RADIS
+  builds its lineshape-interpolation grid from the set of loaded lines, so
+  dropping 4600-11000 cm^-1 perturbs every profile a little. Measured rather than
+  assumed — the reduced range reproduces the delivered kappa_R exactly at four of
+  the six points, to 1e-9 at a fifth, and to **1.0e-3** at (3000 K, 2228.7), the
+  state whose Lorentzian widths span the widest range. Recomputed there over the
+  delivered [50, 11000] cm^-1 the agreement is exact. 0.1% is two orders below the
+  effect being measured, so the scan stands, but the reduced range is an
+  approximation with a number on it, not a free one.
+
+  And the cost turns out to be **flat in the truncation** with RADIS's default
+  line-shape optimisation, not the quadratic its documentation warns of — 170 s
+  per spectrum at 25 and at 500 cm^-1 alike.
+
+  **Renormalisation cannot be switched off.** `lineshape /= area` is unconditional
+  at five places in `radis/lbl/broadening.py` (1526, 1592, 1770, 1892, 1989) in
+  0.16.3, and no `SpectrumFactory` argument or `radis.config` key exposes it. The
+  brief's "where RADIS allows" resolves to nowhere, and the library is not patched
+  to find out.
+
+  **The numbers, and they are large.** kappa_R rises monotonically with the
+  cut-off at every point. Across 25 to 500 cm^-1:
+
+  | state | kappa_R (cm^2/g) | spread | kappa_P spread |
+  |---|---|---|---|
+  | 650 K, 300 | 0.545 - 11.88 | **21.8x** | 1.09x |
+  | 1000 K, 129.7 | 4.02 - 18.06 | 4.50x | 1.02x |
+  | 1500 K, 471.3 | 20.26 - 67.42 | 3.33x | 1.01x |
+  | 2000 K, 1200 | 47.94 - 116.3 | 2.43x | 1.007x |
+  | 1000 K, 30 | 3.97 - 8.79 | 2.21x | 1.005x |
+  | 3000 K, 2228.7 | 102.4 - 152.2 | 1.49x | 1.02x |
+
+  kappa_P barely moves — 0.5% to 9%, and 9% only at the coldest point — because an arithmetic mean does not care where
+  inside the band the redistributed area lands. kappa_R is a harmonic mean set by
+  the transparency windows, and filling them is exactly what a truncated,
+  renormalised profile does. The largest spread is at the **cold, dense** corner,
+  where the Lorentzian half-width most exceeds the cut-off.
+
+  **This is the largest line-list systematic found so far, and it eats into the
+  headline.** The first-principles / line-list Rosseland ratio at these six states
+  spans **1.3 to 180** across the cut-off range: at (1500 K, 471.3) it falls from
+  4.32 at 25 cm^-1 to **1.30** at 500, which is agreement, not a factor of four.
+  At (3000 K, 2228.7) it stays 26.9-40 and at (650 K, 300) it stays 8.25-180, so
+  the excess does not vanish everywhere — but the line-list reference is not a
+  fixed quantity to be exceeded by a definite factor, and any statement of the
+  form "the first-principles opacity is N times the line list" has to name the
+  cut-off. The delivered 50 cm^-1 is RADIS's default, not a physical choice.
+
+- **A72 — AQUA's entropy is the uncorrected one, and the cost is 3% in the label,
+  3-6% in the age.** `tools/aqua_entropy_check.py` -> `outputs/aqua_entropy_check.json`.
+
+  The table on disk is `aqua_eos_rhot_v1_0.dat`, SHA-256 `c78c4523…`. The upstream
+  repository offers only the v1_0 tables — one release, tagged 2020-09-02, last
+  touched 2020-12-30 — so it predates the August 2024 cut-off Aguichine et al.
+  (2025) footnote 3 names, and carries the uncorrected Mazevet et al. (2019)
+  entropy: a sign error on the first two terms of F_T in their Eq. (13), and a
+  reference entropy S0 of 4.9 rather than 9.8 n_at k_B.
+
+  **The corrected values are read, not reimplemented.** PALEOS (Zenodo
+  10.5281/zenodo.22776069) re-grids AQUA with the sign fix applied analytically
+  and states that rho and P are untouched. Measured along the water-world
+  fiducial's own profiles, at five ages:
+
+  | age | s (AQUA) | s (corrected) | shift | E shift | age shift at fixed s |
+  |---|---|---|---|---|---|
+  | 0.001 Gyr | 13942 | 14171 | +1.65% | +0.58% | +0.001 Gyr |
+  | 0.01 | 13382 | 13616 | +1.75% | +0.54% | +0.009 |
+  | 0.1 | 12669 | 12911 | +1.91% | +0.47% | +0.051 |
+  | 1 | 11002 | 11273 | +2.46% | +0.35% | +0.30 |
+  | 10 | 9681 | 9990 | +3.19% | +0.25% | +8.8 |
+
+  **Half the envelope is in the affected region**: 49.5% of the profile points on
+  this track fall in AQUA's supercritical/superionic block, the part taken from
+  Mazevet et al. (2019), at every one of the five ages.
+
+  Two independent checks passed: the interpolated density agrees to 1.2e-4, and
+  the adiabatic gradient differs by a **median 3.9e-4** (the maximum, 3.9e-2, is
+  one point at a phase boundary) — so the correction really does leave the
+  derivatives alone, as stated.
+
+  **What it costs depends on which route you take.** The cooling age integrates
+  dt = dE/L with E the envelope internal *energy* and the adiabat set by grad_ad,
+  so ages, radii and luminosities never read the entropy column; entropy is a
+  label. Through the energy the total radiated energy falls **2.75%** and ages at
+  1-10 Gyr shorten by **3.7-6.5%**. Through the label — which is what
+  `structure.build_at_entropy` and the fixed-entropy cooling-time ratio use — a
+  3% entropy shift is worth **+8.8 Gyr at 10 Gyr**, because ds/d(age) has almost
+  flattened by then — that one is Delta s divided by a derivative going to zero,
+  so it is an order-of-magnitude statement, not a three-figure one. Nothing is
+  substituted: the model still reads the table it has, and this is what that
+  costs.
+
+  **G5's reference is now Aguichine et al. (2025)**, matched age for age at their
+  1 microbar radius with their Earth-like core (cmf 0.325). Twelve cases across
+  three equilibrium temperatures, two water fractions and two masses:
+  **median |dR/R| 0.0405**, worst 0.0591, improving with age (0.0456 at 1 Gyr,
+  0.0319 at 10). Against the 2021 relation's 0.0844 that is half the residual,
+  and **all 36 are positive** where all eight of the 2021 residuals were negative
+  — so the two disagree about the sign, not just the size. The 2021 comparison is
+  kept as the second row.
+
+  Two systematics measured rather than assumed: their own M-star and G-star tracks
+  differ by **0.86%** at 5 Gyr, a fifth of the residual, so the choice of the G
+  rows is not what is being measured; and their R_20mbar/R_1000bar is 1.013 for a
+  20 M_E water world, so the radius convention is worth about 1%, not tens of
+  percent. The comparison reads their 1 microbar radius, which is the level this
+  study's anchor already used.
+
+  **The two rows use different opacity sources, and it does not matter.** The 2021
+  row runs `hitemp` (full radiative-zone coverage; the radius there is
+  EOS-dominated), the 2025 row the production `composite`. Measured at the first
+  case, the source moves the radius by +0.007% at 1 Gyr, -0.30% at 5 and -0.62% at
+  10, so the 2025 residual would read +2.90 / +2.05 / +1.63% under `hitemp`
+  against +2.90 / +2.36 / +2.27% under `composite` — still positive, still about
+  half the 2021 residual. The disagreement in sign between the two anchors is not
+  the opacity source.
+
+  Two limits stated rather than discovered later: the gate reads
+  `outputs/aguichine2025_compare.json` and the reference tracks live outside the
+  repository, so it **skips on a fresh clone** until both are built; and this
+  model's track starts at T_int = 200 K, about 0.01 Gyr after a hot start, which
+  together with their 1 Myr formation offset is negligible at the 1-10 Gyr the
+  comparison uses.
+
+- **A73 — Release tables in MESA's format, which is not the same as a MESA table.**
+  `tools/release_tables.py` -> `data/release/`. The format is taken from the
+  reader (`kap/private/load_kap.f90`, `Read_Kap_X_Table`), with
+  `form = kap_table_fixed_metal_form = 1` and `version >= min_version = 37`, and
+  validated by a round trip through a strict parser of that spec (agreement
+  4.6e-5 dex, which is half a unit in the written last place).
+
+  MESA's R is rho/T6^3 with **rho in g cm^-3**, so a steam envelope at
+  10-2229 kg m^-3 and 650-3000 K sits at **log R 6.0-9.5**, where MESA's own
+  tables run -8 to +1. No MESA table covers this regime — which is the reason to
+  release one — but the files are a format, not a drop-in replacement, and say so
+  in their own header. 93 of the 225 cells lie inside the 48-point hull; the rest
+  carry -99 (the OPAL no-data value; MESA's parser requires a number in every
+  column) and are blank in the companion CSV. Values are the model's own
+  interpolant — linear on the Delaunay triangulation in (T, log10 rho) over
+  log10 kappa — sampled onto the regular grid, so the release reproduces the
+  paper's own table to 4.6e-5 dex rather than being a second fit to it.
+
+  The two-regime fit kappa_R = kappa_0 (rho/100)^a (T/1000)^b:
+
+  | regime | kappa_0 (cm^2/g) | a | b | RMS | n | validity |
+  |---|---|---|---|---|---|---|
+  | dense (rho >= 100) | 32.5 | +1.023 | +0.559 | 0.192 dex | 39 | 100-2229 kg m^-3, 650-3000 K |
+  | dilute (rho < 100) | 28.9 | +0.256 | +1.537 | 0.093 dex | 9 | 10-60 kg m^-3, 1000-2000 K |
+
+  The dense exponent a = 1.02 is the same statement as A70's kappa_R slope near 2
+  (alpha = rho kappa), from an independent fit. **The dense fit is poor**: 0.192
+  dex is a factor of 1.56, and a single power law cannot follow the curvature
+  ED Fig. 9c shows across a 22x density range. It is published as a convenience
+  with its residual attached, not as a substitute for the table.
+
+  `data/release/` is exempted from the SPEC §1 "data is never committed" rule:
+  these are outputs of this code, not raw inputs. The exemption needed
+  `/data/*` rather than `/data/` in `.gitignore`, because git does not descend
+  into an excluded directory and the negation was unreachable.
+
 ## 2026-09-26 (housekeeping: the pull, the model binary, one ledger key)
 
 - **A69 — The ARC pull and the dipole-model binary now live in the repository;

@@ -1,0 +1,102 @@
+{
+ "meta": "Drop-in opacity table and power-law fit for Data availability (Task 41).",
+ "generated": "2026-09-26",
+ "band_cm": [
+  100.0,
+  4000.0
+ ],
+ "units": {
+  "kappa": "cm^2/g",
+  "rho": "kg/m^3 (MESA log R uses g/cm^3)",
+  "T": "K"
+ },
+ "grid": {
+  "dlog_R": 0.25,
+  "dlog_T": 0.05,
+  "log_R_range": [
+   6.0,
+   9.5
+  ],
+  "log_T_range": [
+   2.8,
+   3.5
+  ],
+  "n_logR": 15,
+  "n_logT": 15,
+  "T_range_K": [
+   630.957344480193,
+   3162.2776601683795
+  ],
+  "n_computed_points": 48,
+  "no_data_value": -99.0,
+  "outside_hull": "blank in the CSV, sentinel in the MESA files"
+ },
+ "mesa_format": {
+  "source": "MESA kap/private/load_kap.f90 (Read_Kap_X_Table)",
+  "form": 1,
+  "version": 37,
+  "log_R_definition": "log10(rho[g/cm^3] / (T/1e6 K)^3)",
+  "note": "this steam regime sits at log R 7-9; MESA's own tables run -8 to +1, so the files are in MESA's format but outside any MESA table's range"
+ },
+ "files": {
+  "subneptune_kappa_R_mesa": {
+   "path": "data/release/subneptune_kappa_R_mesa.txt",
+   "round_trip_max_abs_dex": 4.624051614898761e-05,
+   "n_finite": 93,
+   "n_cells": 225,
+   "written_decimals": 4,
+   "interpolant": "linear on the Delaunay triangulation in (T, log10 rho) over log10 kappa, the model's own"
+  },
+  "subneptune_kappa_P_mesa": {
+   "path": "data/release/subneptune_kappa_P_mesa.txt",
+   "round_trip_max_abs_dex": 4.9725196251237946e-05,
+   "n_finite": 93,
+   "n_cells": 225,
+   "written_decimals": 4,
+   "interpolant": "linear on the Delaunay triangulation in (T, log10 rho) over log10 kappa, the model's own"
+  }
+ },
+ "csv": "data/release/subneptune_kappa_grid.csv",
+ "fit": {
+  "dense": {
+   "n_points": 39,
+   "kappa_0_cm2_g": 32.4881682777721,
+   "a_rho_exponent": 1.0227760035338658,
+   "b_T_exponent": 0.5594590671855272,
+   "rho_0_kg_m3": 100.0,
+   "T_0_K": 1000.0,
+   "rms_log10_residual": 0.19231255420374935,
+   "max_abs_log10_residual": 0.45468698687717335,
+   "validity_rho_kg_m3": [
+    100.0,
+    2228.71
+   ],
+   "validity_T_K": [
+    650.0,
+    3000.0
+   ]
+  },
+  "dilute": {
+   "n_points": 9,
+   "kappa_0_cm2_g": 28.885460214608795,
+   "a_rho_exponent": 0.25584380582267224,
+   "b_T_exponent": 1.5370528523902471,
+   "rho_0_kg_m3": 100.0,
+   "T_0_K": 1000.0,
+   "rms_log10_residual": 0.09284744561966335,
+   "max_abs_log10_residual": 0.15652680513528752,
+   "validity_rho_kg_m3": [
+    10.0,
+    60.0
+   ],
+   "validity_T_K": [
+    1000.0,
+    2000.0
+   ]
+  }
+ },
+ "caveats": [
+  "Interaction-induced absorption: These are first-principles molecular-dynamics opacities, so collision-induced and many-body absorption is present by construction and is not separable into a line list plus a pair continuum.",
+  "Dipole model: The spectra come from a machine-learned dipole surface whose symmetric-stretch derivative is 2.8x the revPBE0 value at 0.957 A and 4.0x at 1.00 A, so the 3200-4000 cm^-1 stretch band is too strong and kappa_P is affected more than kappa_R."
+ ]
+}

@@ -32,7 +32,7 @@ FIGS = ROOT / "figs"
 FIGURES = ("fig1", "fig2", "fig3", "fig4")
 # The Extended Data items are the same deliverable and carry the same rules; only
 # the ledger they record into differs, so the file-level gates cover them too.
-ED_FIGURES = tuple(f"ed/ed_fig{i}" for i in range(1, 9))
+ED_FIGURES = tuple(f"ed/ed_fig{i}" for i in range(1, 9)) + ("ed/ed_fig9_scaling",)
 
 
 @pytest.fixture(scope="module")

@@ -1,6 +1,16 @@
-"""Gate G5: static M–R for steam worlds vs Aguichine et al. (2021) (SPEC §7).
+"""Gate G5: steam-world radii against the published models (SPEC §7).
 
-Anchor = the published mass–radius relation of Aguichine, Mousis, Deleuil &
+**The reference is Aguichine et al. (2025)**, the Steam Worlds Evolution release
+(Zenodo 10.5281/zenodo.15043384; arXiv 2412.17945): 1440 machine-readable
+*evolutionary* tracks, so a radius is matched at the age it belongs to rather
+than at one assumed interior state. Twelve matched cases give a median
+|ΔR_p/R_p| of **0.0405** at 1, 5 and 10 Gyr. The 2021 mass–radius relation stays
+as the second row, at 0.0844 — see ``test_g5_steam_world_radius_age_2025`` below
+for the first row and A72 for why the order changed.
+
+The rest of this docstring describes that second row.
+
+Second anchor = the published mass–radius relation of Aguichine, Mousis, Deleuil &
 Marcq (2021), ApJ 914, 84. Their parametric fit is Eq. 29,
 
     log10 R_p = a·log10(M_p) + b + exp(−d·(log10(M_p) + c)),
@@ -143,3 +153,72 @@ def test_g5_steam_world_mass_radius(cfg):
         f"G5 median |ΔR_p/R_p| = {median:.4f}, not the A46 value {_MEDIAN_A46:.4f} "
         f"(1% tolerance); see {report}"
     )
+
+
+# ---------------------------------------------------------------------------
+# The 2025 reference: evolutionary tracks, matched age for age.
+#
+# The 2021 anchor above is a static mass-radius relation digitized from a figure,
+# read at one assumed interior state (T_int = 30 K). The Steam Worlds Evolution
+# release (Aguichine et al. 2025; Zenodo 10.5281/zenodo.15043384) is a
+# machine-readable grid of 1440 evolutionary tracks, so a radius can be matched at
+# the age it belongs to instead. Under conventions matched rather than assumed —
+# their 1 microbar radius, which is the level this anchor already reads; their
+# Earth-like core, cmf = 0.325; M_c = (1 - WMF) M_p — twelve cases across three
+# equilibrium temperatures, two water fractions and two masses give a median
+# |ΔR_p/R_p| of 0.0405 at 1, 5 and 10 Gyr, against 0.0844 for the 2021 relation,
+# and every residual has the opposite sign. This is the better reference and is
+# gated first; the 2021 comparison stays as the second row (A72).
+#
+# The gate reads the recorded comparison rather than rebuilding twelve cooling
+# tracks, which take about twenty minutes; the tool that writes it is
+# tools/aguichine2025_compare.py.
+_REF_2025 = "outputs/aguichine2025_compare.json"
+_MEDIAN_2025 = 0.0405
+# Wider than the 1% pin on the 2021 median: this number moves with the opacity
+# tables and the EOS, and it is a physics result, not a convention check.
+_MEDIAN_2025_TOL = 0.05
+# Structural bound, as _TOL is for 2021. The measured worst is 5.9%.
+_TOL_2025 = 0.12
+
+
+def _load_2025(cfg):
+    path = cfg.output_path / Path(_REF_2025).name
+    if not path.exists():
+        pytest.skip(f"{_REF_2025} not built on this machine "
+                    f"(python tools/aguichine2025_compare.py config/fiducial.yaml)")
+    doc = json.loads(path.read_text())
+    if "summary" not in doc:
+        pytest.skip(f"{_REF_2025} has no residuals: {doc.get('blocked', 'unknown')}")
+    return doc
+
+
+def test_g5_steam_world_radius_age_2025(cfg):
+    doc = _load_2025(cfg)
+    s = doc["summary"]
+    assert s["n_cases"] >= 8, (
+        f"only {s['n_cases']} matched cases; the 2025 reference is meant to be the "
+        f"better-covered anchor")
+    assert s["worst_abs_rel"] <= _TOL_2025, (
+        f"worst |ΔR_p/R_p| = {s['worst_abs_rel']:.1%} > {_TOL_2025:.0%}")
+    assert s["median_abs_rel"] == pytest.approx(_MEDIAN_2025, rel=_MEDIAN_2025_TOL), (
+        f"median |ΔR_p/R_p| vs the 2025 tracks = {s['median_abs_rel']:.4f}, not "
+        f"{_MEDIAN_2025:.4f} ± {_MEDIAN_2025_TOL:.0%}")
+
+
+def test_g5_2025_is_the_better_anchor(cfg):
+    """The claim that motivates the reordering, kept honest as a gate."""
+    doc = _load_2025(cfg)
+    assert doc["summary"]["median_abs_rel"] < _MEDIAN_A46, (
+        f"the 2025 median {doc['summary']['median_abs_rel']:.4f} is no better than "
+        f"the 2021 median {_MEDIAN_A46:.4f}; the ordering in this module's docstring "
+        f"would then be wrong")
+
+
+def test_g5_2025_conventions_are_matched_not_assumed(cfg):
+    doc = _load_2025(cfg)
+    ref = doc["reference"]
+    assert ref["their_column"] == "R_1mibar"
+    assert ref["radius_level_bar"] == pytest.approx(1.0e-6)
+    # their 1 microbar level is the level this module's own anchor reads
+    assert cfg.anchor.radius_pressure_bar == pytest.approx(ref["radius_level_bar"])

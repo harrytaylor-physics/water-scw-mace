@@ -48,6 +48,10 @@ DESCRIPTIONS = {
                "matched points, and the residual against water mass fraction.",
     "ed_fig8": "Evolution: radius, interior entropy and deepest-boundary density "
                "against age for three water worlds under both opacities.",
+    "ed_fig9_scaling": "Density scaling: alpha/rho^2 against density at three "
+                       "places in the spectrum, the local and fitted power-law "
+                       "index by source, and the mean-free-path breakdown map "
+                       "with the published tables' documented limits.",
     "ed_table1": "The 48 state points: first-principles Planck and Rosseland means "
                  "and the ratios to each line-list reference.",
     "ed_table2": "The ten strongest boundaries: state, both opacities, dispute "

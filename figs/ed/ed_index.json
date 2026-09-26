@@ -70,6 +70,13 @@
    "figs/ed/ed_fig8.pdf"
   ]
  },
+ "ed_fig9_scaling": {
+  "description": "Density scaling: alpha/rho^2 against density at three places in the spectrum, the local and fitted power-law index by source, and the mean-free-path breakdown map with the published tables' documented limits.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig9_scaling.pdf"
+  ]
+ },
  "ed_table1": {
   "description": "The 48 state points: first-principles Planck and Rosseland means and the ratios to each line-list reference.",
   "status": "built",

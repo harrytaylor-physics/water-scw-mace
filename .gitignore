@@ -1,7 +1,11 @@
 # Data is never committed (SPEC §1). Point config paths at ~/subneptune_data,
 # or create a convenience symlink `data -> ~/subneptune_data`.
-/data
-/data/
+# Ignore the contents, not the directory: git will not descend into an excluded
+# directory, so `/data/` would make the negation below unreachable.
+/data/*
+# ...except the released data products, which are outputs of this code rather
+# than the raw inputs SPEC §1 keeps out (A70).
+!/data/release/
 
 # Run outputs (structure profiles, figures rendered to disk, cached tables)
 /outputs/

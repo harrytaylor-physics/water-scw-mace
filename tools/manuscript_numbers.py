@@ -500,6 +500,121 @@ def figures(cfg: Config, led: Ledger) -> None:
                         "figs/fig_numbers.json")
 
 
+def scaling_and_conventions(cfg: Config, led: Ledger) -> None:
+    """The rho^2 scaling test, the wing cut-off, and the AQUA entropy typo."""
+    s1 = "tools/rho_scaling.py"
+    doc = _json(cfg, "rho_scaling.json")
+    if doc is None:
+        led.absent("scaling", "-", s1, "run tools/rho_scaling.py")
+    else:
+        src = "outputs/rho_scaling.json"
+        for name, per in doc["fitted_slope_dense"]["per_source"].items():
+            for key in ("window_2550", "rosseland"):
+                vals = [v[key]["slope"] for v in per.values()]
+                led.add(f"scaling.fitted_index.{name}.{key}_range",
+                        [min(vals), max(vals)], "d ln alpha / d ln rho", s1, src,
+                        "least squares over rho >= 100 along each isotherm")
+        led.add("scaling.sigma_ln_alpha_pair",
+                {k: v["sigma_ln_alpha"]
+                 for k, v in doc["scatter"]["per_diagnostic"].items()},
+                "-", s1, src, "from the 729.344/810.382 pair at 3000 K, one dof")
+        led.add("scaling.sigma_ln_alpha_pooled",
+                {k: v["sigma_ln_alpha"]
+                 for k, v in doc["scatter_pooled"]["per_diagnostic"].items()},
+                "-", s1, src, "pooled quadratic residuals, 23 dof")
+        led.add("scaling.breakdown_density_kg_m3",
+                {k: (None if v is None else v["rho_hi_kg_m3"])
+                 for k, v in doc["breakdown"]["rosseland"].items()},
+                "kg/m^3", s1, src,
+                "first adjacent pair whose index exceeds 2 by more than the noise")
+        bd = doc["breakdown_map"]
+        led.add("scaling.rho_at_lambda", bd["rho_at_lambda_kg_m3"], "kg/m^3", s1, src,
+                bd["depends_on"])
+        for nm, e in bd.get("table_limits", {}).items():
+            led.add(f"scaling.table_limit.{nm.split(' et')[0].lower()}",
+                    {"pressure_bar": e["pressure_bar"],
+                     **{f"rho_at_{t}K": v["rho_kg_m3"]
+                        for t, v in e["by_isotherm"].items()}},
+                    "kg/m^3", s1, src, "AQUA rho at the table's documented limit")
+
+    s2 = "tools/wing_cutoff.py"
+    doc = _json(cfg, "wing_cutoff.json")
+    if doc is None:
+        led.absent("wing_cutoff", "-", s2, "run tools/wing_cutoff.py")
+    else:
+        src = "outputs/wing_cutoff.json"
+        led.add("wing_cutoff.truncations_cm", doc["truncations_cm"], "cm^-1", s2, src)
+        for r in doc["results"]:
+            tag = f"T{r['T']:g}_rho{r['rho']:g}"
+            led.add(f"wing_cutoff.{tag}.kappa_R_max_over_min",
+                    r["kappa_R_max_over_min"], "-", s2, src)
+            led.add(f"wing_cutoff.{tag}.kappa_R_range",
+                    r["kappa_R_range_cm2_g"], "cm^2/g", s2, src)
+            if "reproduces_delivered_to" in r:
+                led.add(f"wing_cutoff.{tag}.reproduces_delivered_to",
+                        r["reproduces_delivered_to"], "relative", s2, src,
+                        "the 50 cm^-1 column against the delivered spectra")
+        led.add("wing_cutoff.largest_spread",
+                max(r["kappa_R_max_over_min"] for r in doc["results"]), "-", s2, src)
+
+    s3 = "tools/aqua_entropy_check.py"
+    doc = _json(cfg, "aqua_entropy_check.json")
+    if doc is None or "points" not in doc:
+        led.absent("aqua_entropy", "-", s3, "run tools/aqua_entropy_check.py")
+    else:
+        src = "outputs/aqua_entropy_check.json"
+        led.add("aqua_entropy.table_sha256", doc["table"]["sha256"], "-", s3, src,
+                doc["table"]["why"])
+        led.add("aqua_entropy.delta_s_frac_range",
+                [min(r["delta_s_frac"] for r in doc["points"]),
+                 max(r["delta_s_frac"] for r in doc["points"])], "relative", s3, src)
+        led.add("aqua_entropy.age_shift_at_fixed_entropy_gyr",
+                {f"{r['age_gyr']:g}": r["age_shift_gyr"] for r in doc["points"]},
+                "Gyr", s3, src)
+        er = doc["energy_route"]
+        led.add("aqua_entropy.radiated_energy_frac_change",
+                er["total_radiated_energy_frac_change"], "relative", s3, src)
+        led.add("aqua_entropy.age_frac_change_from_energy",
+                {f"{r['age_gyr']:g}": r["age_frac_change_from_energy"]
+                 for r in doc["points"]}, "relative", s3, src)
+
+    s4 = "tools/aguichine2025_compare.py"
+    doc = _json(cfg, "aguichine2025_compare.json")
+    if doc is None or "summary" not in doc:
+        led.absent("g5.aguichine2025", "-", s4, "run tools/aguichine2025_compare.py")
+    else:
+        src = "outputs/aguichine2025_compare.json"
+        for k in ("median_abs_rel", "worst_abs_rel", "median_signed_rel",
+                  "n_residuals", "n_cases", "n_negative"):
+            led.add(f"g5.aguichine2025.{k}", doc["summary"][k], "-", s4, src)
+        led.add("g5.aguichine2025.by_age",
+                {k: v["median_abs_rel"] for k, v in doc["summary"]["by_age"].items()},
+                "relative", s4, src)
+
+    s5 = "tools/release_tables.py"
+    doc = _json_path(Path("data/release/subneptune_kappa_fit.json"))
+    if doc is None:
+        led.absent("release", "-", s5, "run tools/release_tables.py")
+    else:
+        src = "data/release/subneptune_kappa_fit.json"
+        led.add("release.grid", doc["grid"], "-", s5, src)
+        for name, f in doc["fit"].items():
+            if "blocked" in f:
+                continue
+            led.add(f"release.fit.{name}",
+                    {k: f[k] for k in ("kappa_0_cm2_g", "a_rho_exponent",
+                                       "b_T_exponent", "rms_log10_residual",
+                                       "n_points", "validity_rho_kg_m3",
+                                       "validity_T_K")},
+                    "cm^2/g and exponents", s5, src,
+                    "kappa_R = kappa_0 (rho/100)^a (T/1000)^b")
+
+
+def _json_path(rel: Path):
+    p = Path(__file__).resolve().parents[1] / rel
+    return json.loads(p.read_text()) if p.exists() else None
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("config", type=Path)
@@ -509,7 +624,8 @@ def main(argv=None) -> int:
 
     led = Ledger()
     for fn in (opacity_ratios, direct_and_broadening, clamp_and_agreement, bands,
-               g5, boundaries, evolution, radiogenic, figures):
+               g5, boundaries, evolution, radiogenic, scaling_and_conventions,
+               figures):
         fn(cfg, led)
 
     head = _commit_for(".")

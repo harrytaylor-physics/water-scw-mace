@@ -170,8 +170,16 @@ def _skip_radis_registration() -> None:
     _Mgr.register = register
 
 
-def build_factory(wavenum_min_cm: float = WAVENUM_MIN_CM):
-    """RADIS SpectrumFactory, locked to the delivered-spectra conventions."""
+def build_factory(wavenum_min_cm: float = WAVENUM_MIN_CM,
+                  truncation_cm: float = TRUNCATION_CM,
+                  neighbour_lines_cm: float = 0.0,
+                  wavenum_max_cm: float = WAVENUM_MAX_CM):
+    """RADIS SpectrumFactory, locked to the delivered-spectra conventions.
+
+    ``truncation_cm`` and ``neighbour_lines_cm`` are parameters rather than
+    constants so ``tools/wing_cutoff.py`` can scan them; their defaults are the
+    delivered convention, so every existing caller is unaffected.
+    """
     import radis
     from radis import SpectrumFactory
 
@@ -183,13 +191,14 @@ def build_factory(wavenum_min_cm: float = WAVENUM_MIN_CM):
     _skip_radis_registration()
     sf = SpectrumFactory(
         wavenum_min=wavenum_min_cm,
-        wavenum_max=WAVENUM_MAX_CM,
+        wavenum_max=wavenum_max_cm,
         molecule="H2O",
         isotope=ISOTOPES,
         wstep=WSTEP_CM,
         pressure=1.0,
         mole_fraction=1.0,  # pure water -> self-broadening
-        truncation=TRUNCATION_CM,
+        truncation=truncation_cm,
+        neighbour_lines=neighbour_lines_cm,
         verbose=False,
     )
     sf.fetch_databank("hitemp")
