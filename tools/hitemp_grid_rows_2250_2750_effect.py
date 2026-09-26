@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Task 23 / A60: what the 2,250 and 2,750 K HITEMP rows changed.
 
-    python tools/grid_extension_effect.py config/fiducial.yaml
+    python tools/hitemp_grid_rows_2250_2750_effect.py config/fiducial.yaml
 
 The two temperatures were absent from the line-list grid, so first-principles
 points at 2,250 and 2,750 K were compared against a line list *interpolated* in
@@ -78,7 +78,7 @@ def main(argv=None) -> int:
 
     out_dir = cfg.output_path
     out_dir.mkdir(parents=True, exist_ok=True)
-    stash = out_dir / "_grid_extension_stash"
+    stash = out_dir / "_hitemp_grid_rows_stash"
     stash.mkdir(parents=True, exist_ok=True)
 
     try:

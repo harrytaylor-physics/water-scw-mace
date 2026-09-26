@@ -4,6 +4,32 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-26 (housekeeping: the pull, the model binary, one ledger key)
+
+- **A69 — The ARC pull and the dipole-model binary now live in the repository;
+  one ledger key renamed.** Three decisions, all the owner's:
+
+  `ed_data/` is tracked, all **92** files. The `*.png` rule is lifted inside it
+  (`!ed_data/**/*.png`), because 41 of those files are ARC's own figures and they
+  are the provenance for panels this repository cannot rebuild — ED Fig. 1 and the
+  functional-sensitivity numbers read from this tree, so a clone without it cannot
+  reproduce them. 7.1 MB.
+
+  `monomer_test/water_dipole_v3.model` (14 MB) is tracked through **git-LFS**
+  (`.gitattributes`: `monomer_test/*.model filter=lfs`). `monomer_test/eval_model.py`
+  needs it and nothing else in the repository can regenerate it. There is no remote
+  yet, so the pointer is local until one is added — a remote that does not serve LFS
+  will reject the push.
+
+  `opacity.grid_extension.*` is renamed **`opacity.hitemp_grid_rows_2250_2750.*`**,
+  and `tools/grid_extension_effect.py` to
+  `tools/hitemp_grid_rows_2250_2750_effect.py`. The old name read as the
+  original/extension distinction the manuscript does not make (A62); it never meant
+  that — it is the two **line-list** rows of A60, not the 48 first-principles
+  points — but a name that has to be explained is the wrong name.
+
+  Also corrected in A67: the pull holds **41** PNGs, not 33. 33 is its script count.
+
 ## 2026-09-25 (Extended Data; the Fig. 4 categories; what the ARC pull does and does not contain)
 
 - **A67 — Extended Data: 8 figures and 2 tables, built from what the repository
@@ -13,7 +39,7 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   it caught four 6.9 pt labels of mine in ED Fig. 5 before they reached a PDF.
 
   **What the ARC pull contains is mostly code, not data.** 92 files: scripts,
-  READMEs, campaign documentation and 33 PNGs, and exactly **four** data files —
+  READMEs, campaign documentation and 41 PNGs, and exactly **four** data files —
   `scw/lagtest_v2.json`, `scw/md_pressure.csv`, `scw/opacity_surface_means.csv`
   and `benchmarks/reference/reference.json`. That decides which ED panels exist.
   Two notes on the CSVs, neither of which is used here: `opacity_surface_means.csv`
@@ -280,7 +306,8 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   it, so a *partially* rebuilt grid gives numbers that belong to no grid at all —
   and intermediate states do not converge towards the answer, they are just
   different. Every output and figure here was regenerated only after all 14 rows
-  landed, and `tools/grid_extension_effect.py` refuses to run on a partial set.
+  landed, and `tools/hitemp_grid_rows_2250_2750_effect.py` refuses to run on a partial
+  set.
 
   **THE RESULT.** All 14 spectra ran, none failed (~2.7 h). The before/after is
   captured by moving the added spectra aside and back, so both states come from

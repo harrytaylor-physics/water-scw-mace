@@ -127,7 +127,7 @@ def opacity_ratios(cfg: Config, led: Ledger) -> None:
     before = _json(cfg, "crossover_v3_before_a60.json")
     after = _json(cfg, "crossover_v3_after_a60.json")
     if before and after:
-        s2 = "tools/grid_extension_effect.py"
+        s2 = "tools/hitemp_grid_rows_2250_2750_effect.py"
         b = {(r["T"], r["rho"]): r for r in before["results"]}
         a = {(r["T"], r["rho"]): r for r in after["results"]}
         rows = []
@@ -139,7 +139,7 @@ def opacity_ratios(cfg: Config, led: Ledger) -> None:
                                      ("rosseland", "bare", "bare"),
                                      ("planck", "continuum", "mtckd"),
                                      ("rosseland", "continuum", "mtckd"))}})
-        led.add("opacity.grid_extension.before_after_2250_2750", rows,
+        led.add("opacity.hitemp_grid_rows_2250_2750.before_after", rows,
                 "ratio [before, after]", s2,
                 "outputs/crossover_v3_{before,after}_a60.json",
                 "adding line-list rows at 2250 and 2750 K; no point away from "

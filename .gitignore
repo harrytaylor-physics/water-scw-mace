@@ -9,6 +9,9 @@
 *.png
 *.pdf
 !docs/**/*.png
+# The ARC pull is provenance for the Extended Data: its figures are part of
+# the record, so the PNG rule above is lifted inside it.
+!ed_data/**/*.png
 
 # Python
 __pycache__/
