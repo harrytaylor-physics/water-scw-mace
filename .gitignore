@@ -20,6 +20,11 @@
 # produce. These are inputs to a gate, not run outputs, so the *.npz rule is
 # lifted inside the pull too (A78).
 !ed_data/**/*.npz
+# ...but A80's dipole bundle is 41 MB of raw trajectory product across 67 cells,
+# which is exactly the raw input SPEC §1 keeps out of the repo. It stays on
+# disk beside the other data; the A80 gates read it the same way every opacity
+# gate reads ~/subneptune_data, and skip cleanly when it is absent (A80).
+ed_data/arc_dipoles/
 
 # Python
 __pycache__/

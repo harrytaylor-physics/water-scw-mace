@@ -165,8 +165,16 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   smaller uncorrelated residual — then propagate. Both are ARC jobs. This is the
   recommendation.
 
-  A81 should carry whichever is chosen. The `opacity_pipeline.py` fix belongs
-  upstream with the reruns and is still not applied to the provenance copy.
+  **Where the dipole bundle lives.** `ed_data/arc_dipoles/` is 41 MB of raw
+  trajectory product across 67 cells — the raw input SPEC §1 keeps out of the
+  repo, unlike A78's 6.8 MB of scripts and spectra, which is provenance. It is
+  gitignored and stays on disk beside `~/subneptune_data`; the A80 gates read it
+  the way every opacity gate reads the data root, and skip cleanly when it is
+  absent. Say so if you would rather it were tracked under git-LFS.
+
+  A81 should carry whichever of (a) and (b) is chosen. The
+  `opacity_pipeline.py` fix belongs upstream with the reruns and is still not
+  applied to the provenance copy.
 
 ## 2026-09-30 (the normalisation is right; the estimator is not, and A80 is blocked on it)
 

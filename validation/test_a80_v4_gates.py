@@ -26,11 +26,15 @@ from __future__ import annotations
 
 import pytest
 
-from tools.v4_regenerate import FLOOR_MARGIN_REQUIRED, run
+from tools.v4_regenerate import DIPOLE_DIR, FLOOR_MARGIN_REQUIRED, run
 
 
 @pytest.fixture(scope="module")
-def doc(cfg):
+def doc(cfg, repo_root):
+    # The 41 MB dipole bundle is raw trajectory product and lives outside git
+    # (SPEC §1), like ~/subneptune_data. Skip rather than fail without it.
+    if not (repo_root / DIPOLE_DIR).is_dir():
+        pytest.skip(f"{DIPOLE_DIR} not present; A80's gates need the dipole bundle")
     return run(cfg, write=False)
 
 
