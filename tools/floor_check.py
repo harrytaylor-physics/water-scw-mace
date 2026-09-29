@@ -14,7 +14,8 @@ Output: ``outputs/floor_check.json``.
 (c) The same kappa_R with the lineshape quantum correction changed.
 
 **What the delivered spectra actually carry**, read from the code rather than
-the prose: ``convergence/04_spectra/spectrum_convergence.py`` line 28 is
+the prose: ``ed_data/arc/water-scw-mace/convergence/04_spectra/
+spectrum_convergence.py`` line 28 is
 
     alpha = w * (1 - np.exp(-HBAR*w/(KB*T))) * I
 
@@ -247,7 +248,8 @@ def run(cfg: Config) -> dict:
         "gap_cm": list(GAP_CM), "window_cm": list(WINDOW_CM),
         "rel_floor": cfg.opacity.rel_floor,
         "delivered_prefactor": ("alpha = w (1 - exp(-hc w / kT)) I_cl, from "
-                                "convergence/04_spectra/spectrum_convergence.py "
+                                "ed_data/arc/water-scw-mace/convergence/04_spectra/"
+                                "spectrum_convergence.py "
                                 "line 28: detailed balance, no lineshape QCF"),
         "smoothing_cm": "read per point from each npz (smooth_cm)",
         "lagtest": {"file": str(LAGTEST), "cells": lag,

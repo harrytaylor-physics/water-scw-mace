@@ -4,6 +4,171 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (tracing the sum-rule violation: grid-wide, and half of A76's index was a formula assumption)
+
+- **A77 — The violation is real, it is grid-wide rather than dilute-only, and it
+  survives under either candidate production formula. But A76's specific index
+  came from a script whose equivalence to the production one is unverified, and
+  the production script is not on this machine. Half of A76's magnitude rests on
+  that unverified equivalence, not on a measurement.**
+  `tools/sum_rule_trace.py` -> `outputs/sum_rule_trace.json`; two gates in
+  `validation/test_sum_rule.py`. Existing data only; no manuscript changes.
+
+  **(1) The production formula cannot be read here, and A76 cited a convergence
+  script for it.** The production chain is
+  `spectra.py` -> `dipoles.npy` -> `~/scw/opacity_pipeline.py ::
+  spectrum_from_dipoles` -> `*_opacity.npz`, named in
+  `ed_data/arc/water-scw-mace/lda_campaign/stepG_dipoles/make_opacity_lda.py`
+  lines 2-4 and 17. **Neither `~/scw/opacity_pipeline.py` nor `spectra.py` is in
+  the ARC pull or anywhere on this machine** (`~/scw` does not exist), and
+  nothing else in the pull references them. A76 took its formula from
+  `convergence/04_spectra/spectrum_convergence.py`, where line 28 states form A
+  unconditionally — so A76 **read** its formula rather than assuming it. What it
+  took on trust was that script's own docstring, which describes it as working
+  from a saved dipole series with "same conventions as the production
+  `spectra.py`": a claim of matching conventions, not of being the production
+  code, and one nothing in the pull substantiates.
+
+  **They demonstrably differ.** The convergence script FFTs onto a `nfft = 2^17`
+  `rfft` grid (0.509 cm^-1 spacing at `dt` = 0.5 fs) and applies no smoothing;
+  the delivered files are on a uniform **1.000 cm^-1** grid of 6000 points from
+  1.1118 to 6000.1 cm^-1 and carry a 20 cm^-1 smoothing. So the answer to "do
+  the two agree line by line" is **no** at the grid and the smoothing, and
+  undetermined at the formula.
+
+  **What is recoverable is recoverable exactly.** Every production step still
+  visible in the delivered arrays reproduces on all 52 files:
+
+  | step | verified to |
+  |---|---|
+  | `sigma_raw = max(... - noise floor, 0)` | 12.0-21.6% of channels clipped, **zero negatives** |
+  | `sigma = gaussian_filter1d(sigma_raw, sd = 20 cm^-1)` | **exactly** (median rel. error 0.0) |
+  | `alpha = n sigma`, `n = rho / M N_A`, M = **18.015280 g/mol** | 4.4e-16 |
+  | `kappa = alpha / rho_cgs` | 4.4e-16 |
+
+  Note the smoothing width is a **standard deviation**, not a FWHM (assuming
+  FWHM misses by 7.7%) — so the effective FWHM is 47 cm^-1, broader than
+  METHODS.md's "20 cm^-1 Gaussian smoothing" reads. The one unreadable step is
+  the ACF -> cross-section map, and that is exactly where the temperature and
+  quantum factors live.
+
+  **The two candidates for it differ by exactly `Q_harmonic = x/(1-e^-x)`:**
+
+  | | form | classical quantity |
+  |---|---|---|
+  | **A** | `sigma ~ w (1-e^-x) I_cl` (the convergence script, line 28; A76 used this) | `kappa x Q_harmonic` |
+  | **B** | `sigma ~ beta w^2 I_cl` (the textbook classical form) | `kappa` itself |
+
+  Both reduce to `w^2 I / T` as x -> 0 and differ only at large x, where I_cl is
+  not available — so **no test on the delivered arrays can separate them.** The
+  stretch band is where they differ most (x = 6.6-8.2 at 700 K, so A and B stand
+  about 7x apart) and it would discriminate if the first-principles stretch
+  intensity were otherwise right. It is not: the delivered stretch ratio to the
+  line list is already 5.2 at (700 K, 10 kg m^-3) before any correction, outside
+  the monomer test's 2.1-3.9 dipole range, so that comparison is dominated by
+  the very violation this amendment is tracing. The script is needed.
+
+  **(2) The violation is grid-wide, and survives either way.** Index p of
+  `int (classical quantity) dnu ~ T^p`, which must be 0, over every density row
+  with three or more temperatures:
+
+  | rho | nT | rot A | B | bend A | B | stretch A | B | full A | B |
+  |---|---|---|---|---|---|---|---|---|---|
+  | 10 | 4 | -0.24 | -0.11 | -1.52 | -0.83 | -1.77 | -0.81 | -1.53 | -0.59 |
+  | 30 | 5 | -0.11 | +0.02 | -1.47 | -0.76 | -1.74 | -0.77 | -1.46 | -0.50 |
+  | 60 | 4 | -0.37 | -0.23 | -1.34 | -0.63 | -1.69 | -0.72 | -1.46 | -0.55 |
+  | 100 | 3 | -0.42 | -0.18 | -1.53 | -0.68 | -2.41 | -1.39 | -2.15 | -0.95 |
+  | 150 | 5 | -0.20 | -0.03 | -1.44 | -0.72 | -1.90 | -0.92 | -1.61 | -0.61 |
+  | 300 | 6 | -0.36 | -0.17 | -1.38 | -0.71 | -1.99 | -1.04 | -1.67 | -0.70 |
+  | 500 | 5 | -0.43 | -0.23 | -1.29 | -0.63 | -1.98 | -1.04 | -1.65 | -0.71 |
+  | 800 | 3 | -0.10 | +0.02 | -0.80 | -0.31 | -1.66 | -0.82 | -1.21 | -0.42 |
+
+  **Every row fails, from rho = 10 to 800 kg m^-3 — this is not a dilute-corner
+  problem**, which is what A76 left open and is the main new fact. The line list,
+  measured identically over eight rows from rho = 0.1 to 1000 and up to 13
+  temperatures, gives **|p| <= 0.063 in every row and every window**. The control
+  is clean, so the measurement is sound and the defect is on the
+  first-principles side.
+
+  **A76's index was formula-dependent and this halves it.** A76 reported T^-1.5
+  and a 4.4x fall, which is column A. Over the six rows that span a factor of two
+  or more in temperature (see the gates note below; the rho = 100 and rho = 800
+  rows are too narrow to carry an index), column A gives full-band **-1.46 to
+  -1.67, median -1.57**, and column B gives **-0.50 to -0.71, median -0.60** —
+  still a violation in every row, still far outside the |p| <= 0.063 the line
+  list achieves, but roughly **half the magnitude A76 claimed**. A76's
+  qualitative conclusion stands; its number should be quoted as "-0.6 to -1.6
+  full-band depending on the production formula" until the script is read.
+  Weak evidence favours **B**: under B the rotation band is flat to +0.02/-0.23
+  across all eight rows, while under A it sits at -0.10 to -0.43. The rotation
+  band is the most nearly classical here and should obey the rule best. This is
+  suggestive, not proof — the rotational sum rule is the loosest of the three.
+
+  **Two mechanisms that could have faked it, both excluded.** (i) *Intensity
+  leaving the window*: extending A76's 100-4000 cm^-1 range to the full
+  100-6000 cm^-1 delivered grid changes p by at most 0.19, and not
+  systematically towards zero (rho = 30: full -1.46, wide -1.56), so the
+  strength is lost, not displaced above 4000 cm^-1. (ii) *The zero clipping*: `sigma_raw` is clipped at zero and
+  ~1 channel in 6 is clipped, which rectifies noise positively — but the clipped
+  fraction is **12.0-21.6% with no temperature trend** in any band or row
+  (rho = 30 bend: 17.5, 19.8, 17.2, 16.0, 12.2% at 700-2000 K), so it cannot
+  produce a monotone factor-of-several trend.
+
+  **(3) and (4) Dynamics and dipole-model checks: stopped, as the brief
+  directs.** No trajectories and no dipole time series are on this machine — the
+  ARC pull carries scripts, figures and logs only, and `~/subneptune_data` holds
+  processed opacity tables. Needed:
+
+  - `~/scw/opacity_pipeline.py` — `spectrum_from_dipoles`, the ACF -> sigma step
+    (this is the step-1 blocker, and it decides A vs B)
+  - `~/scw/spectra.py` — writes `dipoles.npy`; the ACF convention
+  - `$DATA/scw_prod/T700_rho30/dipoles.npy`, `.../T1000_rho30/`,
+    `.../T2000_rho30/` — plus the matching trajectories with **velocities**
+    (64 molecules, 0.5 fs, 60 ps) for the equipartition and dipole-regression
+    checks
+
+  rho = 30 kg m^-3 is the dilute row with the most temperatures (700, 800, 1000,
+  1500, 2000 K), so it is the cheapest row spanning the trend. Directory names
+  follow `make_opacity_lda.py`'s `--trajdir` convention, `T{T}_rho{rho}`.
+
+  **(5) Plain statement — where the T^-p behaviour first appears.** As far upstream as this
+  machine reaches, which is the delivered `sigma_raw` array. Everything below
+  that point is verified exact and temperature-free: the clipping has no
+  temperature trend, the smoothing is a fixed 20 cm^-1 standard deviation, and
+  `alpha = n sigma` and `kappa = alpha / rho` introduce no temperature factor at
+  all at fixed density. **So the trend enters at or above the ACF ->
+  cross-section step, and this machine cannot say which of the three candidates
+  it is** — the dipole model's temperature response, the trajectory dynamics
+  (a sub-equipartition vibrational amplitude), or the formula in
+  `opacity_pipeline.py` itself. Those are exactly steps (3), (4) and (1), and all
+  three are blocked on the files listed above. What can be said without them:
+  the defect is **not** in post-processing, it is **not** confined to the dilute
+  corner, it is **not** an artefact of the integration window or the clipping,
+  and it is **not** present in the line list processed through the same
+  measurement.
+
+  **Gates.** `validation/test_sum_rule.py` adds two. The line list must satisfy
+  the rule (|p| < 0.1 in every row; measured <= 0.063) — the control, which if it
+  ever fails means the measurement broke, not the spectra. And the
+  first-principles bend must keep failing it (every qualifying row p < -0.40 and the
+  median < -0.55; measured -0.628 to -0.825, median -0.715), so that a silent upstream fix
+  cannot invalidate A76/A77 unnoticed. The second gate is pinned to the
+  **delivered** kappa with no correction applied — the quantity the files
+  actually contain — which keeps it independent of the unresolved A/B question.
+
+  A row qualifies only if its temperatures span a factor of two or more, since a
+  log-log index over less than that is not a measurement of a trend. Two rows
+  fail, and both are three hot points: rho = 100 (650-1000 K, 1.54x) and
+  rho = 800 (1500-2500 K, 1.67x). The second shows why the rule is needed —
+  dropping its coldest point moves its index from -0.31 to **+0.07**, so it
+  carries no information either way, and it is the row that made the raw range
+  in the table above look wider than the measurement supports. Across the six
+  qualifying rows no single leave-one-out fit rises above -0.535.
+
+  Also fixed here: `tools/floor_check.py` cited the convergence script by a path
+  relative to the ARC pull rather than to the repo. A78 should read
+  `opacity_pipeline.py` and settle A vs B before anything else.
+
 ## 2026-09-30 (calibrating the quantum correction: it is not the free parameter)
 
 - **A76 — None of the three corrections works, and none can. The temperature
