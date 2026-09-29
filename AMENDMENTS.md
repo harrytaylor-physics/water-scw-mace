@@ -4,6 +4,158 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (calibrating the quantum correction: it is not the free parameter)
+
+- **A76 — None of the three corrections works, and none can. The temperature
+  trend the calibration was meant to null is not in the lineshape: the
+  first-principles vibrational band strengths fall as T^-1.5 where the classical
+  sum rule they should obey requires T^0.**
+  `tools/qcf_calibration.py` -> `outputs/qcf_calibration.json`. Existing data
+  only; no new runs.
+
+  A75 established that the delivered spectra carry `alpha = w (1 - exp(-x)) I_cl`
+  — the detailed-balance factor with **Q = 1 on the lineshape** — and that the
+  three standard corrections raise kappa_R by x1.7-2.0 (standard), x2.2-4.8
+  (harmonic) and x2.5-10.2 (Schofield). Which one belongs there is not decidable
+  from the spectra alone. It is, in principle, decidable against the line list,
+  because HITEMP is quantum by construction and the dipole model's own
+  band-intensity error is known independently from the monomer test. So:
+  `int kappa(nu) dnu` over each band for both sources at the 13 points with
+  rho <= 60 plus (800, 100); FP/HITEMP under each of the four forms; then divide
+  out the monomer test's intensity factor. What is left should be 1, flat in T.
+
+  **The rotation and bend bands are the diagnostic.** Their intensity factors are
+  tight (0.974; 1.25-1.32, the squares of the measured bend derivative ratios
+  1.12 at r_OH = 0.957 A and 1.15 at 1.00 A). The stretch factor spans 2.1-3.9
+  — 0.27 dex on its own — and cannot discriminate; it is reported and not used.
+
+  **Corrected ratio = (FP/HITEMP) / intensity factor**, median [min, max] over
+  the 14 points, with the log-space temperature slope, the hottest/coldest ratio
+  and the Spearman rho:
+
+  | band | correction | median | [min, max] | dln(r)/dT /1000 K | hot/cold | rho_s |
+  |---|---|---|---|---|---|---|
+  | rotation | delivered | **0.388** | [0.327, 0.441] | **-0.10** | 0.93 | -0.45 |
+  | | standard | 0.481 | [0.384, 0.553] | -0.19 | 0.83 | -0.68 |
+  | | harmonic | 0.494 | [0.389, 0.569] | -0.21 | 0.81 | -0.71 |
+  | | Schofield | 0.502 | [0.391, 0.580] | -0.22 | 0.79 | -0.75 |
+  | bend | delivered | **0.86 / 0.81** | [0.560, 1.198] | **-0.55** | 0.48 | -0.89 |
+  | | standard | 1.55 / 1.47 | [0.858, 2.309] | -0.74 | 0.38 | -0.95 |
+  | | harmonic | 2.18 / 2.06 | [0.946, 4.103] | -1.09 | 0.24 | -0.95 |
+  | | Schofield | 2.69 / 2.55 | [0.997, 6.266] | -1.36 | 0.17 | -0.95 |
+  | stretch | delivered | 1.75 / 0.94 | [1.102, 2.742] | -0.58 | 0.44 | -0.90 |
+  | | standard | 3.48 / 1.88 | [2.057, 5.477] | -0.63 | 0.41 | -0.90 |
+  | | harmonic | 9.53 / 5.13 | [3.141, 19.42] | -1.35 | 0.16 | -0.92 |
+  | | Schofield | 26.5 / 14.3 | [4.152, 124.8] | -2.51 | 0.03 | -0.94 |
+
+  (Where two medians are given they are the two ends of the factor range; the
+  bracketed range is at the low end. Per-point, per-band, per-correction ratios
+  are in the JSON.)
+
+  **Every correction makes the bend worse on both criteria, and this is forced,
+  not accidental.** All three Q >= 1, and all three fall towards 1 as T rises at
+  fixed nu. The delivered bend ratio already falls with T. So every correction
+  must steepen the trend, and the data do exactly that: -0.55 -> -0.74 -> -1.09
+  -> -1.36 per 1000 K. **No choice of Q can flatten a ratio that is already
+  falling.** The brief's question presupposes one of them works; none does.
+
+  **The trend is in temperature, not density, and is not a window artefact.**
+  At fixed T the bend ratio is flat in density — d ln(ratio)/d ln(rho) = +0.014,
+  range -0.017 to +0.101 over the four isotherms — while at fixed rho = 30 the
+  temperature slope is -0.548, indistinguishable from the pooled -0.553. The
+  first-principles bend sits 5-26 cm^-1 above the line list's, so a fixed
+  1400-1800 window could in principle catch a drifting fraction of it; widening
+  it makes the trend *steeper*, not flatter (-0.553 at 1400-1800, -0.607 at
+  1200-2100, -0.641 at 1000-2400).
+
+  **What it is instead: the band-strength sum rule.** `Q_harmonic x (1 - e^-x)
+  = x` exactly, so the harmonic-corrected form is `alpha ~ beta w^2 I_cl` — the
+  plain classical absorption formula. For a classical trajectory
+  `int beta w^2 I_cl dw ~ beta <|mu_dot|^2> = beta (kT/m) sum (dmu/dQ)^2` is
+  **independent of temperature**, and the line list's net band strength is
+  T-independent by the same sum rule. Fitting `int kappa_harmonic dnu ~ T^p` over
+  windows wide enough to hold each whole band:
+
+  | window (cm^-1) | FP rho=10 | rho=30 | rho=60 | HITEMP |
+  |---|---|---|---|---|
+  | rotation 50-1100 | -0.24 | -0.11 | -0.37 | **-0.00** |
+  | bend 1000-2400 | **-1.52** | **-1.47** | **-1.34** | +0.06 |
+  | stretch 2800-4000 | **-1.77** | **-1.74** | **-1.69** | -0.04 |
+  | full 100-4000 | **-1.53** | **-1.46** | **-1.46** | +0.02 |
+
+  HITEMP obeys the sum rule to **2.7% over the full band** across 700-2000 K, as
+  it must. The first-principles side **falls by 4.4x** over the same range
+  (normalised to 700 K at rho = 30: 1.000, 0.822, 0.565, 0.298, 0.226 against
+  HITEMP's 1.000, 1.004, 1.010, 1.019, 1.027). The loss is not redistribution
+  between bands — the full-band index matches the bend and stretch indices — and
+  it is density-independent, so it is not a normalisation error, which would hit
+  every band equally. The identification is exact rather than assumed: `ac()` in
+  the generation script returns the **unbiased** estimator `a / (n - lag)` of the
+  mean-removed dipole ACF, with no C(0) normalisation and no temperature factor,
+  so the delivered `alpha` is exactly `w (1 - e^-x) FFT[C]` and multiplying by
+  Q_harmonic gives `(hbar/kT) w^2 FFT[C]` and nothing else.
+
+  The obvious objection does not rescue it. Equipartition fixes <Qdot^2>, not
+  <|grad mu|^2>: on an anharmonic dipole surface the sum rule is
+  `beta <|mu_dot|^2> = <|grad mu|^2>` averaged over the configurations actually
+  sampled, which need not be strictly T-independent. But the monomer test says
+  grad mu **grows** with bond length (sym 2.84 at 0.957 A to 4.01 at 1.00 A), so
+  hotter sampling should push p *positive*. The observed -1.5 is anomalous under
+  either reading, and the band dependence settles it in any case: a global
+  prefactor error would give the same p in every band, and the rotation band's
+  p ~ -0.2 against the vibrational -1.5 rules that out. **The rotation band, which is near-classical here
+  (intensity-weighted <x> = 0.64 at 700 K falling to 0.35 at 2000 K), roughly
+  obeys the rule; the bend and stretch, where x runs 1.0-8.2, do not.** The defect is upstream of the lineshape and no QCF can reach it.
+
+  **So "delivered is closest" is arithmetic, not physics.** Q_harmonic is larger
+  at low T (3.42 at 1600 cm^-1, 700 K; 1.68 at 2000 K), and dividing it back out
+  cancels part of a temperature dependence the spectra should not have in the
+  first place. That is the whole of the delivered form's advantage. Forcing the
+  bend ratio to 1 point by point would need an intensity factor running from
+  **1.50 at 700 K to 0.71 at 2000 K** (at rho = 30) — the dipole model would have
+  to go from 50% too strong to 29% too weak in the bend — which a fixed monomer dipole
+  surface cannot do. The one T-dependence the monomer test does supply goes the
+  wrong way: hotter states sample longer bonds, so the bend factor should rise
+  from 1.25 towards 1.32, making the corrected ratio *smaller* at high T. It is
+  also 5% against a factor of 2.1.
+
+  **The rotation band says something separate and cleaner.** Both sides obey the
+  sum rule there, so the comparison is well posed — and the first-principles
+  rotation band is a **flat factor of 2.6 too weak** after the dipole factor
+  (0.388, range 0.327-0.441, hot/cold 0.93, and +0.013 per 1000 K at fixed
+  rho = 30, i.e. no trend at all). No correction closes it: the largest,
+  Schofield, reaches 0.50. This is an intensity deficit in the model's permanent
+  dipole, not a lineshape question.
+
+  **Two consistency notes.** (i) Neither side carries MT_CKD here — the loader
+  returns the stored kappa — so the line list is lines only while the
+  first-principles spectrum, being bulk MD, in principle contains the continuum.
+  That asymmetry flatters the first-principles side. Adding the self-continuum to
+  the rotation denominator is worth 0.5-69% of the line integral (largest cold
+  and dense) and deepens the deficit from 0.32-0.43 to **0.24-0.39**, so the
+  factor of 2.6 is conservative. (ii) These band integrals are immune to A71's
+  wing cut-off, the largest line-list systematic: RADIS renormalises every line
+  profile to unit area (`lineshape /= area`, unconditional), so across the whole
+  25-500 cm^-1 truncation range kappa_P moves by **0.5-9.0%** (0.5% at the
+  nearest state, 1000 K and 30 kg m^-3) where kappa_R moves by up to **21.8x**.
+
+  **Plain statement.** Of the four forms, the delivered one — Q = 1 on the
+  lineshape, as shipped — brings the corrected bend ratio closest to 1 (median
+  0.81-0.86 across the factor range, 0.08 dex from 1 at its midpoint) and is also the flattest in temperature. But none of the
+  three corrections removes the temperature trend, and none can: all three are
+  >= 1 and fall with T, while the ratio they act on already falls with T, so each
+  one steepens it. The correct answer to the question as posed is that no
+  correction achieves it, because the trend is not a lineshape effect. The
+  first-principles bend and stretch band strengths violate the classical sum rule
+  by a factor of 4.4 across 700-2000 K while the line list holds it to 2.7%; the
+  delivered form looks best only because 1/Q_harmonic happens to cancel part of
+  that spurious temperature dependence. **The quantum correction is not the free
+  parameter that reconciles the two sources.** Until the sum-rule violation is
+  traced upstream in the dipole time series, no lineshape correction can be
+  calibrated from this comparison, and the delivered Q = 1 should stand — as the
+  form that requires the fewest unearned assumptions, not as one that has been
+  shown correct. A76 opens that as the question A77 should answer.
+
 ## 2026-09-30 (the dilute noise floor, measured rather than assumed)
 
 - **A75 — There is a floor and it is three orders of magnitude below the
@@ -54,7 +206,8 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   not an artefact of the 20 cm^-1 smoothing.
 
   **What the delivered spectra carry, read from the code.**
-  `convergence/04_spectra/spectrum_convergence.py` line 28 is
+  `ed_data/arc/water-scw-mace/convergence/04_spectra/spectrum_convergence.py`
+  line 28 is
   `alpha = w * (1 - np.exp(-HBAR*w/(KB*T))) * I` with `I` the classical dipole
   autocorrelation spectrum: the detailed-balance factor and **no quantum
   correction on the lineshape**. The ARC prose calls that factor itself "the
