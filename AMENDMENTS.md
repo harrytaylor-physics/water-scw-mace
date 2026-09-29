@@ -4,6 +4,170 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the estimator replaced; propagation held at the noise floor)
+
+- **A80 — The fixed estimator is built, gated and written as v4. Two of the
+  three pre-propagation gates pass. The third fails, and it is the one that
+  matters: with the estimator corrected, the dilute noise floor is **1.8x**
+  below the deepest point of the transparency window at (1000 K, 10 kg m^-3),
+  not the 10x required — 55% of what is there is dipole-model noise. Nothing has
+  been propagated. The registry still points at v3.**
+  `opacity/dipole_spectrum.py` (the estimator), `tools/v4_regenerate.py` ->
+  `outputs/v4_regenerate.json`, five gates in
+  `validation/test_a80_v4_gates.py`. No manuscript changes.
+
+  **Manifest, before anything else.** All **52 delivered cells matched**, none
+  missing. Fifteen tags have two directories — an older ~30002-frame run and an
+  `_05fs` 60002-frame one — so matching is done by *reproduction* rather than by
+  name: each candidate is pushed through the unfixed production backend and the
+  one that reproduces the delivered `sigma_raw` wins. All 52 resolve to the
+  `_05fs` series, median error **1.4e-8**, worst **7.9e-5**. The 15 bare
+  directories are unused.
+
+  **(1) The estimator.** `opacity/dipole_spectrum.py` implements
+
+      sigma(w) = beta w^2 Itilde_2(w) / (6 eps0 c N)
+
+  with `Itilde_2` the **two-sided** power spectrum of the mean-removed cell
+  dipole, estimated **window-free** by the periodogram of the full series, the
+  harmonic correction entering **once** (as the cancellation A79 derived), and
+  **no zero clip** — the clip is dropped because a periodogram is non-negative
+  by construction, so it was provably inert here, not because it was forgotten.
+  Everything downstream of the estimator is kept as delivered: the 1 cm^-1 grid,
+  the Gaussian smoothing (sd 20, and 15 at the four 1500 K points — confirmed
+  from the files: exactly four carry 15, at rho = 150, 300, 800, 1200), the
+  number density and the mass-opacity conversion. So a v3/v4 comparison isolates
+  the estimator and nothing else. It reproduces A79's independent implementation
+  to **3e-12**.
+
+  **Smoothing sensitivity, kappa_R and kappa_P at sd 10 and 40:**
+
+  | T | rho | sd used | kappa_R 10 / used / 40 | kappa_P 10 / used / 40 |
+  |---|---|---|---|---|
+  | 700 | 30 | 20 | 15.24 / 15.42 / 15.93 | 455.9 / 456.1 / 456.9 |
+  | 1000 | 100 | 20 | 29.20 / 29.48 / 30.16 | 437.3 / 437.4 / 437.7 |
+  | 1500 | 300 | 15 | 57.07 / 57.41 / 58.80 | 450.0 / 450.0 / 450.2 |
+  | 2000 | 1200 | 20 | 558.0 / 560.9 / 564.1 | 906.9 / 906.8 / 906.5 |
+  | 2500 | 500 | 20 | 170.5 / 172.3 / 174.5 | 423.7 / 423.6 / 423.5 |
+  | 3000 | 2228.71 | 20 | 6709 / 6742 / 6758 | 6603 / 6596 / 6584 |
+
+  **kappa_R moves by at most 4.3% and kappa_P by 0.3% across a factor of four in
+  smoothing width.** The delivered choice is not a sensitive one, and this is a
+  marked improvement on v3, where the clip made the windows noise-dominated and
+  therefore smoothing-dependent.
+
+  **(2) The gates.**
+
+  | gate | result | |
+  |---|---|---|
+  | (i) A79 oscillator through the v4 estimator | 0.9939 against 1 | **PASS** |
+  | (ii) band integral = `beta <|Mdot_band|^2>` at the three rho = 30 cells | worst deviation **0.14%** against 2% | **PASS** |
+  | (iii) A75 dilute floor >= 10x below the window | **1.8x** | **FAIL** |
+
+  For (ii) the dipole derivative is taken **spectrally**, by multiplying by
+  `i w` in Fourier space, not by central differences: the central-difference
+  estimator carries a known `[sin(w dt)/(w dt)]^2` bias worth 5% at the top of
+  the stretch band, which is a property of the test rather than of the estimator
+  under test. With it, every band at every cell agrees to 0.1%.
+
+  **(iii) is the blocker, and the reason is not what A75 implies.**
+
+  | T | rho | margin at the window minimum | noise fraction there |
+  |---|---|---|---|
+  | 1000 | 10 | **1.8x** | **55%** |
+  | 700 | 60 | 2.2x | 46% |
+  | 700 | 30 | 3.2x | 31% |
+  | 1000 | 30 | 6.0x | 17% |
+
+  A white residual carrying the lag test's uncorrelated fraction
+  `r^2 = 7.26e-5` of the dipole power has a flat two-sided spectrum
+  `Itilde = r^2 <|M|^2> dt`, which is pushed through the *same* estimator as the
+  signal. At 2550 cm^-1 — where A75 quoted its margins — the range is
+  **5.3x to 108.9x**; at the deepest point of the 1900-3100 window it is
+  **1.8x to 83.7x**. Both fail the 10x bound at the cold, dilute end.
+
+  **A75's margin was not wrong; it was not well posed, and A80 supersedes it.**
+  A75 compared a clean analytic floor against the delivered v3 kappa. But v3's
+  window opacity was itself largely artefact: the clip at zero rectified noise
+  upward while the symmetric window suppressed the signal, which is exactly why
+  A79 found that no scalar could repair kappa_R. **v4 is the first version in
+  which the window opacity is a clean estimate, and therefore the first in which
+  the floor comparison means anything.** A75 did not establish a large margin;
+  it established nothing.
+
+  **The floor quoted here is a lower bound.** Against the spectrum's own plateau
+  at 4500-5800 cm^-1, above every water band, the observed level runs 1.3x to
+  22x the lag-test prediction, and the excess grows with temperature — real hot
+  bands live up there at 1500 K and above. But at the cold dilute cells there is
+  almost no real absorption there, so their excess is noise the lag test did not
+  see: it was measured at (800, 61) and (1000, 130), and the rho = 10 cells are
+  noisier. Using each cell's plateau-implied `r^2` instead, the worst margin
+  falls from 1.8x to **1.4x**. Both numbers are reported and neither is averaged
+  into the other.
+
+  **(3) Not propagated.** The brief gates propagation on (2), and (2) fails, so
+  `tools/v4_regenerate.py --write` puts the 52 v4 spectra in their own directory
+  (`fp_opacity_v4/`, units marker `cm2_per_g:A80`, `version = v4:fixed-estimator`)
+  for inspection, and **the registry is untouched, no cache is cleared and
+  nothing downstream has been rerun**. A gate asserts that
+  (`test_nothing_has_been_propagated`), so v4 cannot be wired in while the floor
+  gate fails without something turning red. v3's `crossover_hitemp.json` is
+  v3-derived and would be silently wrong against v4, so it is carried into the
+  v4 directory only under the name `crossover_hitemp_v3_DO_NOT_USE.json`.
+
+  **What v3 -> v4 does, which is the table that can be given.** The two defects
+  partly cancel — the spare `Q_harmonic` made v3 too large, the window and clip
+  too small — so the *magnitude* barely moves. The **temperature slope** does:
+
+  | T (K) | n | median kappa_R v4/v3 | median kappa_P v4/v3 |
+  |---|---|---|---|
+  | 650 | 4 | **0.746** | 1.088 |
+  | 700 | 3 | 0.862 | 1.093 |
+  | 800 | 5 | 0.741 | 1.017 |
+  | 1000 | 8 | 0.821 | 1.024 |
+  | 1500 | 8 | 0.992 | 1.146 |
+  | 2000 | 8 | 1.157 | 1.383 |
+  | 2250 | 2 | 1.363 | 1.436 |
+  | 2500 | 5 | 1.472 | 1.520 |
+  | 2750 | 2 | 1.529 | 1.564 |
+  | 3000 | 7 | **1.638** | 1.608 |
+
+  Over the 52 cells kappa_R moves by a median of 1.081 (range 0.608-1.695) and
+  kappa_P by 1.158 (0.989-1.655) — but **the temperature dependence of kappa_R
+  changes by a factor of 2.2 across the grid**, from 0.75x at 650 K to 1.64x at
+  3000 K. Every downstream number inherits that, which is why propagation is
+  worth doing properly rather than quickly. The manuscript-number table the
+  brief asks for is what propagation would produce; it is not given here because
+  nothing was propagated.
+
+  **The dilute band medians under v4**, FP/HITEMP at the 13 dilute points plus
+  (800, 100): rotation **1.044** [0.980, 1.139] against 0.97; bend **1.515**
+  [1.306, 1.717] against 1.25-1.32; stretch **2.658** [2.207, 2.963] against
+  1.7-3.9. These match A79's prediction from the measured 3.5155 (1.028 / 1.539
+  / 2.659) to within 2%, which is an independent confirmation that the estimator
+  replacement does what A79 said a correct one would.
+
+  **Why this is not a precautionary halt.** The boundaries are not in the dense
+  interior. Of the 108 radiative-convective boundaries, **89 sit at
+  rho <= 60 kg m^-3** (42 of them on computed data), the median boundary is at
+  **rho = 12.9**, and **47 sit below the grid's rho floor of 10** and therefore
+  read the dilute edge cells through the A26 flat-in-rho clamp. The corner where
+  the floor gate fails is the corner the boundary physics lives in. Propagating
+  now would build the boundary result on window opacities that are 17-55%
+  dipole-model noise at their coldest, most dilute points.
+
+  **The two options, and the choice is Harry's.**
+  (a) Propagate v4 anyway and flag the dilute window opacities as noise-limited,
+  the way A71 flagged the wing cut-off — defensible only if the boundary result
+  is shown to be insensitive to the dilute edge, which the 47-of-108 count above
+  argues against.
+  (b) Reduce the floor first — longer trajectories, or a dipole model with a
+  smaller uncorrelated residual — then propagate. Both are ARC jobs. This is the
+  recommendation.
+
+  A81 should carry whichever is chosen. The `opacity_pipeline.py` fix belongs
+  upstream with the reruns and is still not applied to the provenance copy.
+
 ## 2026-09-30 (the normalisation is right; the estimator is not, and A80 is blocked on it)
 
 - **A79 — The production prefactor is exactly correct: the derived

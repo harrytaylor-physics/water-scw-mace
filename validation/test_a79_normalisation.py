@@ -25,6 +25,8 @@ from __future__ import annotations
 import pytest
 
 from tools.normalisation_check import synthetic_oscillator_check
+# the estimator itself now lives in opacity.dipole_spectrum (A80);
+# this check exercises the same expression and stays where A79 put it.
 
 TOLERANCE = 0.03
 
