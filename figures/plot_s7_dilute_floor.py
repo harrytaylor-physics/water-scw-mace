@@ -65,7 +65,7 @@ DIPOLE_FLOOR_MDEBYE = 5.75  # quoted range 5.7-5.8; both ends reported
 DIPOLE_FLOOR_RANGE_MDEBYE = (5.7, 5.8)
 DIPOLE_SIGNAL_RMS_MDEBYE = 12.4
 
-DILUTE_RHO_MAX = 60.0  # "dilute" cells: ρ <= 60 kg/m³ (the nine new low-ρ points)
+DILUTE_RHO_MAX = 60.0  # "dilute" cells: ρ <= 60 kg/m³ (the low-density column)
 SCIENCE_BAND_CM = (100.0, 4000.0)
 WINDOW_CM = (1900.0, 3100.0)  # transparency window between bend and stretch
 FLOOR_MULTIPLE = 2.0  # "above the floor" means κ > 2 × κ_floor
@@ -296,7 +296,7 @@ def main(argv=None):
                   f"{r['median_margin_cores']:>9.2f} | "
                   f"{r['rosseland_window_share']:>6.2f}")
 
-    _table(f"the nine dilute cells (rho <= {DILUTE_RHO_MAX:g} kg/m^3):", rows)
+    _table(f"the dilute cells (rho <= {DILUTE_RHO_MAX:g} kg/m^3):", rows)
     _table("CONTROL — the whole 48-point grid, by density:",
            sorted(all_rows, key=lambda r: (r["rho_si"], r["temperature_k"])))
 
@@ -369,7 +369,7 @@ def main(argv=None):
           f"Under this\n    construction the window is floor-dominated at every one of "
           f"the {len(thin_win)} cells with\n    rho <= 500 (window fraction "
           f"{min(thin_win):.3f}-{max(thin_win):.3f}), INCLUDING the dense points the\n"
-          f"    existing headline rests on. The nine dilute cells "
+          f"    existing headline rests on. The dilute cells "
           f"({min(dilute_win):.3f}-{max(dilute_win):.3f}) are, if\n    anything, "
           f"slightly better than the rho = 100-500 ones. So the honest statement is\n"
           f"    not 'the dilute points are unreliable' but 'the transparency windows are "
@@ -385,7 +385,7 @@ def main(argv=None):
               "ratio", "frac_above_band", "frac_above_window", "frac_above_cores",
               "median_margin_band", "median_margin_window", "median_margin_cores",
               "min_margin_window", "rosseland_window_share", "planck_window_share"]
-    # All 48 points, not just the nine: the crossover table (A53) carries the
+    # All 52 points, not just the dilute ones: the crossover table (A53) carries the
     # window-floor fraction per point, so unreliable cells stay visible there.
     with csv_path.open("w", newline="") as fh:
         w = csv.writer(fh)

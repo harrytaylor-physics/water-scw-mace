@@ -1,4 +1,4 @@
-"""FP units fixed at source, and the merged 48-point grid (A50).
+"""FP units fixed at source, and the first-principles grid (A50, A74).
 
 ``tools/fix_fp_units.py`` moved the legacy factor-1000 correction out of the
 loader and into the data, and merged the 21 extension spectra. These gates pin
@@ -9,7 +9,7 @@ the three things that operation had to preserve:
     live pipeline immediately before ``fix_fp_units.py`` ran;
 (b) the old and new spectra are mutually consistent where they nearly coincide
     in (T, ρ);
-(c) all 48 files load with finite, positive κ and carry the units marker.
+(c) all 52 files load with finite, positive κ and carry the units marker.
 
 Plus the two invariants that keep the fix from silently regressing: the loader
 REFUSES an unmarked file, and the rewritten files still satisfy α = n·σ (the
@@ -31,7 +31,7 @@ from tools.fix_fp_units import (
 )
 
 BAND_CM = (100.0, 4000.0)
-N_FP_POINTS = 48  # 27 legacy + 21 extension
+N_FP_POINTS = 52  # A74 added four cells at (700, 10/30/60) and (800, 30)
 
 # (a) Captured from the pipeline immediately BEFORE the rewrite, on BAND_CM with
 # rel_floor 1e-6. Once the data is fixed there is no live "before" left, so the
@@ -58,8 +58,8 @@ def _index_of(temps, rhos, point):
     return i
 
 
-def test_the_grid_is_the_merged_48_points(means):
-    """27 legacy + 21 extension, spanning the enlarged domain."""
+def test_the_grid_is_the_full_point_set(means):
+    """Every file in fp_opacity/, spanning the domain it covers (A50, A74)."""
     temps, rhos, _, _ = means
     assert temps.size == N_FP_POINTS
     assert (temps.min(), temps.max()) == pytest.approx(GRID_T_RANGE_K)
@@ -89,7 +89,7 @@ def test_b_old_and_new_spectra_are_consistent(means):
 
 
 def test_c_every_spectrum_loads_finite_positive_and_marked(cfg):
-    """Gate (c): all 48 files load, κ finite and > 0, marker present."""
+    """Gate (c): every file loads, κ finite and > 0, marker present."""
     rows = audit(cfg.data_root_path / get_spec("fp").subdir)
     assert len(rows) == N_FP_POINTS
     for r in rows:

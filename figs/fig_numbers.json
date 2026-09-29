@@ -63,7 +63,7 @@
   }
  },
  "fig2": {
-  "caption_hint": "a, Rosseland-mean opacity over the 48 first-principles points, interpolated as the structure model reads it. b, first-principles / line-list ratio against density, coloured by temperature; filled Planck, open Rosseland.",
+  "caption_hint": "a, Rosseland-mean opacity over the 52 first-principles points, interpolated as the structure model reads it. b, first-principles / line-list ratio against density, coloured by temperature; filled Planck, open Rosseland.",
   "panels": {
    "a": {
     "x_label": "Density (kg/m^3)",
@@ -78,7 +78,7 @@
      646.3166144200627,
      3003.6833855799373
     ],
-    "n_computed_points": 48,
+    "n_computed_points": 52,
     "T_range_K": [
      650.0,
      3000.0
@@ -117,9 +117,9 @@
     ],
     "references": {
      "HITEMP": {
-      "n_points": 48,
+      "n_points": 52,
       "planck_range": [
-       1.2897318615713422,
+       1.1911276374731379,
        17.721249061854
       ],
       "rosseland_range": [
@@ -139,7 +139,7 @@
       ]
      },
      "HITEMP + MT_CKD continuum": {
-      "n_points": 48,
+      "n_points": 52,
       "planck_range": [
        0.21211126077496448,
        15.708414574022676
@@ -157,7 +157,7 @@
     ],
     "colour_scale": "viridis, linear in T",
     "line_list_asymmetry": "the two line lists are not matched in isotopologue coverage: the HITEMP spectra carry isotopologues 1, 2 and 3, the POKAZATEL spectra the main one only. Both use the same ideal-gas broadening pressure and the same band. The minor isotopologues sit mostly in the windows, so they bear on the Rosseland ratio more than the Planck one; the size of that is not measured here and a caption should not imply the two references differ only in their line data",
-    "pokazatel_matching": "matched state by state, not interpolated: POKAZATEL sits on 27 of the 48 first-principles states exactly"
+    "pokazatel_matching": "matched state by state, not interpolated: POKAZATEL sits on 27 of the 52 first-principles states exactly"
    }
   }
  },
@@ -287,7 +287,7 @@
   }
  },
  "fig4": {
-  "caption_hint": "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio over the 48 first-principles points, with the line-list radiative-convective boundary of 108 scanned planets overlaid, coloured by T_eq. The outline is the first-principles grid extent.",
+  "caption_hint": "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio over the 52 first-principles points, with the line-list radiative-convective boundary of 108 scanned planets overlaid, coloured by T_eq. The outline is the first-principles grid extent.",
   "panels": {
    "": {
     "x_label": "Density (kg/m^3)",
@@ -302,7 +302,7 @@
      232.23669616519172,
      3003.466076696165
     ],
-    "n_first_principles_points": 48,
+    "n_first_principles_points": 52,
     "n_planets_plotted": 108,
     "n_planets_in_scan": 108,
     "ratio_range_over_grid": [
@@ -315,7 +315,7 @@
     ],
     "boundary_T_range_K": [
      364.2,
-     1850.0
+     1848.9
     ],
     "boundary_rho_range_kg_m3": [
      1.4,
@@ -330,14 +330,14 @@
      1300.0
     ],
     "counts_by_category": {
-     "on computed data": 43,
+     "on computed data": 49,
      "T below the grid": 18,
      "\u03c1 below the grid": 41,
-     "between computed points": 6
+     "between computed points": 0
     },
     "category_rule": "filled where the opacity table's own triangulation contains the point, open where the model clamps, with the clamp cause distinguished \u2014 the same four categories as ED Fig. 6a",
-    "n_boundaries_inside_grid_extent": 43,
-    "grid_extent": "convex hull of the 48 points in (T, log10 rho)",
+    "n_boundaries_inside_grid_extent": 49,
+    "grid_extent": "convex hull of the 52 points in (T, log10 rho)",
     "band_cm": [
      100.0,
      4000.0

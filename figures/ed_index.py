@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DESCRIPTIONS = {
     "ed_fig1": "Validation of the interatomic potential: force-parity RMSE by "
                "regime, and the NVE energy-drift bound against its gate.",
-    "ed_fig2": "Planck-mean opacity over the 48 computed points, and the "
+    "ed_fig2": "Planck-mean opacity over the 52 computed points, and the "
                "first-principles / HITEMP Planck ratio on the same axes.",
     "ed_fig3": "Line-list conventions: kappa_R under three broadening pressures, "
                "the MT_CKD self-continuum share of kappa_R, and the band-truncation "

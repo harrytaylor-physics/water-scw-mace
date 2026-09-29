@@ -38,7 +38,7 @@ log R = 7-9, where MESA's own tables run -8 to +1: no MESA table covers this
 regime, which is the point of releasing one. The table is written so that a MESA
 reader can parse it; using it requires extending the kap module's R range.
 
-**Nothing is extrapolated.** Cells outside the convex hull of the 48 computed
+**Nothing is extrapolated.** Cells outside the convex hull of the 52 computed
 points carry the sentinel -99.0 in the MESA file (the OPAL "no data" value; MESA
 has no blank convention because its parser requires a number in every column)
 and are empty in the CSV.

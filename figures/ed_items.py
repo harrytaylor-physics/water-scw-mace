@@ -184,7 +184,7 @@ def ed2(cfg: Config) -> Path:
     from opacity.table import CM2_PER_G_TO_SI
 
     nums = FigureNumbers(figure="ed_fig2", caption_hint=(
-        "a, Planck-mean opacity over the 48 first-principles points. b, the "
+        "a, Planck-mean opacity over the 52 first-principles points. b, the "
         "first-principles / HITEMP Planck ratio on the same axes."))
     t_pts, rho_pts, _, kp = compute_point_means("fp", cfg, BAND)
     src = get_source("fp", cfg, band=BAND)
@@ -257,7 +257,7 @@ def ed3(cfg: Config) -> Path:
 
     nums = FigureNumbers(figure="ed_fig3", caption_hint=(
         "a, kappa_R under three broadening conventions at six states. b, MT_CKD "
-        "self-continuum share of the line-list kappa_R over the 48 points. "
+        "self-continuum share of the line-list kappa_R over the 52 points. "
         "c, band-truncation ratio for HITEMP over its own grid. d, kappa_R "
         "against the line-wing cut-off at the six states of a."))
     # (a) needs the width: six two-line state labels collide in a third of a page.

@@ -28,7 +28,7 @@ and the local power-law index d ln alpha / d ln rho between adjacent densities.
 
 **The line-list sources are run on their own grid, not the first-principles one.**
 The 90-point line-list grid is a clean T x rho product (rho = 0.1 ... 1000) and
-shares six isotherms with the 48 computed points, but only 20 of the 48 states
+shares isotherms with the 52 computed points, but only some of the 52 states
 have a line-list spectrum at the same (T, rho). Interpolating one onto the other
 would smooth the very derivative being measured, so each source is differenced
 along its own densities and the shared isotherms are compared.
@@ -69,7 +69,7 @@ SCATTER_PAIR = (3000.0, 729.344, 810.382)
 def _run_parameters(cfg: Config, t_k: float, rho_si: float) -> dict:
     """Molecule count and spectral smoothing width of one first-principles run.
 
-    Neither is uniform over the 48 points — N is 216 at rho <= 60 on the 1000,
+    Neither is uniform over the 52 points — N is 216 at rho <= 60 on the 1000,
     1500 and 2000 K isotherms and 64 everywhere else, and the smoothing kernel is
     15 cm^-1 at four of the 1500 K points and 20 cm^-1 at the rest. A narrower
     kernel lets a transparency window sit deeper, so a kernel that changes along
@@ -161,12 +161,24 @@ def run(cfg: Config) -> dict:
                 continue
             idx = []
             for a, b in zip(rows, rows[1:]):
-                idx.append({
+                entry = {
                     "rho_lo_kg_m3": a["rho_kg_m3"], "rho_hi_kg_m3": b["rho_kg_m3"],
                     "rho_geom_kg_m3": float(np.sqrt(a["rho_kg_m3"] * b["rho_kg_m3"])),
                     "dln_rho": float(np.log(b["rho_kg_m3"] / a["rho_kg_m3"])),
                     "index": {k: _index(a["rho_kg_m3"], a["q"][k],
-                                        b["rho_kg_m3"], b["q"][k]) for k in keys}})
+                                        b["rho_kg_m3"], b["q"][k]) for k in keys}}
+                if source == "fp":
+                    ra, rb = a.get("run", {}), b.get("run", {})
+                    # An index taken ACROSS a change of molecule count or smoothing
+                    # width is measuring that change as well as the density. The
+                    # per-isotherm homogeneity flag below only looks at rho >= 100,
+                    # so a pair that straddles the boundary needs its own mark.
+                    entry["run_parameters_match"] = bool(
+                        ra.get("n_molecules") == rb.get("n_molecules")
+                        and ra.get("smooth_cm") == rb.get("smooth_cm"))
+                    if not entry["run_parameters_match"]:
+                        entry["run_parameters"] = {"lo": ra, "hi": rb}
+                idx.append(entry)
             entry = {"rows": rows, "index": idx,
                      "index_assigned_to": "geometric mean of the pair"}
             if source == "fp":
@@ -175,7 +187,17 @@ def run(cfg: Config) -> dict:
                 sm = sorted({r["run"].get("smooth_cm") for r in dense})
                 entry["dense_run_parameters"] = {
                     "n_molecules": ns, "smooth_cm": sm,
-                    "homogeneous": len(ns) == 1 and len(sm) == 1}
+                    "homogeneous": len(ns) == 1 and len(sm) == 1,
+                    "note": ("this covers the dense segment the slope is fitted "
+                             "over; adjacent pairs below rho = 100 are flagged "
+                             "individually by run_parameters_match")}
+                entry["all_run_parameters"] = {
+                    "n_molecules": sorted({r["run"].get("n_molecules")
+                                           for r in rows}),
+                    "smooth_cm": sorted({r["run"].get("smooth_cm") for r in rows})}
+                entry["index_pairs_crossing_a_run_change"] = [
+                    [i["rho_lo_kg_m3"], i["rho_hi_kg_m3"]]
+                    for i in idx if not i.get("run_parameters_match", True)]
             per_iso[f"{t_k:g}"] = entry
         out["sources"][source] = per_iso
     out["scatter"] = _scatter(out)

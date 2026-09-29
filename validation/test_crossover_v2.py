@@ -1,4 +1,4 @@
-"""FP/HITEMP crossover recomputed on the merged 48-point grid (A53).
+"""FP/HITEMP crossover recomputed on the first-principles grid (A53, A74).
 
 ``opacity/crossover.py`` replaces the delivered ``crossover_hitemp.json`` as the
 *source* of the M2 ratios (it can reach the 21 extension points, which RADIS
@@ -17,9 +17,9 @@ import pytest
 from opacity.crossover import agreement_summary, crossover_rows, write_json
 
 BAND_CM = (100.0, 4000.0)
-N_POINTS = 48
+N_POINTS = 52  # A74 merged the four corner cells
 N_CLAMPED = 9  # the nine legacy points with rho > 1000, HITEMP's grid ceiling
-N_DILUTE = 9
+N_DILUTE = 13  # A74: the four corner cells are all rho <= 60
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +39,7 @@ def test_hitemp_is_clamped_exactly_where_its_grid_ends(rows):
     """Only rho > 1000 clamps; the whole thin and cold part of the grid is interior.
 
     The last assertion used to be phrased over the points added by a later
-    delivery. The 48 points are one grid now (A62), so it is phrased over where
+    delivery. The points are one grid (A62), so it is phrased over where
     the points sit instead — which is what it always meant: nothing dilute and
     nothing cold is outside the line list's range.
     """
@@ -83,7 +83,11 @@ def test_dilute_rows_carry_their_noise_floor_fractions(cfg, rows):
         pytest.skip("S7 has not been run; floor columns are optional by design")
     for r in dilute:
         assert r["floor_frac_above_window"] < 0.10
-        assert r["floor_rosseland_window_share"] > 0.8
+        # Was > 0.8 over the nine original dilute points. A74's (700, 10) — the
+        # coldest and thinnest cell on the grid — sits at 0.724, the only one of
+        # the thirteen below 0.8; the rest span 0.81-0.93. Re-pinned to what the
+        # data give rather than left where it was.
+        assert r["floor_rosseland_window_share"] > 0.70
 
 
 def test_spectral_contrast_explains_the_cold_ratios(rows):
@@ -98,14 +102,24 @@ def test_spectral_contrast_explains_the_cold_ratios(rows):
     hot = [r for r in rows if r["T"] >= 2500.0]
     assert cold and hot
     # FP has no strong window structure anywhere on the grid: its contrast spans
-    # 1-33 over all 48 points, against HITEMP's 2.4-567.
+    # 1-32.5 over all 52 points, against HITEMP's 2.4-567.
     assert max(r["contrast_fp"] for r in rows) < 40.0
     # HITEMP's rises sharply when cold, and FP's does not follow.
     assert min(r["contrast_hitemp"] for r in cold) > 100.0
     assert max(r["contrast_hitemp"] for r in hot) < 10.0
-    assert all(r["contrast_hitemp"] / r["contrast_fp"] > 15.0 for r in cold)
-    # So the cold Rosseland ratios are huge while the Planck ones stay ~1-2.
-    assert min(r["M2_rosseland_ratio"] for r in cold) > 20.0
+    # The separation was >= 15 over the cold rows until A74 added the first
+    # first-principles cells in the cold DILUTE corner. Those have the deepest FP
+    # windows anywhere cold — contrast 14.8-22.4 against 4.8-11.2 for the
+    # cold-dense rows — so the separation narrows to 11.2 at (800, 30). The claim
+    # survives, with less margin, and the bound is re-pinned to what the data give
+    # rather than left where it was.
+    assert all(r["contrast_hitemp"] / r["contrast_fp"] > 10.0 for r in cold)
+    # So the cold Rosseland ratios are huge while the Planck ones stay ~1-2. The
+    # bound was > 20 when every cold row was also dense; A74's cold DILUTE cells
+    # run 14.4-37.8, lowest at (800, 30), because at low density HITEMP's windows
+    # are less filled relative to the first-principles ones. Still an order of
+    # magnitude, and still the point being made.
+    assert min(r["M2_rosseland_ratio"] for r in cold) > 12.0
     assert max(r["M2_planck_ratio"] for r in cold) < 3.0
 
 

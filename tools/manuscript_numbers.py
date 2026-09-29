@@ -109,7 +109,7 @@ def opacity_ratios(cfg: Config, led: Ledger) -> None:
     for raw, label in keymap.items():
         s = summ["all"].get(raw)
         if s:
-            led.add(f"opacity.all48.{label}_range", [s["min"], s["max"]], "ratio",
+            led.add(f"opacity.all_points.{label}_range", [s["min"], s["max"]], "ratio",
                     script, "outputs/crossover_v3.json")
     sub = summ["sub_unity_mtckd"]
     led.add("opacity.sub_unity_continuum_points.n", len(sub), "count", script,

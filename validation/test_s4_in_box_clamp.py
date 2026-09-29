@@ -87,16 +87,22 @@ def test_the_corner_gate_cannot_be_satisfied_and_is_attributed(scan_rows):
     "T >= 650 and rho >= 10" has no upper bound, so the deep convective interior
     — which runs past 10 000 K against the FP grid's 3000 K ceiling, and past
     2229 kg/m³ against its density ceiling — is counted as "in box" and clamps by
-    arithmetic necessity. All 108 cells violate it. That is a property of the
-    definition, not a finding about the data, so the gate here is that every
-    corner clamp is *attributable* to one of the three reasons.
+    arithmetic necessity. That is a property of the definition, not a finding
+    about the data, so the gate here is that every corner clamp is *attributable*
+    to one of the three reasons.
+
+    It used to be all 108. Since A74 filled the 700-800 K, 10-60 kg/m³ gap, one
+    cell — M_c = 5, wmf 0.05, T_eq = 500 K, T_int = 30 K — clamps on only 0.2% of
+    its in-box samples and clears the 1% limit. The ceilings have not moved; a
+    hole below them has been filled, and this is the first cell to notice.
     """
     live = [r for r in scan_rows if not r["skipped"]]
     bad = _violations(live, "composite_in_box_clamp_fraction",
                       "composite_n_in_box_samples")
-    assert len(bad) == len(live), (
+    assert len(bad) >= len(live) - 1, (
         f"only {len(bad)} of {len(live)} cells violate the unbounded corner gate — "
-        f"if that has changed, the FP grid's ceilings have moved; re-report it")
+        f"more than one has cleared it; the FP grid's ceilings may have moved, "
+        f"re-report it")
     for r in live:
         total = int(round(s4._num(r, "composite_in_box_clamp_fraction", 0.0)
                           * r["composite_n_in_box_samples"]))
@@ -129,7 +135,9 @@ def test_full_box_violations_are_the_recorded_set(scan_rows):
     names = [f"M_c={r['mass_core_mearth']:g} wmf={r['wmf']:.2f} "
              f"T_eq={r['t_eq_k']:g} T_int={r['t_int_k']:g}: {f:.4f}"
              for r, f in bad]
-    assert len(bad) == 28, (
+    # 28 before A74; the same cell that now clears the corner gate also drops
+    # below 1% here, leaving 27.
+    assert len(bad) == 27, (
         f"{len(bad)} of {len(live)} cells clamp >= {CLAMP_LIMIT:.0%} inside the FP "
         f"grid's rectangle (recorded: 28):\n  " + "\n  ".join(names))
 

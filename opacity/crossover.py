@@ -1,10 +1,10 @@
 """FP vs line-list crossover metrics on the merged 48-point grid (A53).
 
 ``crossover_hitemp.json`` holds the owner's independent RADIS analysis, which
-covers 27 of the 48 first-principles states. This module recomputes the same
+covers 27 of the 52 first-principles states. This module recomputes the same
 Planck/Rosseland ratios through *our* pipeline — the identical band-limited table
 builder used for every source (SPEC §3), so the differential is exact — over all
-48 points, which are treated throughout as one grid.
+52 points, which are treated throughout as one grid.
 
 How the line list is evaluated at an FP point. The grid is not a subset of
 HITEMP's (T = 650 and ρ = 60/150/500 have no HITEMP twin), so exact
@@ -204,7 +204,7 @@ def agreement_summary(rows: list[dict]) -> dict:
 # --------------------------------------------------------------------------
 # v3: both references — bare line list, and line list + MT_CKD self-continuum
 # --------------------------------------------------------------------------
-# The 48 points are ONE grid. They are grouped by where they sit in (T, rho),
+# The 52 points are ONE grid. They are grouped by where they sit in (T, rho),
 # because the caveats differ by regime, not by when a point was computed (A62):
 #   "dilute"     — rho <= 60, where A52 found the transparency windows that carry
 #                  kappa_R sit at or below the dipole model's noise floor;
@@ -351,7 +351,7 @@ def write_v3_json(
     path = out_dir / name
     payload = {
         "meta": (
-            f"FP vs {line_list.upper()} on the 48-point FP grid, against TWO references "
+            f"FP vs {line_list.upper()} on the first-principles grid, against TWO references "
             f"(A58): the bare line list, and the line list plus the MT_CKD 4.3 water "
             f"SELF-continuum evaluated at each spectrum's own (T, rho). Both are "
             f"band-limited means over [{band_cm[0]:g}, {band_cm[1]:g}] cm^-1 computed by "

@@ -16,7 +16,7 @@ axis ranges, marked values, point counts — into ``figs/fig_numbers.json``, so 
 caption can be checked against the figure it describes rather than against the
 author's memory. :class:`FigureNumbers` is that ledger.
 
-The 48 first-principles points are one grid. Nothing here, and nothing in the
+The 52 first-principles points are one grid. Nothing here, and nothing in the
 figures, distinguishes how or when a point was delivered.
 """
 
@@ -194,7 +194,7 @@ def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None,
     Two rules are enforced here rather than in review, because both are invisible
     once the figure is a PDF and expensive to discover late:
 
-    * the manuscript treats the 48 points as one grid, so a figure that says
+    * the manuscript treats the 52 points as one grid, so a figure that says
       "original", "extension" or "campaign" anywhere is a bug;
     * nothing may be set below :data:`MIN_PT` at final size. Setting the rcParams
       is not enough — a per-call ``fontsize=`` overrides them silently, which is

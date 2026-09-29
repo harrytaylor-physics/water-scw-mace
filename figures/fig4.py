@@ -4,7 +4,7 @@
     python figures/fig4.py config/fiducial.yaml
 
 The (T, ρ) plane shaded by the first-principles / HITEMP Rosseland-mean ratio over
-the 48 first-principles points, interpolated on the model's own triangulation. Over
+the 52 first-principles points, interpolated on the model's own triangulation. Over
 it, the line-list radiative–convective boundary of each of the 108 scanned planets,
 coloured by equilibrium temperature. The outline is the extent of the
 first-principles grid — its convex hull, which is exactly where the model
@@ -64,7 +64,7 @@ def main(argv=None) -> int:
         figure="fig4",
         caption_hint=(
             "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio "
-            "over the 48 first-principles points, with the line-list radiative-"
+            "over the 52 first-principles points, with the line-list radiative-"
             "convective boundary of 108 scanned planets overlaid, coloured by T_eq. "
             "The outline is the first-principles grid extent."),
     )
@@ -185,7 +185,7 @@ def main(argv=None) -> int:
                        "the point, open where the model clamps, with the clamp cause "
                        "distinguished — the same four categories as ED Fig. 6a"),
         n_boundaries_inside_grid_extent=int(inside.sum()),
-        grid_extent="convex hull of the 48 points in (T, log10 rho)",
+        grid_extent="convex hull of the 52 points in (T, log10 rho)",
         band_cm=list(BAND_CM),
         input_vintage=(
             "boundary locations come from the stored domain scan, which predates "

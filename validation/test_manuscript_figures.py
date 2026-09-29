@@ -225,9 +225,9 @@ def test_the_extended_data_ledgers_never_name_the_delivery_history(name):
 def test_the_ledger_agrees_with_the_grid_size(numbers):
     """Point counts a caption would quote, checked against the grid itself."""
     if "fig2" in numbers:
-        assert numbers["fig2"]["panels"]["a"]["n_computed_points"] == 48
+        assert numbers["fig2"]["panels"]["a"]["n_computed_points"] == 52
     if "fig4" in numbers:
-        assert numbers["fig4"]["panels"][""]["n_first_principles_points"] == 48
+        assert numbers["fig4"]["panels"][""]["n_first_principles_points"] == 52
 
 
 # -- the one-grid rule in the outputs, not just the figures ----------------
@@ -235,7 +235,7 @@ def test_crossover_rows_carry_no_delivery_history(cfg):
     from opacity.crossover import GROUPS, crossover_v3_rows
 
     rows = crossover_v3_rows(cfg, (100.0, 4000.0))
-    assert len(rows) == 48
+    assert len(rows) == 52
     assert set(GROUPS) == {"dilute", "cold_dense", "dense"}
     for r in rows:
         assert "is_extension_point" not in r

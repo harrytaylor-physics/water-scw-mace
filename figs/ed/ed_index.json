@@ -16,7 +16,7 @@
   }
  },
  "ed_fig2": {
-  "description": "Planck-mean opacity over the 48 computed points, and the first-principles / HITEMP Planck ratio on the same axes.",
+  "description": "Planck-mean opacity over the 52 computed points, and the first-principles / HITEMP Planck ratio on the same axes.",
   "status": "built",
   "files": [
    "figs/ed/ed_fig2.pdf"

@@ -47,7 +47,7 @@ full strength. **The sign of that error on κ_R is not determined a priori** —
 depends on where the redistributed area lands relative to the transparency
 windows — so the ratios reported here are *not* bounds in either direction. They
 carry an unquantified line-shape systematic wherever HWHM > 50 cm⁻¹, which is 45
-of the 48 FP grid points (A58). The cap is recorded per run in the output.
+of the 52 FP grid points (A58). The cap is recorded per run in the output.
 
 Writes ``outputs/broadening_sensitivity.json`` (+ per-point npz spectra). Run
 ``figures/plot_ed1_broadening.py`` afterwards for the Extended Data panel. If

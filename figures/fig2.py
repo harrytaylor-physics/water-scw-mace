@@ -3,14 +3,14 @@
 
     python figures/fig2.py config/fiducial.yaml
 
-**a** The Rosseland mean κ_R(T, ρ) over the 48 first-principles points, band-limited
+**a** The Rosseland mean κ_R(T, ρ) over the 52 first-principles points, band-limited
 to 100-4,000 cm⁻¹ and interpolated exactly as the structure model reads it: linear
 on a Delaunay triangulation of (T, log₁₀ρ) over log₁₀κ. Outside the convex hull the
 model clamps to the nearest point; that is an extrapolation, not a surface, so it
-is left blank here rather than shaded. The 48 computed points are drawn on top.
+is left blank here rather than shaded. The 52 computed points are drawn on top.
 
 **b** First-principles / line-list ratio against density, coloured by temperature.
-Three references: HITEMP at all 48 points, ExoMol POKAZATEL at the 27 points it
+Three references: HITEMP at all 52 points, ExoMol POKAZATEL at the 27 points it
 covers, and HITEMP plus the MT_CKD 4.3 water self-continuum — what a planetary
 model would actually use. Filled marks are Planck means, open marks Rosseland.
 
@@ -200,7 +200,7 @@ def panel_b(ax, fig, cfg, rows, nums: FigureNumbers) -> None:
             "two references differ only in their line data"),
         pokazatel_matching=(
             "matched state by state, not interpolated: POKAZATEL sits on 27 of the "
-            "48 first-principles states exactly"),
+            "52 first-principles states exactly"),
     )
 
 
@@ -216,7 +216,7 @@ def main(argv=None) -> int:
     nums = FigureNumbers(
         figure="fig2",
         caption_hint=(
-            "a, Rosseland-mean opacity over the 48 first-principles points, "
+            "a, Rosseland-mean opacity over the 52 first-principles points, "
             "interpolated as the structure model reads it. b, first-principles / "
             "line-list ratio against density, coloured by temperature; filled "
             "Planck, open Rosseland."),

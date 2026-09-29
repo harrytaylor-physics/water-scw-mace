@@ -4,6 +4,135 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-29 (four corner cells: the grid is 52 points)
+
+- **A74 — Four cells at (700, 10/30/60) and (800, 30) close the gap the boundaries
+  were falling into. The first-principles grid is 52 points.**
+  `tools/corner_cells.py`, `tools/corner_boundaries.py`.
+
+  **Checked before the marker, not after.** `units_marker` is what stops a legacy
+  factor-1000 spectrum loading (A50), so an unstamped file is refused by the
+  loader by design; the checks therefore read the npz directly and only then is
+  `units_fixed = cm2_per_g:A74` written. On the common band:
+
+  | cell | kappa_P | kappa_R | vs 1000 K at the same rho | the 48-point model there |
+  |---|---|---|---|---|
+  | (700, 10) | 423.1 | 28.65 | x1.12 | 379.1, clamped to (1000, 10) |
+  | (700, 30) | 404.7 | 18.04 | x1.05 | 384.0, clamped to (1000, 30) |
+  | (700, 60) | 404.7 | 19.30 | x0.97 | 468.9, clamped to (650, 100) |
+  | (800, 30) | 400.2 | 22.90 | x1.04 | 384.0, clamped to (1000, 30) |
+
+  and (800, 30) against (700, 30) is x0.989 in kappa_P. Every cell is within 12%
+  of its 1000 K neighbour against a refusal threshold of a factor of 10, so
+  nothing resembling the A50 units error is present. Three further checks passed
+  that the brief did not ask for and that a factor-of-10 test would not catch:
+  `alpha / rho` reproduces `kappa` exactly, `kappa / sigma` equals the production
+  files' constant, and each spectrum spans the band. **All four states were
+  clamped before**, and the embedded `planck`/`rosseland` scalars were not used —
+  they are full-range (1.1-6000 cm^-1), not band-limited (A4).
+
+  **The four new crossover rows** (line list read off its own table, as all 52
+  rows are):
+
+  | state | P/bare | R/bare | P/+MT_CKD | R/+MT_CKD | MT_CKD share |
+  |---|---|---|---|---|---|
+  | (700, 10) | 1.247 | 37.84 | 1.113 | 28.75 | 0.240 |
+  | (700, 30) | 1.192 | 21.47 | 0.876 | 11.89 | 0.446 |
+  | (700, 60) | 1.191 | 22.09 | 0.664 | 8.91 | 0.597 |
+  | (800, 30) | 1.287 | 14.41 | 1.049 | 12.00 | 0.168 |
+
+  Three of the four sit on the 90-point line-list grid, so the line list was also
+  taken **directly** at those states as a check: table and direct agree to
+  **1.0000** at all three, and to 0.9925 in kappa_R at (700, 60), the one that
+  needed a new spectrum (`hitemp_extra/T700_rho60.npz`). The 90-point line-list
+  grid is unchanged. Two of these rows have a **sub-unity** Planck ratio against
+  the continuum-inclusive reference — 0.876 and 0.664 — and the continuum carries
+  up to 60% of the combined Rosseland mean there.
+
+  **All six boundaries that were falling between computed points are now inside**,
+  and the category counts go **43 -> 49** on computed data, 18 and 41 unchanged,
+  and **6 -> 0** between computed points. Profiled by the same code path the ten
+  strongest use, all six still exceed their flip threshold — but **the clamp was
+  wrong in both directions**:
+
+  | case | T, rho | FP/LL before | after | threshold |
+  |---|---|---|---|---|
+  | M_c=5 wmf 0.20 T_eq 500 T_int 30 | 739.1, 54.6 | 32.61 | **18.70** | 1.034 |
+  | M_c=5 wmf 0.50 T_eq 500 T_int 30 | 732.2, 54.1 | 34.09 | **19.26** | 1.122 |
+  | M_c=10 wmf 0.05 T_eq 500 T_int 50 | 710.7, 11.0 | 14.26 | **34.13** | 1.100 |
+  | M_c=10 wmf 0.50 T_eq 500 T_int 50 | 730.2, 11.5 | 12.52 | **28.35** | 1.063 |
+  | M_c=15 wmf 0.05 T_eq 500 T_int 50 | 712.5, 13.1 | 13.86 | **31.30** | 1.136 |
+  | M_c=15 wmf 0.20 T_eq 500 T_int 50 | 729.5, 13.1 | 12.42 | **28.44** | 1.044 |
+
+  At rho ~ 54 the clamp reached a colder, denser point and **overestimated** the
+  first-principles opacity by 1.8x; at rho ~ 11-13 it reached (1000, 10) and
+  **underestimated** it by 2.3x. Neither error was visible as anything but a flag.
+
+  **All ten of the strongest boundaries changed triangle**, two of them from
+  clamped to interpolated, and the dispute ratios fell across the board — the
+  maximum from 54.27 to **47.08**, and the two formerly clamped from 34.09/32.61
+  to 19.26/18.70. All ten still exceed their thresholds, so ED Table 2 is now
+  **10 interpolated, 0 clamped**, ratios 6.15-47.08.
+
+  **What the merge does NOT do: move the boundaries.** Their positions come from
+  the line-list opacity, which is untouched. The stored scan CSV differs from
+  today's by up to 1.2 K in the boundary temperature and 1.3e-4 R_earth in radius,
+  which looked at first like the merge. It is not: re-running the scan with the
+  four cells **moved back out** reproduces the same offsets against the stored
+  CSV, and two runs at the same state are bit-identical. The offsets predate this
+  task; the shooting solver is warm-start sensitive at 1e-7 in R_p, which moves
+  which sample of a 1500-point profile is the deepest radiative one. Recorded
+  because it was measured, not because it matters here: a 1.2 K jitter cannot
+  produce a 6-boundary category change.
+
+  **The water-world fiducial's triangle changed**, from (650,100)-(800,100)-(1000,60)
+  to (650,100)-(700,60)-(800,100), so E2 was rerun. The composite-against-line-list
+  differences it reports move by about a tenth of themselves: the radius difference
+  at 10 Gyr from 0.00121 to **0.00136** (+12.6%), the entropy difference from
+  0.01346 to **0.01510** (+12.2%), the cooling-time ratio from 1.00875 to
+  **1.00993**, and the track end from 387 to 417 Gyr. In absolute terms the
+  fiducial is still a 0.14% radius effect; what moved is the size of a small
+  number, not the conclusion drawn from it.
+
+  **Density scaling on the two new isotherms.** 700 K now has three densities
+  (10/30/60), all below 100, so it has no dense segment to fit; its local kappa_R
+  indices are **0.58** (10 -> 30) and **1.10** (30 -> 60) — the dilute limit, as
+  the line list shows there. 800 K gains rho = 30 below its 100-500 run, and its
+  indices are 1.48 (30 -> 100), 1.97, 1.52, 1.72, with the fitted dense slope
+  unchanged at 1.67 +- 0.15 because the fit starts at 100. **The 30 -> 100 pair
+  crosses the N = 216 to N = 64 boundary** and so measures that change as well as
+  the density; the per-isotherm homogeneity flag only looked at rho >= 100 and
+  would have missed it, so an explicit per-pair flag was added. It shows the same
+  problem at 1000 K (60 -> 100), 1500 K (three pairs) and 2000 K (60 -> 150).
+
+  **Three gates re-pinned, all narrowings the new cells caused.** The dilute row
+  count 9 -> 13; `floor_rosseland_window_share` from > 0.8 to > 0.70, because
+  (700, 10) is the only one of the thirteen below 0.8 at 0.724; the cold
+  Rosseland ratio floor from > 20 to > 12, because the new cold **dilute** rows
+  run 14.4-37.8 where every cold row used to be dense; and the FP/HITEMP
+  window-contrast separation from >= 15 to >= 10, because the new cells have the
+  deepest first-principles windows anywhere cold (contrast 14.8-22.4 against
+  4.8-11.2 for the cold-dense rows) and the separation narrows to 11.2 at
+  (800, 30). Each claim survives with less margin; each bound is moved to what
+  the data give rather than left where it was. Three more in the dilute-floor
+  gates for the same reason: the cell count 9 -> 13, the Rosseland window share
+  from > 0.8 to > 0.70 ((700, 10) at 0.724), and the fraction of the band cores
+  above the floor from > 0.5 to > 0.35 ((700, 30) at 0.394). The contrast that
+  carries A52's claim — under 5% of the *window* above the floor against 39-75% of
+  the *cores* — is untouched. And two in the in-box clamp accounting, both
+  improvements: one cell (M_c = 5, wmf 0.05, T_eq = 500, T_int = 30) now clamps on
+  **0.2%** of its in-box samples and clears the 1% limit, so "all 108 violate the
+  unbounded corner gate" becomes 107 of 108, and the full-box violation count goes
+  28 -> 27. The ceilings have not moved; a hole below them has been filled, and
+  this is the first cell to notice.
+
+  **The release fit's dilute regime changes, the dense one does not.** With four
+  more points and a temperature range that now starts at 700 K rather than 1000,
+  kappa_0 goes 28.9 -> **31.6**, a from +0.256 to **+0.134**, b from +1.537 to
+  **+1.013**, and the RMS from 0.093 to **0.124** dex over 13 points. The dense
+  regime is untouched (39 points, identical coefficients). The MESA-format grid
+  gains coverage: **100 of 225 cells** inside the hull, up from 93.
+
 ## 2026-09-26 (rho^2 scaling; wing cut-off; the AQUA entropy typo; release tables)
 
 - **A70 — The absorption is faster than rho^2 in the window, and only there.**

@@ -9,8 +9,8 @@ dynamics, on a regular (log R, log T) grid.
 | Band | 100-4000 cm^-1, the widest band every source in the study shares |
 | log R | 6.00 to 9.50, step 0.25 dex, R = rho / (T/10^6 K)^3 with rho in g cm^-3 |
 | log T | 2.80 to 3.50, step 0.05 dex (631-3162 K) |
-| Computed points | 48 states, T 650-3000 K, rho 10-2229 kg m^-3 |
-| Coverage | grid 0.25 dex in log R, 0.05 dex in log T; 93 of 225 cells inside the 48-point hull |
+| Computed points | 52 states, T 650-3000 K, rho 10-2229 kg m^-3 |
+| Coverage | grid 0.25 dex in log R, 0.05 dex in log T; 100 of 225 cells inside the 48-point hull |
 | Outside the hull | `-99` in the MESA files, blank in the CSV — never extrapolated |
 
 ## Files

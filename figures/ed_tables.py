@@ -3,7 +3,7 @@
 
     python figures/ed_tables.py config/fiducial.yaml
 
-ED Table 1 — the 48 state points with both opacity means and the ratios to each
+ED Table 1 — the 52 state points with both opacity means and the ratios to each
 line-list reference.
 ED Table 2 — the ten strongest boundaries, with the provenance of the
 first-principles value at each.
@@ -110,7 +110,7 @@ def table1(cfg: Config) -> dict:
         w.writerow(csv_header)
         w.writerows(csv_rows)
     _tex(ED_DIR / "ed_table1.tex", header, tex_rows,
-         "ED Table 1 — the 48 state points, common band 100-4000 cm^-1")
+         "ED Table 1 — the 52 state points, common band 100-4000 cm^-1")
     return {"n_rows": len(rows), "n_with_pokazatel": n_pk,
             "band_cm": list(BAND), "columns": csv_header,
             "sorted_by": "T then rho",

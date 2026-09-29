@@ -1,6 +1,6 @@
 {
  "meta": "Drop-in opacity table and power-law fit for Data availability (Task 41).",
- "generated": "2026-09-26",
+ "generated": "2026-09-29",
  "band_cm": [
   100.0,
   4000.0
@@ -27,7 +27,7 @@
    630.957344480193,
    3162.2776601683795
   ],
-  "n_computed_points": 48,
+  "n_computed_points": 52,
   "no_data_value": -99.0,
   "outside_hull": "blank in the CSV, sentinel in the MESA files"
  },
@@ -41,16 +41,16 @@
  "files": {
   "subneptune_kappa_R_mesa": {
    "path": "data/release/subneptune_kappa_R_mesa.txt",
-   "round_trip_max_abs_dex": 4.624051614898761e-05,
-   "n_finite": 93,
+   "round_trip_max_abs_dex": 4.7495251021212326e-05,
+   "n_finite": 100,
    "n_cells": 225,
    "written_decimals": 4,
    "interpolant": "linear on the Delaunay triangulation in (T, log10 rho) over log10 kappa, the model's own"
   },
   "subneptune_kappa_P_mesa": {
    "path": "data/release/subneptune_kappa_P_mesa.txt",
-   "round_trip_max_abs_dex": 4.9725196251237946e-05,
-   "n_finite": 93,
+   "round_trip_max_abs_dex": 4.9617969795523464e-05,
+   "n_finite": 100,
    "n_cells": 225,
    "written_decimals": 4,
    "interpolant": "linear on the Delaunay triangulation in (T, log10 rho) over log10 kappa, the model's own"
@@ -77,20 +77,20 @@
    ]
   },
   "dilute": {
-   "n_points": 9,
-   "kappa_0_cm2_g": 28.885460214608795,
-   "a_rho_exponent": 0.25584380582267224,
-   "b_T_exponent": 1.5370528523902471,
+   "n_points": 13,
+   "kappa_0_cm2_g": 31.54981974406686,
+   "a_rho_exponent": 0.1335767997410526,
+   "b_T_exponent": 1.0128366317705282,
    "rho_0_kg_m3": 100.0,
    "T_0_K": 1000.0,
-   "rms_log10_residual": 0.09284744561966335,
-   "max_abs_log10_residual": 0.15652680513528752,
+   "rms_log10_residual": 0.12366950595750204,
+   "max_abs_log10_residual": 0.29835121586887997,
    "validity_rho_kg_m3": [
     10.0,
     60.0
    ],
    "validity_T_K": [
-    1000.0,
+    700.0,
     2000.0
    ]
   }

@@ -4,7 +4,7 @@
 
 History. The panel began as a replot of the owner's delivered
 ``crossover_hitemp.json`` (27 points, RADIS). A53 recomputed the M2
-Planck/Rosseland ratios through our own band-limited table builder over all 48 FP
+Planck/Rosseland ratios through our own band-limited table builder over all 52 FP
 points, with HITEMP evaluated by the same triangulated interpolation the structure
 model uses, and kept the delivered JSON overplotted as the independent check.
 A58 adds the **second reference** a reviewer will ask for: the same line list plus
@@ -16,7 +16,7 @@ Reading the figure. Each FP grid point appears twice, joined by a thin grey stem
   * **filled, temperature-coloured** — FP / bare HITEMP (line absorption only);
   * **open vermillion** — FP / (HITEMP + MT_CKD self-continuum).
 
-The 48 points are one grid. The marker *shape* carries where a point sits in
+The 52 points are one grid. The marker *shape* carries where a point sits in
 (T, ρ), because the caveats differ by regime:
 
   * **diamond**  — dilute (ρ ≤ 60), where A52 found the transparency windows that
@@ -216,7 +216,7 @@ def _print_groups(summary):
                     "ratio_planck_mtckd", "ratio_rosseland_mtckd",
                     "mtckd_share_kappa_R"):
             cells.append(f"{s[key]['min']:>8.3f}-{s[key]['max']:<10.3f}")
-        label = GROUP_LABEL.get(group, "all 48 points")
+        label = GROUP_LABEL.get(group, "all 52 points")
         print(f"  {label:<28s} {s['n']:>3d} | {cells[0]} {cells[1]} | "
               f"{cells[2]} {cells[3]} | {cells[4]}")
 
