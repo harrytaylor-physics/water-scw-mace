@@ -4,6 +4,169 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the production formula, read: the harmonic correction is applied twice)
+
+- **A78 — `opacity_pipeline.py` multiplies `beta omega^2 Smm`, which is already
+  the harmonic-corrected result, by `Q_harmonic` a second time. The delivered
+  spectra carry the harmonic quantum correction twice. That spare factor is the
+  whole of the temperature trend A76 found and A77 measured grid-wide: at the
+  source, `beta <|Mdot|^2>` obeys the classical sum rule exactly.**
+  `tools/dipole_sum_rule.py` -> `outputs/dipole_sum_rule.json`; four gates in
+  `validation/test_a78_dipole_sum_rule.py`. Existing data only.
+
+  **(1) The formula, line by line.** `ed_data/arc_a78/scw/opacity_pipeline.py`,
+  `spectrum_from_dipoles`, imports only `numpy` and
+  `scipy.ndimage.gaussian_filter1d` — there is no third module to chase.
+  `spectra.py` imports `torch`, `ase.io` and `mace` and does nothing but
+  evaluate the dipole model frame by frame and cache `dipoles.npy`; it contains
+  no opacity arithmetic. The chain, with the line numbers:
+
+  | line | operation |
+  |---|---|
+  | 54-58 | `M` in e.A -> Debye (`EANG_TO_DEBYE`), mean removed at line 64 |
+  | 60 | `M_cm = M * 3.33564e-30` (Debye -> C m) |
+  | 65 | `Cmm = sum_k autocorr_fft(M_k)`, **unbiased** (`ac / (n - lag)`) |
+  | 66 | `Smm = dt_s * Re rfft(Cmm * np.hanning(L))` |
+  | 77-79 | keep `0 < wn <= 6000`; `Smm` clipped at 0 |
+  | 80 | `x = beta hbar omega` |
+  | 81 | `qcf = x / (1 - exp(-x))`  — **this is `Q_harmonic`** |
+  | 82 | `sigma_raw = (beta omega^2 / (3 eps0 c N)) * Smm * qcf * 1e4` |
+  | 83-84 | linear interpolation onto a 1 cm^-1 grid, NaN -> 0 |
+  | 85 | `gaussian_filter1d(sigma, sd = smooth_cm)` |
+  | 86 | `alpha = n sigma`, `n = rho/M_w N_A`; `kappa = alpha / rho_cgs` |
+
+  **It is neither of A77's candidates.** A77 carried form A
+  (`sigma ~ w (1-e^-x) I_cl`) and form B (`sigma ~ beta w^2 I_cl`). Production is
+  **form B times a second `Q_harmonic`**. The algebra is three lines: the
+  standard relation is `alpha ~ w (1 - e^-x) I_qm`; the harmonic correction is
+  `I_qm = Q_harmonic I_cl` with `Q_harmonic = x/(1 - e^-x)`; so
+  `alpha ~ w (1-e^-x) . x/(1-e^-x) . I_cl = beta hbar w^2 I_cl` — **the
+  `(1-e^-x)` has already cancelled against `Q_harmonic`'s denominator.** Line 82
+  starts from that cancelled result and applies `Q_harmonic` again.
+
+  Read, not paraphrased: running the function as it stands on each supplied
+  `dipoles.npy` reproduces the delivered `sigma_raw` to **8e-8 relative** (float
+  round-off on float32 input), and the three rho = 30 cells are bit-identical to
+  the delivered grid files, so these are the production cells.
+
+  **A second defect in the same function, line 66.** `np.hanning(L)` is a
+  *symmetric* window and `Cmm` is a *one-sided* autocorrelation, so the zero-lag
+  value — the largest and best-determined point — is multiplied by **zero**, and
+  the peak weight lands at lag L/2 where the unbiased estimator `ac/(n-lag)` is
+  at its noisiest. `spectra.py` line 46 does the same job correctly, with
+  `np.hanning(2*maxlag)[maxlag:]`. This distorts the lineshape and the overall
+  scale; it does **not** introduce a temperature trend, which (3) below
+  establishes independently. Its size cannot be quoted without also settling the
+  `maxlag` convention (`spectra.py` truncates at 8000 lags, the pipeline does
+  not), so A79 should settle both together.
+
+  **(2) The sum rule at its source, with no formula in between.** From each
+  `dipoles.npy`: `Mdot` by central differences at the stored 0.5 fs, an FFT mask
+  per band, then `beta <|Mdot_band|^2>` per molecule. This is the quantity the
+  classical sum rule fixes, since `beta <|Mdot|^2> = beta (kT/m) sum (dmu/dQ)^2`.
+  The three rho = 30 cells, 60002 frames, N = 216:
+
+  | band | 700 K | 1000 K | 2000 K | index p |
+  |---|---|---|---|---|
+  | rotation 50-1100 | 4.915e-12 | 5.050e-12 | 5.587e-12 | **+0.125** |
+  | bend 1000-2400 | 1.663e-12 | 1.728e-12 | 1.578e-12 | **-0.061** |
+  | stretch 2800-4000 | 1.729e-12 | 1.813e-12 | 2.114e-12 | **+0.196** |
+
+  **The dipole series satisfies the sum rule.** Against that, the delivered band
+  integrals give +0.049, **-0.741** and **-0.737**. Removing line 81-82's `qcf`
+  and nothing else recovers +0.158, **-0.049** and **+0.229** — which track
+  `beta <|Mdot|^2>` to within 0.03 in every band, at a ratio constant to
+  **3.5-5.4%** across the three temperatures. (That constant absorbs the line-66
+  window and the unbiased-estimator normalisation; only its constancy is the
+  claim, and its constancy is what shows the window carries no temperature
+  dependence.) The trend attributable to the spare factor is **-0.108**,
+  **-0.692** and **-0.966**. Taking `Q_harmonic` on its own, weighted by each
+  band's own (un-doubled) intensity, gives **-0.108, -0.692 and -0.966** — the
+  same numbers to three decimals. The spare factor does not mostly account for
+  the trend; it *is* the trend.
+
+  **(3) Plain statement.** **No** — the temperature trend is *not* present in
+  `beta <|Mdot|^2>`; that quantity is flat to |p| <= 0.2 in all three bands.
+  **The defect is in the formula, not the dipole series.** So the brief's
+  fallback does not apply and no equipartition check is needed: the dynamics and
+  the dipole model are exonerated for this finding, and the ARC velocities are
+  not required. What is required is one line of arithmetic in
+  `opacity_pipeline.py`.
+
+  **Corrections to A75, A76 and A77.**
+
+  - **A75 is wrong where it says the delivered spectra carry `Q = 1` on the
+    lineshape.** That was read from `spectrum_convergence.py`, which is not the
+    production code. Production carries `Q_harmonic` **twice**. A75's noise-floor
+    result does not depend on this and stands.
+  - **A76's conclusion was right for the wrong reason.** It found that none of
+    the three corrections improves the match and that each steepens the trend.
+    Of course: the spectra already carried one too many. The operation needed is
+    to **divide** by `Q_harmonic`, which A76 never tried because A75 had told it
+    the factor was absent. Redone with the formula corrected, A76's calibration
+    comes out flat:
+
+    | band | corrected ratio / dipole factor | range | dln/dT per 1000 K | rho_s |
+    |---|---|---|---|---|
+    | rotation | 0.302 | [0.275, 0.346] | **-0.000** | +0.08 |
+    | bend | 0.341 - 0.323 | [0.288, 0.382] | **-0.015** | +0.01 |
+    | stretch | 0.365 - 0.196 | [0.296, 0.423] | +0.191 | +0.82 |
+
+    The bend's temperature trend goes from -0.553 per 1000 K to **-0.015**, and
+    its Spearman rho from -0.89 to **+0.01**. That the trend vanishes under a fix
+    derived independently, from reading the source, is the strongest evidence
+    that the fix is the right one.
+  - **A77's grid-wide violation is entirely this.** Its measured indices stand;
+    its open A/B question is closed against both. Its statement that the trend
+    "enters at or above the ACF -> cross-section step" was correct, and the
+    answer is the step itself.
+
+  **What the fix does not repair, and it is now the open question.** With the
+  spare factor removed, the first-principles bands sit at a **uniform ~0.3 of the
+  line list** once the monomer dipole factor is divided out — 0.30 in rotation,
+  0.34 in bend, 0.37 in stretch — flat in temperature and consistent across
+  bands. A76's rotation deficit therefore deepens from 2.6x to **3.3x** rather
+  than closing. A frequency-independent factor of three is the signature of a
+  normalisation, not of a dipole surface. The line-66 window sets an absolute
+  constant and is the obvious suspect, but it cannot simply be swapped: the
+  half-window alternatives change the band integrals by 4.5x, 30.5x and 82.5x
+  — strongly frequency-dependent, nothing like a uniform 3.3x — and they fail
+  the constancy test above, so they are not a correction. **A79 should derive
+  the absolute normalisation of `beta omega^2 Smm / (3 eps0 c N)` from first
+  principles and compare it against the measured 3.0e-6, the one number that
+  would settle both the window and the factor of three.** Do not treat the 0.3
+  as a dipole-model result until then.
+
+  **Two provenance notes, neither affecting the above.** (i) The supplied
+  `T2000_rho300_05fs/opacity_v3.npz` carries the **legacy x1000** error in
+  `alpha` and `kappa` while its `sigma` is correct and identical to the delivered
+  file; the internal check `alpha = n sigma` catches it, and **all 52 delivered
+  files pass that check**, so the paper's grid is clean and only the bundled cell
+  is stale. (ii) The delivered grid is **mixed in box size**: 39 files carry
+  N = 64 and 13 carry N = 216, and `mace_opacity.py` takes N from the command
+  line with a default of 64. For the three rho = 30 cells N = 216 is right — the
+  mean cell dipole 5.267 e.A implies 1.87 D per molecule, in the range expected
+  for near-isolated water (gas phase 1.85 D), whereas N = 64 would imply 3.43 D,
+  which no water molecule has; this discriminates N but says nothing about how
+  well the model extrapolates — but the two
+  `*_BAD64` directories show the pipeline has been run with a wrong N before
+  (they carry N = 256 and different dipole series, and were not used here).
+  Harry should confirm the box size of the 13 N = 216 cells against their run
+  records; `sigma ~ 1/N`, so a wrong N is a factor of 3.4 in kappa.
+
+  **Gates.** `validation/test_a78_dipole_sum_rule.py` adds four: the formula as
+  read reproduces the delivered `sigma_raw` (<= 1e-5; measured 1.7e-7); the
+  dipole series satisfies the sum rule (|p| < 0.3; measured <= 0.196); the band
+  integrals are recovered from the dipole series at a temperature-independent
+  ratio (spread < 10%; measured <= 5.4%); and the delivered bend integral still
+  carries the spare correction (index < -0.5; measured -0.741), so an upstream
+  fix cannot pass unnoticed.
+
+  These gates read the bundle, so `ed_data/arc_a78/` is tracked in full, and
+  `.gitignore`'s global `*.npz` is lifted inside `ed_data/` exactly as A69
+  lifted the PNG rule there: the seven `opacity_v3.npz` are gate inputs and
+  provenance, not run outputs. 6.8 MB, largest file 720 kB, so no git-LFS.
+
 ## 2026-09-30 (tracing the sum-rule violation: grid-wide, and half of A76's index was a formula assumption)
 
 - **A77 — The violation is real, it is grid-wide rather than dilute-only, and it
@@ -13,6 +176,10 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   that unverified equivalence, not on a measurement.**
   `tools/sum_rule_trace.py` -> `outputs/sum_rule_trace.json`; two gates in
   `validation/test_sum_rule.py`. Existing data only; no manuscript changes.
+
+  *Superseded in part by A78, which read the production script: it is neither
+  candidate form, but form B times a second `Q_harmonic`. The measured indices
+  here stand; the open A/B question is closed.*
 
   **(1) The production formula cannot be read here, and A76 cited a convergence
   script for it.** The production chain is
@@ -177,6 +344,11 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   sum rule they should obey requires T^0.**
   `tools/qcf_calibration.py` -> `outputs/qcf_calibration.json`. Existing data
   only; no new runs.
+
+  *Superseded in part by A78: the production spectra carry `Q_harmonic` twice,
+  so the operation needed was a division, not any of the three multiplications
+  tested here. The conclusion -- that no correction helps -- stands; the reason
+  given for it does not.*
 
   A75 established that the delivered spectra carry `alpha = w (1 - exp(-x)) I_cl`
   — the detailed-balance factor with **Q = 1 on the lineshape** — and that the

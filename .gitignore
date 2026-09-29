@@ -16,6 +16,10 @@
 # The ARC pull is provenance for the Extended Data: its figures are part of
 # the record, so the PNG rule above is lifted inside it.
 !ed_data/**/*.png
+# A78's bundle carries the production dipole series and the spectra they
+# produce. These are inputs to a gate, not run outputs, so the *.npz rule is
+# lifted inside the pull too (A78).
+!ed_data/**/*.npz
 
 # Python
 __pycache__/
