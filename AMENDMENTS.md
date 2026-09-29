@@ -4,6 +4,101 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the smoothing width cannot be chosen from a 30 ps record)
+
+- **A82 — No width satisfies both of the brief's criteria, and the reason is not
+  the width. sd = 10 cm^-1 meets them at five of the six cells; the sixth,
+  (1000 K, 10 kg m^-3), carries a 4.4% smoothing bias against an **8.0%
+  statistical uncertainty**, so the 2% criterion is being applied below the
+  noise. The 30 ps records cannot determine kappa_R to 2% anywhere in the dilute
+  corner. Reporting and stopping before propagation, as the brief directs.**
+  `tools/smoothing_width.py` -> `outputs/smoothing_width.json`. Nothing
+  propagated; the registry is still on v3.
+
+  **(1) The study.** Six cells, seven widths, A81's estimator throughout
+  (Hann-tapered periodogram, `sum(w^2)` normalisation, one harmonic correction)
+  with the **discrete-derivative prefactor** `[2 sin(w dt/2)/dt]^2` the brief
+  specifies. Four quantities per cell and width:
+
+  | quantity | how |
+  |---|---|
+  | as delivered | kappa_R of the smoothed tapered periodogram |
+  | noise-corrected | x `nu/(nu-2)`, since kappa_R integrates `1/kappa` and `E[1/S_hat] = (1/S) nu/(nu-2)` |
+  | statistical uncertainty | from the two 15 ps halves |
+  | smoothing bias | against a datum at sd = 2 |
+
+  with `nu = 6 . 2 s sqrt(pi) / (1.5 dnu_fft)` — 6 for three Cartesian
+  components of a chi^2_2 periodogram, the Gaussian kernel's effective bin
+  count, and 1.5 for the Hann taper's noise-equivalent bandwidth. `nu` is the
+  same for every cell (1.0159 at sd = 10) because every record is 60002 frames
+  at 0.5 fs. The analytic `nu` is used only for the bias it predicts; every
+  error bar is the empirical half-record one.
+
+  **Two corrections to how those were first computed.** The half-record spread
+  is `sqrt(2) sigma_15 / kappa` and `sigma_30 = sigma_15/sqrt(2)`, so the
+  uncertainty on the full record is the spread **divided by two**, not the
+  spread. And the Welch-8 reference, though nearly noise-free, has **5.0 cm^-1**
+  intrinsic resolution against the full record's 1.11, so its sd = 2 value is
+  already smoothed to an effective ~5.4 cm^-1: **it cannot certify a 2% bias for
+  any width near 5, whatever the data say.** The verdict below therefore uses
+  the *full-record noise-corrected* value at sd = 2 as the bias datum, which is
+  properly resolved at the cost of being noisy; Welch is kept as a cross-check
+  and gives the same ordering.
+
+  **(2) The verdict.** Worst case over the six cells:
+
+  | sd (cm^-1) | worst step | worst bias | worst statistical | cells passing |
+  |---|---|---|---|---|
+  | 5 | 2.2% | 2.2% | 8.3% | 5/6 |
+  | 7.5 | 1.2% | 3.4% | 8.1% | 5/6 |
+  | **10** | **1.0%** | **4.4%** | **8.0%** | **5/6** |
+  | 15 | 1.7% | 6.2% | 7.7% | 5/6 |
+  | 20 | 1.8% | 8.1% | 7.5% | 3/6 |
+  | 30 | 4.5% | 13.0% | 7.5% | 2/6 |
+  | 40 | 5.8% | 19.5% | 7.5% | 2/6 |
+
+  **No width passes at all six cells, so A82 stops.** But the failure is one
+  cell, not a trend: at sd = 10 the bias is 0.7-1.5% at (700, 60), (1500, 300),
+  (2000, 1200), (2500, 500) and (3000, 2228.71), and **4.4% at (1000, 10)**
+  alone — the grid's most dilute corner, where the transparency windows are
+  deepest and the harmonic mean is most exposed to them. Widths of 5 to 15 all
+  pass five of six; only at 20 and above does the bias spoil the denser cells
+  too.
+
+  **The binding constraint is the record length, not the width.** The
+  statistical uncertainty on kappa_R from a 30 ps record is **1.1% to 7.9%,
+  median 6.2%**, and 8.0% at the failing cell — three to four times the
+  tolerance being tested. Reaching 2% needs **9.5x the record: ~285 ps at the
+  median cell and ~463 ps at the worst**, against the 30 ps in hand. No choice
+  of smoothing width can recover what the record does not contain.
+
+  **The error model closes, which is the positive result.** At (1000, 10) the
+  noise-corrected kappa_R rises **19.5%** from sd = 2 to sd = 40, and the
+  independently measured Welch smoothing bias over the same range is **18.4%**.
+  The two agree to 1.1%, so the whole width dependence of kappa_R is smoothing
+  bias plus a well-modelled chi^2 noise term and nothing else. **The 30 ps
+  record's spectral *shape* is sound; only its *length* is limiting.** That is a
+  different and much better position than A80 or A81 were in.
+
+  **(3) Not done.** Propagation, v5, the registry switch and the whole downstream
+  list are untouched, per the brief's instruction to stop if (2) fails. The
+  registry still points at v3 and the A80 gate that asserts it still passes.
+
+  **What A83 should do, and the choice is Harry's.**
+  (a) Extend the dilute trajectories to ~300-500 ps — the only route to the 2%
+  the criteria ask for, and an ARC job of about ten times the original cost for
+  the dilute cells alone (the dense cells are already at 1-4%).
+  (b) Adopt **sd = 10 cm^-1** and propagate with the systematic stated: +4.4%
+  smoothing bias worst case, 8% statistical at the dilute corner, both quoted
+  beside A71's wing cut-off. sd = 10 is the widest width that is stationary to
+  1.0% and passes five of six cells, and it is half the delivered 20.
+
+  **One inconsistency to settle either way.** The brief specified the
+  discrete-derivative prefactor; A81's estimator and the v4 files use the
+  continuous `w^2`. The two differ by **-0.71% to -1.26% on kappa_R** across the
+  six cells, always negative. It is small, but v5 must pick one and every
+  downstream number must come from the same choice.
+
 ## 2026-09-30 (there is no noise floor: it was spectral leakage)
 
 - **A81 — The floor that held A80 is not dipole-model noise and not
