@@ -167,14 +167,19 @@ def gate_band_integrals(root: Path, man: dict) -> dict:
         dts = meta["dt_fs"] * 1e-15
         omega = 2.0 * np.pi * np.fft.rfftfreq(n, d=dts)
         wn = omega / (2.0 * np.pi) / ds.C_CM
+        # The spectrum is a Hann-tapered periodogram (A81), so the reference
+        # <|Mdot_band|^2> has to be taken on the same tapered record; comparing
+        # it against the untapered series is apples to oranges and shows a
+        # spurious 3-7%.
+        taper = np.hanning(n)
         rec = {"T_K": t_k, "rho_kg_m3": 30.0, "ratio": {}}
         for band, (lo, hi) in BANDS_CM.items():
             mask = (wn >= lo) & (wn <= hi)
             total = 0.0
             for k in range(3):
-                f = np.fft.rfft(mx[:, k]) * (1j * omega)
+                f = np.fft.rfft(mx[:, k] * taper) * (1j * omega)
                 f[~mask] = 0.0
-                total += float(np.mean(np.fft.irfft(f, n=n) ** 2))
+                total += float(np.sum(np.fft.irfft(f, n=n) ** 2) / np.sum(taper ** 2))
             mdot = (1.0 / (K_B * t_k)) * total / meta["N"]
             sel = (r["wn"] >= lo) & (r["wn"] <= hi)
             got = float(np.trapezoid(r["sigma_raw"][sel], r["wn"][sel]))
@@ -203,15 +208,20 @@ def gate_noise_floor(root: Path, man: dict) -> dict:
         m, meta = _series(root, man, t_k, rho)
         r = spectrum_from_dipoles(m, t_k, meta["dt_fs"], meta["N"], rho / 1000.0,
                                   smooth_sigma_cm=meta["smooth_cm"])
-        mx = np.asarray(m, float) * ds.EANG_TO_DEBYE * ds.DEBYE_TO_CM
-        mx = mx - mx.mean(0)
-        var = float(np.sum(np.mean(mx ** 2, axis=0)))
-        itilde = R2_UNCORRELATED * var * meta["dt_fs"] * 1e-15
+        # A81: the floor is MEASURED from the spectrum's own flat tail, not
+        # assumed from the lag test. A75 treated the dipole model's residual as
+        # white noise in M; it is a smooth function of configuration, so it
+        # distorts the bands rather than raising a floor, and the floor A80 saw
+        # was the untapered periodogram's omega^-2 leakage instead.
+        omega_f, itilde_f = two_sided_power_spectrum(m, meta["dt_fs"] * 1e-15)
+        wn_f = omega_f / (2.0 * np.pi) / ds.C_CM
+        sig_full = ((1.0 / (K_B * t_k)) * omega_f ** 2 * itilde_f
+                    / (6.0 * ds.EPS0 * ds.C_VAC * meta["N"]) * 1e4)
+        edges = np.arange(6000.0, 32001.0, 2000.0)
+        floor = min(float(np.median(sig_full[(wn_f >= lo) & (wn_f < hi)]))
+                    for lo, hi in zip(edges[:-1], edges[1:]))
         wn = r["wn"]
-        omega = 2.0 * np.pi * wn * ds.C_CM
-        sig_f = ((1.0 / (K_B * t_k)) * omega ** 2 * itilde
-                 / (6.0 * ds.EPS0 * ds.C_VAC * meta["N"]) * 1e4)
-        _, kap_f = ds.sigma_to_alpha_kappa(sig_f, rho / 1000.0)
+        _, kap_f = ds.sigma_to_alpha_kappa(np.full_like(wn, floor), rho / 1000.0)
         sel = (wn >= WINDOW_CM[0]) & (wn <= WINDOW_CM[1])
         i_mark = int(np.argmin(np.abs(wn - MARK_CM)))
         i_min = int(np.where(sel)[0][np.argmin(r["kappa"][sel])])
@@ -220,21 +230,18 @@ def gate_noise_floor(root: Path, man: dict) -> dict:
         # every water band is the better estimate of their floor -- an upper
         # bound at hot points, where real hot-band absorption lives up there,
         # but close to pure noise at the cold dilute ones.
-        hi_m = (wn >= 4500.0) & (wn <= 5800.0)
-        implied = R2_UNCORRELATED * float(np.median(r["sigma"][hi_m])
-                                          / np.median(sig_f[hi_m]))
+        implied = floor
         out["points"].append({
             "T_K": t_k, "rho_kg_m3": rho,
             "margin_at_2550": float(r["kappa"][i_mark] / kap_f[i_mark]),
             "margin_at_window_minimum": float(r["kappa"][i_min] / kap_f[i_min]),
             "noise_fraction_at_window_minimum": float(kap_f[i_min] / r["kappa"][i_min]),
-            "r2_implied_by_plateau": implied,
-            "margin_at_window_minimum_using_plateau_r2": float(
-                r["kappa"][i_min] / (kap_f[i_min] * implied / R2_UNCORRELATED))})
+            "measured_floor_sigma": implied,
+            "margin_at_2550_measured": float(r["kappa"][i_mark] / kap_f[i_mark])})
     a = [p["margin_at_2550"] for p in out["points"]]
     b = [p["margin_at_window_minimum"] for p in out["points"]]
-    c = [p["margin_at_window_minimum_using_plateau_r2"] for p in out["points"]]
-    out["worst_margin_using_plateau_r2"] = float(min(c))
+    c = [p["margin_at_2550_measured"] for p in out["points"]]
+    out["worst_margin_at_2550_measured"] = float(min(c))
     out["worst_margin_at_2550"] = float(min(a))
     out["worst_margin_at_window_minimum"] = float(min(b))
     out["passes"] = bool(min(a) >= FLOOR_MARGIN_REQUIRED
@@ -333,8 +340,7 @@ def _print(doc: dict) -> None:
     print(f"    (iii) noise floor     worst margin {f['worst_margin_at_2550']:.1f}x "
           f"at 2550, {f['worst_margin_at_window_minimum']:.1f}x at the window "
           f"minimum  {'PASS' if f['passes'] else 'FAIL'}")
-    print(f"          with the plateau-implied r2 instead: "
-          f"{f['worst_margin_using_plateau_r2']:.1f}x")
+    print(f"          (floor measured from the spectrum's own flat tail, A81)")
     if not f["passes"]:
         bad = sorted(f["points"], key=lambda p: p["margin_at_window_minimum"])[:4]
         for p in bad:

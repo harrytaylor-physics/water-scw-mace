@@ -4,6 +4,145 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (there is no noise floor: it was spectral leakage)
+
+- **A81 — The floor that held A80 is not dipole-model noise and not
+  discontinuities. It is the untapered periodogram's own leakage: the record's
+  end-to-end mismatch acts as a step, leaks as omega^-2, and the omega^2 of the
+  absorption formula turns that into a *flat floor in sigma* straight across the
+  transparency windows. A Hann taper on the time series removes it. The margin
+  goes from 1.8x to **1243x** and all three A80 gates pass.**
+  `tools/floor_identify.py` -> `outputs/floor_identify.json`; the estimator in
+  `opacity/dipole_spectrum.py` now tapers; `ed_data/arc_dipoles_sha256.json` is
+  the tracked fingerprint of the bundle. **Nothing propagated.**
+
+  **(1) Not discontinuities.** Across all 52 cells and **3,109,989** consecutive
+  frame steps there is **not one** outlier above 10 sigma. The largest |dM|
+  anywhere is **0.199** of the box length, against the ~0.4-0.8 L a wrapped
+  atomic charge would give — at the dilute cells that would be a 450-sigma
+  event, and there are none. The magnitudes do not cluster at multiples of
+  q x L; the largest step in each cell sits at a median of **5.53** MAD-sigma
+  (range 4.20-7.59), against the ~5.1 expected for the maximum of 60000 draws
+  from a chi distribution with three degrees of freedom — a slightly heavier
+  tail than Gaussian, worth noting, but nothing like a wrap. The dipole model
+  is not being evaluated across a periodic image, so there is nothing to unwrap.
+
+  **(2) The tail exponent, and the trap in measuring it.** Fitting
+  `sigma ~ nu^m` above 6000 cm^-1 gave a slope that *rose* with frequency —
+  -0.21, +0.26, +0.67, +1.36 across the four bands to Nyquist at (700, 30) —
+  which is not a power law at all. The cause was the prefactor: writing
+  `sigma ~ omega^2 S` uses the **continuous** omega^2 on a series sampled at
+  0.5 fs, where the right factor is `[2 sin(omega dt/2)/dt]^2`. Under the
+  discrete factor the same bands give **-0.30, +0.01, +0.05, +0.04** — flat.
+  Across all 52 cells the near-Nyquist discrete exponent has median **-0.04**.
+
+  Flat in the discrete sigma means `S ~ omega^-2`, which is the brief's *step*
+  signature — and (1) says there are no large steps, so it had to be many small
+  ones. But dM is **smooth**: its lag-1 autocorrelation is 0.91-0.98, with only
+  0.2-4% of its power in the flat tail. Something was producing an omega^-2
+  tail without any step in the data.
+
+  **The step is the record boundary.** A discrete Fourier transform treats the
+  record as periodic, so the mismatch between the first and last frame *is* a
+  step discontinuity, once per record, and it leaks as omega^-2 — exactly the
+  observed shape. Two tests confirm it and exclude the alternatives:
+
+  - **It scales with the boundary mismatch, which is the proof rather than the
+    inference.** Leakage from a step of size `Delta = M[last] - M[first]` goes as
+    `Delta^2 / n`. Across all 52 cells the measured untapered floor tracks that
+    prediction with a log-log correlation of **r = 0.973** and a slope of
+    **0.896** against the exact 1.0 — one mechanism, over four orders of
+    magnitude in floor level.
+  - **It falls with record length.** Halving and quartering the series raises
+    the apparent floor (60002 frames against 15000: **0.06 to 0.69**). Genuine
+    additive model noise is a bias in the expected spectrum and would not move;
+    leakage from a single boundary mismatch dilutes as the record lengthens.
+  - **It is not the thermostat.** Production is **NVE VelocityVerlet**
+    (`run_prod_md_05fs.py` line 50); Langevin appears only in equilibration at
+    lines 47-48. And it is not float32: the implied step is 4000-25000x the
+    float32 ulp of the stored dipoles.
+
+  **The repair is a taper, and it is exact.** Applying a Hann window to the time
+  series and normalising by `sum(w^2)` — the normalisation that keeps Parseval
+  exact for a tapered record — drops the high-frequency floor by **three to five
+  orders of magnitude** (ratios 1e-5 to 0.08) while leaving every band integral
+  unchanged:
+
+  | gate | A80 (untapered) | A81 (tapered) |
+  |---|---|---|
+  | (i) oscillator vs textbook band strength | 0.9939 | 1.0201 |
+  | (ii) band integral vs `beta<Mdot^2>` | 0.14% | **0.09%** |
+  | (iii) floor margin at the window minimum | **1.8x** | **1243x** |
+
+  Gate (i) moves the wrong way, from 0.6% to 2% off, and the reason is the
+  taper's ~1.5x noise-equivalent bandwidth: the synthetic test's line is 27 cm^-1
+  wide, comparable to the widened resolution, so the trapezoid over it integrates
+  slightly differently. On the real spectra, whose features are far broader than
+  the resolution, the effect is smaller — which gate (ii) confirms at 0.09%.
+
+  Gate (ii) needs one care: the reference `beta <|Mdot_band|^2>` must be taken on
+  the *same tapered* record. Compared against the untapered series it shows a
+  spurious 3-7%, which is what the A80 tool reported on first being handed a
+  tapered spectrum; taper-consistent, it is 0.09%.
+
+  **(3) What subtraction would have done, and why it was the wrong repair.**
+  Before the taper was found, the measured flat floor was subtracted as a
+  constant (its level the lowest 2000-cm^-1 binned median between 6000 cm^-1 and
+  Nyquist, uncertainty 0.3-4.1%). It removed essentially the whole window: the
+  margin went from 0.8x to **0.0x**, kappa_R fell by a median of **62%** at
+  rho <= 60 and 35% at 60-300 while kappa_P moved 1%, and 25 of 52 cells lost
+  more than 20% of kappa_R. That is the signature of subtracting something that
+  is not additive noise but an artefact of the estimate itself. The record is
+  kept here because it is the measurement that showed the subtraction route was
+  wrong.
+
+  **A75 and A52 are both superseded.** Both modelled the dipole model's residual
+  as **white noise in M**, which gives `sigma ~ nu^2` and a floor that must be
+  scaled down from the 3900-5500 cm^-1 estimation window to 2550. Neither part
+  of that survives: the residual is a smooth function of configuration, so it
+  distorts the bands rather than raising a floor, and the flat tail that was
+  taken for it was the estimator's leakage. **There is no white-noise floor on
+  these spectra.** A52's original worry, A75's reconstruction of it and A80's
+  blocker are one artefact seen three times.
+
+  **(4) Plain statement.** The cause is spectral leakage from the untapered
+  periodogram, not the dipole model, not the dynamics and not periodic-image
+  wrapping. Corrected with a Hann taper, the floor margin at the worst cells is
+  **1243x** at the window minimum and **2390x** at 2550 cm^-1, against the 10x
+  required — three orders of magnitude of headroom, at every one of the 14
+  dilute points. **Propagation can proceed on this criterion**, and A81 does not
+  propagate because it was told not to: the registry still points at v3, no
+  cache is cleared and nothing downstream has been rerun. A gate asserts it.
+
+  **The window depth is real, not the taper's main lobe.** A Hann taper trades
+  -13 dB sidelobes for -31 dB but widens the main lobe, which could fill a deep
+  window from its edges. Against a Welch estimate (8 segments, 50% overlap —
+  coarser resolution, independent noise statistics) the tapered sigma at
+  2550 cm^-1 agrees to **6-12%** at (700, 30), (1000, 10) and (2000, 30). The
+  windows are as deep as they look.
+
+  **One thing to carry into A82, and it is not small.** With the leakage gone
+  the windows are genuinely deep, so kappa_R is now sensitive to the smoothing
+  width: sd 10 against sd 40 moves it by **13.2%**, where untapered v4 gave 4.3%
+  and kappa_P is unmoved at 0.3%. Worse, it does not converge. At (700, 30):
+
+  | sd (cm^-1) | 5 | 10 | 15 | 20 | 30 | 40 |
+  |---|---|---|---|---|---|---|
+  | kappa_R | 3.405 | 3.494 | 3.561 | 3.629 | 3.797 | 4.026 |
+
+  kappa_R rises monotonically and is **still moving by 2.6% between sd 5 and 10**,
+  so there is no plateau to sit on and the delivered sd = 20 is a choice rather
+  than a converged value — it is 6.6% above sd 5 and 11% below sd 40. Which
+  width is right is a physics question (the true linewidth supportable by a 30 ps
+  record), not a taste one. **A82 must settle it before the release tables are
+  rebuilt**, and until then it belongs beside A71's wing cut-off as a stated
+  systematic of the same size.
+
+  **The bundle's fingerprint.** `ed_data/arc_dipoles/` is gitignored as raw data
+  (A80), so `ed_data/arc_dipoles_sha256.json` carries a tracked SHA-256 per cell
+  with byte counts — 67 series — so the inputs behind A80 and A81 can be
+  verified without the 41 MB being in git.
+
 ## 2026-09-30 (the estimator replaced; propagation held at the noise floor)
 
 - **A80 — The fixed estimator is built, gated and written as v4. Two of the

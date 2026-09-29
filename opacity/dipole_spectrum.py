@@ -27,10 +27,17 @@ appears here as 1/6 together with the two-sided convention; ``Itilde_2`` the
 **two-sided** transform of ``C``; refractive index 1; and ``sigma`` per molecule.
 The harmonic correction enters **once**, implicitly, as the cancellation above.
 
-``Itilde_2`` is estimated **window-free**, by the periodogram of the full
-mean-removed series, which satisfies Parseval exactly and so needs no lag window
-and no autocorrelation estimator. The zero clip is dropped: a periodogram is
-non-negative by construction, so the clip was inert here in any case.
+``Itilde_2`` is estimated by the periodogram of the mean-removed series under a
+**Hann taper**, normalised by the window's summed square so that Parseval is
+preserved exactly (A81). The taper is not cosmetic. An untapered periodogram
+treats the record as periodic, so the mismatch between its two ends acts as a
+step discontinuity and leaks power as ``omega^-2`` -- which, multiplied by the
+``omega^2`` of the absorption formula, is a **flat floor in sigma** right across
+the transparency windows. A80 measured that leakage, mistook it for dipole-model
+noise, and held propagation on it; A81 identified it and the taper removes it,
+dropping the high-frequency floor by three to five orders of magnitude while
+leaving every band integral unchanged to 0.09%. The zero clip is dropped: the
+estimate is non-negative by construction, so the clip was inert in any case.
 
 Everything downstream of the estimator is kept as delivered -- the 1 cm^-1
 output grid, the Gaussian smoothing, the number density and the mass-opacity
@@ -59,18 +66,25 @@ WN_STEP_OUT = 1.0
 ROSS_WN_MIN, ROSS_WN_MAX, ROSS_FLOOR_FRAC = 100.0, 5000.0, 1.0e-6
 
 
-def two_sided_power_spectrum(m_eang, dt_s):
-    """Itilde_2(w) of the trace ACF, as a periodogram of the full series.
+def two_sided_power_spectrum(m_eang, dt_s, taper=True):
+    """Itilde_2(w) of the trace ACF, as a tapered periodogram (A81).
 
-    Returns (omega, Itilde_2) on the positive rfft frequencies. Parseval is
-    exact: (1/2pi) * 2 * sum Itilde_2 dw = <|M|^2>, so no window or ACF
-    estimator is involved and no normalisation is left implicit.
+    With ``taper``, a Hann window is applied to the time series and the estimate
+    is divided by ``sum(w**2)`` rather than ``n``, which is the normalisation
+    that keeps Parseval exact for a tapered record. Without it the record's
+    end-to-end mismatch leaks as omega^-2 and shows up as a flat floor in sigma
+    (A80's "noise floor"); with it that floor falls by three to five orders of
+    magnitude and the band integrals are unchanged.
+
+    ``taper=False`` reproduces the A80 estimator and is kept for the A81
+    diagnostic that identifies the leakage.
     """
     m = np.asarray(m_eang, dtype=float) * EANG_TO_DEBYE * DEBYE_TO_CM
     m = m - m.mean(0)
     n = len(m)
-    ft = np.fft.rfft(m, axis=0)
-    itilde = (dt_s / n) * np.sum(np.abs(ft) ** 2, axis=1)
+    w = np.hanning(n) if taper else np.ones(n)
+    ft = np.fft.rfft(m * w[:, None], axis=0)
+    itilde = dt_s * np.sum(np.abs(ft) ** 2, axis=1) / np.sum(w ** 2)
     omega = 2.0 * np.pi * np.fft.rfftfreq(n, d=dt_s)
     return omega, itilde
 

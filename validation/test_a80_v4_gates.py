@@ -7,19 +7,13 @@ estimator, which no scalar can repair because kappa_R is a lineshape quantity.
 harmonic correction, no zero clip). A80 gates that replacement before anything
 downstream is allowed to read it.
 
-Two of the three gates pass and are pinned here. The third fails, and is
-recorded as a strict xfail rather than deleted or loosened: the A75 dilute noise
-floor is **not** far below the transparency-window opacity once the estimator is
-fixed. v3's clip at zero had been rectifying noise upward and the window at the
-same time, so v3's window opacity was never a clean measurement and A75's
-comparison against it was not well posed. v4 is the first version where the
-question can be asked, and the answer is that at (1000 K, 10 kg m^-3) the floor
-is 1.8x below the deepest point of the window -- 55% of what is there is
-dipole-model noise -- against the 10x the brief requires.
+All three gates pass. The third was A80's blocker and A81 removed it: the floor
+A80 measured was spectral leakage from an untapered periodogram, not dipole-model
+noise, and a Hann taper on the time series drops it by three to five orders of
+magnitude while leaving the band integrals exact. The margin is now ~1200x.
 
-When the floor is reduced (longer trajectories or a better dipole model, both
-ARC jobs), this xfail flips to a pass and propagation can proceed. Until then
-the registry still points at v3 and nothing downstream has moved.
+Propagation is still not done -- A81 was told not to -- so the registry still
+points at v3 and nothing downstream has moved. A gate asserts that.
 """
 
 from __future__ import annotations
@@ -64,15 +58,21 @@ def test_band_integrals_equal_the_dipole_derivative_variance(doc):
     assert g["passes"], f"worst deviation {100*g['worst_deviation']:.2f}% exceeds 2%"
 
 
-@pytest.mark.xfail(strict=True,
-                   reason="A80: with the estimator fixed, the A75 dilute noise "
-                          "floor is 1.8x below the window minimum at (1000, 10), "
-                          "not the 10x required. v3's windows were never a clean "
-                          "measurement, so A75's margin was not well posed. "
-                          "Propagation is held until the floor is reduced.")
 def test_the_dilute_noise_floor_stays_ten_times_below_the_window(doc):
+    """Was A80's blocker; A81 identified the cause and it now passes by ~1200x.
+
+    The floor A80 measured was the untapered periodogram's omega^-2 leakage --
+    the record's end-to-end mismatch acting as a step -- which the omega^2 of
+    the absorption formula turns into a flat floor across the transparency
+    windows. A Hann taper on the time series removes it. The floor here is now
+    MEASURED from the spectrum's own flat tail rather than assumed from the lag
+    test, because A75's white-noise-in-M model of the dipole residual was wrong
+    in kind: a smooth function of configuration distorts the bands, it does not
+    raise a floor.
+    """
     g = doc["gates"]["noise_floor"]
-    assert g["worst_margin_at_window_minimum"] >= FLOOR_MARGIN_REQUIRED
+    assert g["worst_margin_at_window_minimum"] >= FLOOR_MARGIN_REQUIRED, (
+        f"margin {g['worst_margin_at_window_minimum']:.1f}x")
 
 
 def test_nothing_has_been_propagated(doc):
