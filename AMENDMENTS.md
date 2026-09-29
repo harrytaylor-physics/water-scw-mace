@@ -4,6 +4,175 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the normalisation is right; the estimator is not, and A80 is blocked on it)
+
+- **A79 — The production prefactor is exactly correct: the derived
+  normalisation factor is 1. The factor of ~3.4 A78 left open is not a
+  normalisation at all but the line-66 window and the line-79 clip, worth a
+  measured 3.52. With it, the dilute bands land on the monomer test's
+  expectation. The N audit is clean. But A80's recipe cannot proceed as
+  written: a scalar on `sigma_raw` leaves a **40% temperature swing in kappa_R**
+  along the rho = 30 row, the quantity the manuscript rests on.**
+  `tools/normalisation_check.py` -> `outputs/normalisation_check.json`.
+  Existing data only; no manuscript changes.
+
+  **(a) The derivation.** Conventions, stated once: SI throughout; `M` is the
+  **total cell** dipole in C m and `N` the molecule count;
+  `C(t) = <M(0).M(t)>` is the **trace**, summed over the three Cartesian
+  components and not averaged, so the orientational average of the field
+  projection supplies the explicit 1/3;
+  `Itilde_2(w) = int_{-inf}^{inf} dt e^{iwt} C(t)` is the **two-sided**
+  transform, equal to `2 Itilde_1(w)` since C is real and even; the refractive
+  index is 1; and sigma is per molecule, so the cell result is divided by N.
+
+  The quantum expression is
+  `alpha(w) = w (1 - e^-x) Itilde_qm(w) / (3 eps0 hbar c V)` with
+  `x = beta hbar w`. The harmonic correction is `Itilde_qm = Q_h Itilde_cl`,
+  `Q_h = x/(1 - e^-x)`, so the `(1 - e^-x)` **cancels**, leaving
+
+  | form | expression |
+  |---|---|
+  | two-sided | `sigma(w) = beta w^2 Itilde_cl,2(w) / (6 eps0 c N)` |
+  | one-sided | `sigma(w) = beta w^2 Itilde_cl,1(w) / (3 eps0 c N)` |
+
+  The 6-versus-3 is exactly the one-/two-sided convention and nothing else.
+  Production line 82 writes the **one-sided** form, and its `Smm` at line 66 is
+  `dt Re rfft(Cmm . w)` — a one-sided cosine transform. **The prefactor
+  `beta w^2 / (3 eps0 c N)` and the `1e4` (m^2 -> cm^2) are both correct, term
+  for term. The derived factor by which production differs is 1.**
+  `spectra.py` is not in this chain at all: it computes
+  `alpha = w (1 - e^-x) I` for diagnostics and writes `spectrum.npz`; nothing
+  downstream of the opacity grid reads it.
+
+  **This is not taken on trust from a remembered reference form.** The
+  one-/two-sided factor of two is exactly where these derivations go wrong, so
+  it is settled numerically: a thermostatted classical harmonic oscillator of
+  known `dmu/dq` and reduced mass, integrated and compared against the textbook
+  classical band strength `A = (dmu/dq)^2 / (12 eps0 c^2 m)` (McQuarrie; the
+  same constant behind the km/mol intensities quantum-chemistry codes print).
+  The two-sided/6 form reproduces it to **0.994**; the two-sided/3 form gives
+  **1.988**. Equipartition in the test integrator holds to 0.1%.
+
+  **So the ~3.4 A78 could not name is not a physical constant.** It is the
+  spectral estimator: the symmetric `np.hanning(L)` on a one-sided ACF (line 66)
+  followed by the clip at zero (line 79). Measured against the window-free
+  periodogram estimate of `Itilde_2`, which satisfies Parseval exactly and needs
+  no lag window, the shortfall is
+
+  | cell | N | rho | rotation | bend | stretch |
+  |---|---|---|---|---|---|
+  | T700_rho30 | 216 | 30 | 3.487 | 3.525 | 3.699 |
+  | T1000_rho30 | 216 | 30 | 3.574 | 3.618 | 3.508 |
+  | T2000_rho30 | 216 | 30 | 3.390 | 3.473 | 3.516 |
+  | T1000_rho300 | 64 | 300 | 3.363 | 3.594 | 3.470 |
+  | T2000_rho300 | 64 | 300 | 3.581 | 3.505 | 3.643 |
+
+  median **3.5155**, range 3.363-3.699, **10% spread over two densities, three
+  temperatures and three bands**. The brief asked for a derived factor and said
+  not to fit one; the honest report is that the derived factor is 1 and this one
+  is **measured**, so it is quoted as a measurement with its scatter and not as
+  a constant.
+
+  **(b) The dilute-limit check, and it agrees with (a).** Dividing out the spare
+  `Q_harmonic` and applying 3.5155, FP/HITEMP over the 13 dilute points:
+
+  | band | median | range | monomer-test expectation | ratio |
+  |---|---|---|---|---|
+  | rotation 50-1100 | **1.028** | [0.946, 1.182] | 0.97 | 1.06 |
+  | bend 1000-2400 | **1.539** | [1.274, 1.667] | 1.25-1.32 | 1.20 |
+  | stretch 2800-4000 | **2.659** | [2.187, 3.039] | 1.7-3.9 | 0.95 |
+
+  The rotation band, whose expectation is the tightest (the model's mu^2 ratio,
+  0.974), lands within **6%**. The stretch lands inside its range. The bend is
+  **20% above** the top of its 1.25-1.32 window. That residual is real rather
+  than estimator noise: truncating the trajectories to 15 ps and 7.5 ps leaves
+  the per-band factors at 3.14-4.08 with no drift and no systematic spread
+  between bands, so the flatness of 3.49/3.52/3.52 is structural and not a
+  property of this record length. 20% is four times the estimator's own 5%
+  scatter — but it is also well inside the uncertainty of the expectation
+  itself, which is a squared derivative ratio read at two bond lengths, so it
+  is recorded and not interpreted. A76's factor-2.6 rotation deficit and
+  A78's uniform 0.3 are both fully explained: they were the estimator, not the
+  dipole model. **(a) and (b) agree, so the brief's stop condition is not
+  triggered.**
+
+  **(c) The N audit is clean; A78's flag is withdrawn.** After both corrections,
+  the rotation-band integral per molecule across all 52 files rises smoothly
+  with density from 4.7e-17 to 2.1e-16 cm^2 cm^-1 — a factor of 4.5, and in the
+  direction expected, since the condensed-phase dipole grows with density. The
+  13 N=216 files span 4.87-6.07e-17 (max/min **1.25**) and the 39 N=64 files
+  4.72-21.3e-17; where the two groups meet in density the ratio of medians is
+  **0.934**, against the **3.375** (or 0.296) a misassigned N would produce.
+  **No cell is flagged.** The step would be unmissable and there is none, at any
+  density. Three of the 13 N=216 cells have local run records (the A78 bundle);
+  all three record N=216, and their mean cell dipole implies 1.87 D per
+  molecule at N=216 against 3.43 D at N=64. The two box sizes are two
+  legitimate production batches.
+
+  **A80 is blocked, on different grounds from the brief's stop condition.**
+  A80 would rescale the delivered `sigma_raw` by a constant. Tested against the
+  honest recomputation from the dipole series, on the five cells where that is
+  possible:
+
+  | cell | kappa_R scalar/recomputed | kappa_P scalar/recomputed |
+  |---|---|---|
+  | T700_rho30 | **0.761** | 0.988 |
+  | T1000_rho30 | **0.870** | 0.985 |
+  | T2000_rho30 | 1.061 | 0.998 |
+  | T1000_rho300 | 1.041 | 0.996 |
+  | T2000_rho300 | 1.043 | 0.980 |
+
+  **The kappa_R error runs with temperature: 0.761 at 700 K to 1.061 at 2000 K
+  along the rho = 30 row — a 40% swing.** That is larger than the factor-2.1
+  bend trend that started this whole chain at A76, and it would have gone
+  straight into every cooling track. kappa_P survives to 2%; kappa_R does not. A
+  scalar restores band integrals, which is what kappa_P is; it cannot restore a
+  lineshape, which is what kappa_R is. kappa_R is set by the transparency
+  windows, where the true sigma is smallest and the clip at zero rectifies noise
+  upward, so the relative bias is largest exactly where kappa_R has its weight.
+  Since kappa_R is what sets the radiative-convective boundaries, the cooling
+  tracks and most of the manuscript's headline numbers, regenerating 52 spectra
+  this way would propagate a 25% temperature-dependent error into all of them,
+  and it would be invisible afterwards because every downstream number would
+  move together and look self-consistent.
+
+  **What A80 needs instead.** The correct operation is not a rescaling but a
+  recomputation: `sigma = beta w^2 Itilde_2 / (6 eps0 c N)` with `Itilde_2`
+  estimated window-free, per cell, from its own dipole series. That needs each cell's own
+  dipole series. This machine has five usable (plus the two `*_BAD64` series,
+  which are different runs at N = 256 and are not usable), so **47 are
+  requested**: `$DATA/scw_prod/<tag>/dipoles.npy` for
+
+  > T650_rho100, T650_rho150, T650_rho300, T650_rho500, T700_rho10, T700_rho60,
+  > T800_rho30, T800_rho100, T800_rho150, T800_rho300, T800_rho500, T1000_rho10,
+  > T1000_rho60, T1000_rho100, T1000_rho129.744, T1000_rho150, T1000_rho500,
+  > T1500_rho10, T1500_rho30, T1500_rho60, T1500_rho150, T1500_rho300,
+  > T1500_rho471.343, T1500_rho800, T1500_rho1200, T2000_rho10, T2000_rho60,
+  > T2000_rho150, T2000_rho500, T2000_rho800, T2000_rho1200, T2250_rho175.545,
+  > T2250_rho1256.23, T2500_rho197.586, T2500_rho300, T2500_rho500,
+  > T2500_rho800, T2500_rho1520.77, T2750_rho222.666, T2750_rho1841.02,
+  > T3000_rho108.796, T3000_rho729.344, T3000_rho810.382, T3000_rho1043.59,
+  > T3000_rho1343.91, T3000_rho1730.66, T3000_rho2228.71
+
+  The local directories spell these with a trailing `_05fs`; either resolves,
+  since `mace_opacity.py` parses `T(\d+(?:\.\d+)?)` and `rho([\d.]+)` out of the
+  basename. **Nothing else is needed**: `N` and `dt_fs` are already carried by
+  each delivered `.npz` (all 52 are `dt_fs = 0.5`; 39 are `N = 64` and 13
+  `N = 216`). With those 47 files A80 becomes a clean rerun of the fixed
+  pipeline and needs **no factor at all**. A79 therefore stops here and
+  regenerates nothing.
+
+  `opacity_pipeline.py` is a copy of an ARC file inside the provenance pull, so
+  it is left byte-identical; the fix belongs upstream, where the reruns happen,
+  and A80 should carry it. Nothing in this amendment applies the 3.5155 to any
+  delivered product: it is a measurement used to test (b) and to decide (a)
+  against (b), not a correction.
+
+  **Gate.** `validation/test_a79_normalisation.py` pins the one-/two-sided
+  factor of two with the synthetic oscillator, since the whole conclusion —
+  that the production prefactor is correct — turns on it and no amount of
+  re-reading the code settles it.
+
 ## 2026-09-30 (the production formula, read: the harmonic correction is applied twice)
 
 - **A78 — `opacity_pipeline.py` multiplies `beta omega^2 Smm`, which is already
