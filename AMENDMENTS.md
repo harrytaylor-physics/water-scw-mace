@@ -4,6 +4,76 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the dilute noise floor, measured rather than assumed)
+
+- **A75 — There is a floor and it is three orders of magnitude below the
+  spectra. A52's worry does not survive contact with the lag-test data.**
+  `tools/floor_check.py` -> `outputs/floor_check.json`. Existing data only.
+
+  A52 built a floor from an amplitude ratio the campaign quoted — 5.75 against
+  12.4 mDebye/atom, so r^2 = 0.215 of the dipole power — spread white over the
+  0.5 fs Nyquist bandwidth, and found that the resulting floor **exceeded** the
+  delivered kappa in the transparency window. A52 recorded that as a
+  contradiction, because an additive white residual cannot exceed the signal it
+  is part of, and made no absolute reliability claim from it.
+
+  **The contradiction was in the input, not the construction.**
+  `ed_data/arc/scw/lagtest_v2.json` carries the residual's own autocorrelation,
+  and the residual is mostly **not** white: ACF at the first lag is 0.9365 at
+  (800 K, 61 kg m^-3) and 0.9552 at (1000, 130), so only **4.5-6.4%** of its
+  variance is uncorrelated. Taking the uncorrelated part,
+  r^2 = residual_variance x (1 - ACF_1) / signal_variance, the two cold cells
+  give **7.26e-5** and **6.79e-5** — agreeing to 7%, so this does not rest on
+  one cell. (The two 2250 K cells give 3.0e-3 and 4.3e-2; they are hot and dense
+  and are not used for the dilute corner.)
+
+  **Both differences from A52 are needed to explain it, and the amplitude ratio
+  is the larger.** Through the same production normalisation:
+
+  | r^2 | floor in the window (cm^2/g) | kappa(2550)/floor |
+  |---|---|---|
+  | A52, 0.215 | 143 - 492 | 0.02 - 0.13 |
+  | A52's ratio x the uncorrelated fraction, 0.0116 | 7.8 - 26.6 | 0.35 - 2.33 |
+  | lag test, 7.0e-5 | **0.046 - 0.157** | **58 - 386** |
+
+  Correcting only the uncorrelated fraction leaves the floor at the kappa level
+  at 9 of the 17 points. The lag test's own total-residual ratio at the cold
+  cells is 1.3e-3 against A52's 0.215, a factor of **162**; the uncorrelated
+  fraction is a further **18.5**. A52's 5.75/12.4 mDebye/**atom** and the lag
+  test's resid/signal are not stated to be the same quantity, so both are
+  reported rather than reconciled.
+
+  **The verdict, over the 13 dilute points and the nine vertices of the ten
+  strongest boundaries' triangles** (17 states):
+  kappa(2550) sits **58-386x** above the floor, the 1000-1200 cm^-1 gap
+  **440-8400x**, and kappa_R **185-458x**. **No point is within a factor of two
+  of the floor; the nearest is 58x.** The Rosseland relative floor
+  (1e-6 x max = 0.0013-0.007 cm^2/g) is two to three orders below the true window
+  minimum and never binds. The minimum of kappa(nu) falls at 2593-2772 cm^-1 at
+  every point — the floor of the transparency window, resolved on 200 samples,
+  not an artefact of the 20 cm^-1 smoothing.
+
+  **What the delivered spectra carry, read from the code.**
+  `convergence/04_spectra/spectrum_convergence.py` line 28 is
+  `alpha = w * (1 - np.exp(-HBAR*w/(KB*T))) * I` with `I` the classical dipole
+  autocorrelation spectrum: the detailed-balance factor and **no quantum
+  correction on the lineshape**. The ARC prose calls that factor itself "the
+  quantum correction", which is where the name "harmonic" comes from in
+  discussion; the code is the authority and it is Q = 1.
+
+  Applying the three standard lineshape corrections raises kappa_R by x1.7-2.0
+  (standard), x2.2-4.8 (harmonic) and x2.5-10.2 (Schofield), and the line list is
+  quantum by construction and gets none — so the first-principles/HITEMP
+  Rosseland ratio can only **grow**: 1.08-37.8 delivered, to 1.9-73, 2.4-156 and
+  2.7-273. The choice cannot make the excess go away. What the spread measures is
+  how much the cold spectra depend on an unverifiable choice, and it is largest
+  exactly where the strongest claims sit. A76 calibrates it.
+
+  **Caveat.** The uncorrelated fraction is a small difference of large numbers
+  (1 - 0.955) on 200 pairs per lag and is quoted to one figure. The floor uses
+  each spectrum's own total dipole power as its denominator, so it is a per-point
+  quantity, not a constant per density.
+
 ## 2026-09-29 (four corner cells: the grid is 52 points)
 
 - **A74 — Four cells at (700, 10/30/60) and (800, 30) close the gap the boundaries
