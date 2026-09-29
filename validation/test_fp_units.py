@@ -33,12 +33,16 @@ from tools.fix_fp_units import (
 BAND_CM = (100.0, 4000.0)
 N_FP_POINTS = 52  # A74 added four cells at (700, 10/30/60) and (800, 30)
 
-# (a) Captured from the pipeline immediately BEFORE the rewrite, on BAND_CM with
-# rel_floor 1e-6. Once the data is fixed there is no live "before" left, so the
-# baseline lives here.
+# (a) Originally captured from the pipeline immediately BEFORE the A50 units
+# rewrite, on BAND_CM with rel_floor 1e-6, so that the rewrite could be shown not
+# to have changed a loader value. A83 regenerated the spectra themselves (the A81
+# estimator at sd = 10 cm^-1), so the pre-rewrite number no longer exists to
+# compare against and these are v5 values. What the test still checks is that the
+# loader, the band limits and the floor reproduce the stored spectrum exactly;
+# what it no longer checks is the A50 rewrite, which A50's own history now carries.
 BASELINE_POINT = (1000.0, 129.744)
-BASELINE_KAPPA_R_CM2_G = 3.5409291039e01
-BASELINE_KAPPA_P_CM2_G = 3.8343749591e02
+BASELINE_KAPPA_R_CM2_G = 17.497935578549924  # A83: v5 (A81 estimator, sd = 10 cm^-1)
+BASELINE_KAPPA_P_CM2_G = 409.7631376857054  # A83: v5 (A81 estimator, sd = 10 cm^-1)
 
 # The new grid's domain (A50): the box the extension campaign opened up.
 GRID_T_RANGE_K = (650.0, 3000.0)

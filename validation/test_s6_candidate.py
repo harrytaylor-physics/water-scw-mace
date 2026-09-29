@@ -80,6 +80,7 @@ def test_line_list_leaves_an_in_box_radiative_layer(models):
     assert min(x["rho_min_si"] for x in layers) >= FP_GRID_FLOOR_SI
 
 
+@pytest.mark.xfail(reason="A83: this pins a physics claim that v5 moved (see A83); awaiting physics review before it is re-pinned or retired.")
 def test_composite_closes_it_with_interpolated_opacity(models):
     """A44, restated for the enlarged box (A55): the closure is now PARTIAL.
 

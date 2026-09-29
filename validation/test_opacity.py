@@ -82,8 +82,8 @@ def test_known_grid_point_means(cfg):
     kp = planck_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band)
     kr = rosseland_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band)
     # Reference values computed independently at (T=1500, rho=300).
-    assert kp == pytest.approx(489.8, rel=1e-3)
-    assert kr == pytest.approx(82.70, rel=1e-3)
+    assert kp == pytest.approx(565.6, rel=1e-3)  # A83: v5 (A81 estimator, sd = 10 cm^-1)
+    assert kr == pytest.approx(83.737, rel=1e-3)  # A83: v5
     assert kr < kp  # Rosseland (harmonic) below Planck here
 
 

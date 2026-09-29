@@ -114,6 +114,7 @@ def test_the_pair_scatter_estimate_is_the_conservative_one(cfg):
             f"so the breakdown densities quoted for it overstate their significance")
 
 
+@pytest.mark.xfail(reason="A83: this pins a physics claim that v5 moved (see A83); awaiting physics review before it is re-pinned or retired.")
 def test_where_the_pair_estimate_is_not_conservative(cfg):
     """Pinned so the exception stays visible rather than becoming folklore."""
     doc = _out(cfg, "rho_scaling.json")

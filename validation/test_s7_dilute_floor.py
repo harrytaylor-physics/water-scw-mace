@@ -11,6 +11,18 @@ runs into, so that cannot quietly disappear.
 
 from __future__ import annotations
 
+import pytest
+
+# A81: this module pins A75's noise-floor construction, which modelled the
+# dipole model's residual as WHITE NOISE IN M. A81 showed that is wrong in kind
+# -- the residual is a smooth function of configuration, so it distorts the
+# bands rather than raising a floor -- and that the flat tail A75 took for it
+# was the untapered periodogram's own omega^-2 leakage. The construction is
+# retired rather than re-pinned, and the file is kept for the trail (A83).
+pytestmark = pytest.mark.skip(
+    reason="A81: the white-noise-in-M floor model was wrong in kind; "
+           "superseded by the leakage finding. See A81 and A83.")
+
 import numpy as np
 import pytest
 

@@ -11,9 +11,10 @@ Two gates, one per side of the comparison:
 
   * the line list must satisfy it -- this is the control, and if it ever fails
     the measurement itself is broken, not the first-principles spectra;
-  * the first-principles vibrational bands must keep failing it, because A76/A77
-    rest on that failure and a silent upstream fix would invalidate them
-    without anything else noticing.
+  * the first-principles vibrational bands must now *satisfy* it. They used to
+    fail, which is what A76 and A77 measured; A78 found the cause (the harmonic
+    correction applied twice), A81 found the rest (the estimator's leakage) and
+    A83 made the fixed spectra live. This gate was inverted at A83.
 
 The second gate is pinned to the **delivered** kappa with no quantum correction
 applied, i.e. the quantity the .npz files actually contain. A77 established that
@@ -39,8 +40,7 @@ from tools.sum_rule_trace import _index, _integral, _rows
 BEND_CM = (1000.0, 2400.0)
 MIN_T_SPAN = 2.0
 LINE_LIST_BOUND = 0.1
-FP_BEND_BOUND = -0.40
-FP_BEND_MEDIAN_BOUND = -0.55
+FP_SATISFIED_BOUND = 0.30  # A83: v5 satisfies the rule; it used to violate it
 
 
 def _spans_enough(rows) -> bool:
@@ -72,7 +72,7 @@ def test_the_line_list_obeys_the_band_strength_sum_rule(cfg):
         f"|p| >= {LINE_LIST_BOUND} at {bad}")
 
 
-def test_the_first_principles_vibrational_bands_still_violate_it(cfg):
+def test_the_first_principles_bands_now_satisfy_the_sum_rule(cfg):
     """A76/A77's finding, pinned: every first-principles row fails the rule in
     the bend, and fails it by a wide margin in the median."""
     rows = {k: v for k, v in _rows(cfg, "fp").items() if _spans_enough(v)}
@@ -84,12 +84,11 @@ def test_the_first_principles_vibrational_bands_still_violate_it(cfg):
         p = _bend_index(cfg, "fp", r)
         assert p is not None, f"rho = {rho}: no index"
         indices[rho] = p
-    ok = {rho: p for rho, p in indices.items() if p >= FP_BEND_BOUND}
-    assert not ok, (
-        f"A76/A77 rest on the first-principles bend violating the sum rule; "
-        f"p >= {FP_BEND_BOUND} at {ok}. If this is an upstream fix, retire the "
-        f"gate and rewrite A76/A77 -- do not loosen the bound.")
-    median = float(np.median(list(indices.values())))
-    assert median < FP_BEND_MEDIAN_BOUND, (
-        f"median bend index {median:.3f} is no longer below "
-        f"{FP_BEND_MEDIAN_BOUND}; see above")
+    # A78-A81 found and fixed the cause (the harmonic correction applied twice,
+    # then the estimator's leakage); A83 made the fixed spectra live. The bend
+    # index must now sit near zero, which is what the classical sum rule
+    # requires of any trajectory.
+    bad = {rho: p for rho, p in indices.items() if abs(p) >= FP_SATISFIED_BOUND}
+    assert not bad, (
+        f"the first-principles bend index should now be near zero; "
+        f"|p| >= {FP_SATISFIED_BOUND} at {bad}")

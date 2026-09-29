@@ -75,11 +75,12 @@ def test_the_dilute_noise_floor_stays_ten_times_below_the_window(doc):
         f"margin {g['worst_margin_at_window_minimum']:.1f}x")
 
 
-def test_nothing_has_been_propagated(doc):
-    """The registry still points at v3 and no downstream product has moved.
-    If this ever fails, someone wired v4 in while the floor gate was failing."""
+def test_v5_is_the_live_source(doc):
+    """A83 propagated: the registry reads the v5 spectra, regenerated with the
+    A81 estimator at the A82 width. Inverted from A80's
+    ``test_nothing_has_been_propagated``, which held while the floor gate failed;
+    A81 lifted that and A83 switched the registry."""
     from opacity.registry import get_spec
 
-    assert doc["propagated"] is False
-    assert get_spec("fp").subdir == "fp_opacity", (
-        "the registry points at a v4 directory while the A80 floor gate fails")
+    assert get_spec("fp").subdir == "fp_opacity_v5", (
+        f"the live first-principles source is {get_spec('fp').subdir!r}, not v5")

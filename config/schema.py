@@ -10,6 +10,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
+
+# A83: the first-principles spectra the whole pipeline reads.
+FP_OPACITY_SUBDIR = "fp_opacity_v5"
 from typing import Any, get_type_hints
 
 import yaml
@@ -208,8 +211,14 @@ class Config:
 
     @property
     def fp_opacity_path(self) -> Path:
-        """Where FP spectra + grid.json + crossover_hitemp.json live."""
-        return self.data_root_path / "fp_opacity"
+        """Where FP spectra + grid.json + crossover_hitemp.json live.
+
+        A83 switched this to the v5 directory: the spectra regenerated with the
+        A81 estimator (Hann-tapered periodogram, single harmonic correction,
+        continuous omega^2) at the A82 smoothing width of 10 cm^-1. v3 is kept
+        beside it untouched.
+        """
+        return self.data_root_path / FP_OPACITY_SUBDIR
 
     @property
     def mtckd_ref_path(self) -> Path:

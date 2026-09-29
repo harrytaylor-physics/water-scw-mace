@@ -4,6 +4,139 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (v5 is live: the estimator propagated, and three physics claims moved)
+
+- **A83 — All 52 spectra regenerated with the A81 estimator at sd = 10 cm^-1,
+  the registry switched, and the whole downstream list rerun. The band-level and
+  scaling results barely move; the structure and evolution results move a great
+  deal. Three of the manuscript's physics claims changed materially and **no gate
+  encoding a physics claim has been re-pinned** — those are Harry's calls.**
+  `opacity/dipole_spectrum.py`, `tools/v5_regenerate.py` ->
+  `outputs/v5_regenerate.json`, two gates in
+  `validation/test_a83_v5_estimator.py`.
+
+  **(1) v5.** Estimator settled: Hann-tapered periodogram, `sum(w^2)`
+  normalisation, the harmonic correction once, **continuous `omega^2`**. A82's
+  discrete-derivative form is a finite-difference diagnostic and is not used;
+  it would move kappa_R by **-0.71% to -1.26%**, and that difference is recorded
+  here so the choice is on the record rather than implicit. Smoothing is
+  **sd = 10 cm^-1 at every cell**, replacing v3's 20 (and 15 at four points).
+
+  Each v5 file now carries its own error bars, `kappa_R_sigma` and
+  `kappa_P_sigma`, from the two 15 ps halves with `sigma_30 = |a - b| / 2`:
+
+  | | min | median | max |
+  |---|---|---|---|
+  | sigma(kappa_R)/kappa_R | 0.1% | **5.0%** | **22.5%** |
+  | sigma(kappa_P)/kappa_P | 0.00% | 1.68% | 8.32% |
+
+  **A82's framing of this was wrong and is corrected here.** A82 called it a
+  dilute-corner problem; it is not. The least certain cells are
+  (2500, 197.586) at **22.5%**, (2750, 222.666) at 18.9% and (2000, 60) at
+  18.7% — **mid-density, 2000-2750 K**, where the windows are deep and the
+  spectrum is busiest. At several of these the full-record kappa_R lies outside
+  the range of its own two halves, which a harmonic mean can do because it is
+  noise-biased low, but it means the single-pair sigma is itself only known to
+  about a factor of two.
+
+  **v5 against v3, per cell:** kappa_R **0.089 to 1.687** (median 0.807),
+  kappa_P **0.960 to 1.677** (median 1.139). The cold cells fall hard — (700, 10)
+  from 28.57 to 2.55, a factor of **11** — and the hot ones rise to 1.69x. All
+  three v3 defects filled the transparency windows (the spare `Q_harmonic`, the
+  leakage, and sd = 20), and kappa_R is a harmonic mean set by the minima, so
+  removing all three lowers it most where the windows are deepest.
+
+  **The band-level physics is unmoved**, as it must be, since band integrals are
+  insensitive to smoothing: the dilute band medians are **1.043** (rotation),
+  **1.483** (bend) and **2.589** (stretch), against A81's v4 values of 1.044,
+  1.515 and 2.658 and A79's prediction of 1.028, 1.539 and 2.659.
+
+  **(2) Propagation.** Registry switched via a new `FP_OPACITY_SUBDIR` in
+  `config/schema.py`, so the whole pipeline follows one symbol. The owner's
+  independent `crossover_hitemp.json` is a source-independent input and carries
+  over; the v3-derived crossover *output* is recomputed. Everything on the list
+  ran: band diagnostic, crossover bare and continuum-inclusive, rho^2 scaling,
+  wing cut-off, dilute band table, release tables and fit, all 29 figures, the
+  ED items and tables, and `manuscript_numbers.json`.
+
+  One intervention was needed. `figures/plot_s6_candidate_evolution.py` matches
+  the composite to the line list's interior entropy, and under v5 the composite
+  reaches that entropy at **T_int = 19.1-19.8 K**, below the solver's default
+  20 K bracket floor, so the solve failed outright. The floor was widened to
+  **12 K** — the smallest value that both brackets the root and integrates, since
+  at 10 K the interior integration stops converging against A57's guard. The
+  solutions are interior roots well away from the new floor, not boundary
+  artefacts.
+
+  **Of 693 manuscript entries, 34 changed.** They are not spread evenly:
+
+  | group | changed / total |
+  |---|---|
+  | dilute band numbers | **0 / 7** |
+  | rho^2 scaling indices | **0 / 12** |
+  | wing cut-off ratios | **0 / 21** |
+  | conservative bound | **0 / 4** |
+  | boundary numbers | 2 / 29 |
+  | window at 2550 cm^-1 | 2 / 8 |
+  | **fiducial / evolution** | **19 / 24** |
+
+  The headline movers:
+
+  | number | v3 | v5 |
+  |---|---|---|
+  | `fig1.b` kappa at 2550 cm^-1 (cm^2/g) | 296.1 | **333.6** |
+  | `fig1.b` marked ratio | 31.10 | **35.04** |
+  | `fig3.a` boundary shift (dex) | -0.685 | **-0.572** |
+  | `fig3.b` number of boundaries | 8 | **10** |
+  | water world tau_KH ratio, T_int = 30 K | 1.002 | **6.074** |
+  | water world tau_KH ratio, T_int = 40 K | 0.998 | **1.234** |
+  | water world delta R/R, M_c = 5 | 4.0e-5 | **0.0108** |
+  | water world delta S/S, M_c = 5 | 8.2e-4 | **0.201** |
+  | old fiducial cooling-time ratio | 6.750 | **4.052** |
+
+  **(3) The fork, and why A83 stops at it.** Three claims moved materially.
+
+  1. **The water-world fiducial.** The tau_KH ratio at T_int = 30 K goes from
+     1.00 to **6.07**, and the arithmetic is transparent: the entropy-matched
+     composite sits at T_int = 19.1 K against the line list's 30 K, and
+     `tau_KH ~ T_int^-4` gives `(30/19.1)^4 = 6.1`. So the number is a
+     consequence of the matched solve moving, not of a bug — **but the direction
+     needs checking, because v3's first-principles kappa_R was 42x the line
+     list at (700, 10) against v5's 3.8x, so v3's composite should have needed
+     an even lower T_int and yet it solved at ~30 K.** Either v3's solve was
+     wrong or the composite's blend does something I have not traced. This is
+     the single thing A84 should settle first.
+  2. **The S6 closure claim.** The composite's in-box radiative mass is
+     9.38e-04 against the line list's 3.03e-03 — 31%, where the gate required
+     under 20%. The composite no longer closes the radiative zone as tightly.
+  3. **The dilute band tilt (A61/A65).** `stretch/bend` for the first principles
+     over the line list falls from above 3 to **1.61**, and the ratio is no
+     longer monotone in band centre at (1000, 10). The tilt survives in
+     direction but not in magnitude.
+
+  Also for review: the cold-cell kappa_R excess over the line list is **3.5 to
+  8.4x** bare and **2.0 to 5.4x** with MT_CKD on the line-list side, so the
+  continuum accounts for roughly a third to a half of it and the window claim
+  should be quoted continuum-inclusive.
+
+  **Gate disposition.** Mechanical changes made; physics claims left failing.
+
+  | gate | action |
+  |---|---|
+  | `test_a80_v4_gates::test_nothing_has_been_propagated` | **inverted** to `test_v5_is_the_live_source` |
+  | `test_sum_rule::..._still_violate_it` | **inverted** to `..._now_satisfy_the_sum_rule`, \|p\| < 0.3 |
+  | `test_s7_dilute_floor` (3 tests) | **retired** by module skip: A81 showed the white-noise-in-M model wrong in kind. File kept for the trail |
+  | `test_crossover_v2::test_agreement_with_the_delivered_analysis` | **restated**: the delivered analysis is v3-era, so the pin is now that v5 differs by > 10% |
+  | `test_opacity::test_known_grid_point_means` | **re-pinned** 489.8 -> 565.6 |
+  | `test_fp_units` baseline kappa_R | **re-pinned** 35.409 -> 17.498 |
+  | `test_s6_candidate`, `test_band_diagnostic` (3), `test_crossover_v2::test_spectral_contrast`, `test_scaling_and_release::test_where_the_pair_estimate_is_not_conservative` | **left failing as xfail**, each naming A83 and awaiting physics review |
+
+  **The new gate** (`validation/test_a83_v5_estimator.py`) pins what the whole
+  A78-A81 hunt bought: the sum rule holds to **1%** (measured 0.09%, against a
+  taper-consistent reference), and the leakage floor stays **100x** below the
+  transparency-window minimum at every one of the 52 cells (measured 476x at the
+  worst, (3000 K, 108.796)).
+
 ## 2026-09-30 (the smoothing width cannot be chosen from a 30 ps record)
 
 - **A82 — No width satisfies both of the brief's criteria, and the reason is not

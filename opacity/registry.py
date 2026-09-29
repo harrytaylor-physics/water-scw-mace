@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from config.schema import FP_OPACITY_SUBDIR
+
 
 @dataclass(frozen=True)
 class SourceSpec:
@@ -46,10 +48,10 @@ REGISTRY: dict[str, SourceSpec] = {
     # correct units). No on-load scale survives; the marker is what enforces it.
     "fp": SourceSpec(
         name="fp",
-        subdir="fp_opacity",
+        subdir=FP_OPACITY_SUBDIR,
         glob="T*_opacity.npz",
         scale=1.0,
-        scale_reason="units fixed at source by tools/fix_fp_units.py (AMENDMENTS A50)",
+        scale_reason="units fixed at source by tools/fix_fp_units.py (A50); spectra regenerated with the A81 estimator at sd = 10 cm^-1 (A83)",
         units_marker="units_fixed",
     ),
     # Line lists carry correct units -> no scaling. Filenames follow the
