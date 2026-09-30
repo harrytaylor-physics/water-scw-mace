@@ -82,9 +82,30 @@ def table1(cfg: Config) -> dict:
     pk = {(round(t, 3), round(r, 3)): (kr, kp)
           for t, r, kr, kp in zip(t_pk, rho_pk, kr_pk, kp_pk)}
 
-    header = ["T (K)", r"$\rho$ (kg m$^{-3}$)", r"$\kappa_P$", r"$\kappa_R$",
+    # A83: every v5 spectrum carries its own statistical uncertainty, from the
+    # two 15 ps halves of its dipole record with sigma_30 = |a - b| / 2. It is
+    # the dominant systematic on kappa_R -- 0.1 to 22.5% across the grid, worst
+    # at mid density and 2000-2750 K -- so the table quotes it rather than
+    # leaving the reader to assume the means are exact.
+    # The stored sigma is absolute, on the pipeline's own 100-5000 cm^-1
+    # Rosseland mean, while this table's kappa_R is band-limited to 100-4000, so
+    # the two differ by ~10%. The *fractional* error is what transports between
+    # band definitions -- it is a property of the record length, not of the
+    # integration limits -- so the fraction is taken from the file and applied to
+    # this table's own mean.
+    sigma_frac = {}
+    for path in sorted(cfg.fp_opacity_path.glob("T*_opacity.npz")):
+        with np.load(path) as z:
+            if "kappa_R_sigma" in z.files:
+                sigma_frac[(round(float(z["T"]), 3), round(float(z["rho_kg_m3"]), 3))] = (
+                    float(z["kappa_P_sigma"]) / float(z["planck"]),
+                    float(z["kappa_R_sigma"]) / float(z["rosseland"]))
+
+    header = ["T (K)", r"$\rho$ (kg m$^{-3}$)", r"$\kappa_P$", r"$\sigma(\kappa_P)$",
+              r"$\kappa_R$", r"$\sigma(\kappa_R)$",
               "P / HIT", "R / HIT", "P / H+MT", "R / H+MT", "P / POK", "R / POK"]
-    csv_header = ["T_K", "rho_kg_m3", "kappa_P_cm2_g", "kappa_R_cm2_g",
+    csv_header = ["T_K", "rho_kg_m3", "kappa_P_cm2_g", "kappa_P_sigma_cm2_g",
+                  "kappa_R_cm2_g", "kappa_R_sigma_cm2_g",
                   "planck_over_hitemp", "rosseland_over_hitemp",
                   "planck_over_hitemp_mtckd", "rosseland_over_hitemp_mtckd",
                   "planck_over_pokazatel", "rosseland_over_pokazatel"]
@@ -97,7 +118,11 @@ def table1(cfg: Config) -> dict:
             kr_p, kp_p = pk[key]
             p_pk = r["kappa_P_fp_cm2_g"] / kp_p
             r_pk = r["kappa_R_fp_cm2_g"] / kr_p
-        vals = [r["T"], r["rho"], r["kappa_P_fp_cm2_g"], r["kappa_R_fp_cm2_g"],
+        fp_, fr_ = sigma_frac.get(key, (None, None))
+        sp = None if fp_ is None else fp_ * r["kappa_P_fp_cm2_g"]
+        sr = None if fr_ is None else fr_ * r["kappa_R_fp_cm2_g"]
+        vals = [r["T"], r["rho"], r["kappa_P_fp_cm2_g"], sp,
+                r["kappa_R_fp_cm2_g"], sr,
                 r["ratio_planck_bare"], r["ratio_rosseland_bare"],
                 r["ratio_planck_mtckd"], r["ratio_rosseland_mtckd"], p_pk, r_pk]
         csv_rows.append(["" if v is None else f"{v:.6g}" for v in vals])
@@ -112,6 +137,11 @@ def table1(cfg: Config) -> dict:
     _tex(ED_DIR / "ed_table1.tex", header, tex_rows,
          "ED Table 1 — the 52 state points, common band 100-4000 cm^-1")
     return {"n_rows": len(rows), "n_with_pokazatel": n_pk,
+            "n_with_uncertainty": sum(1 for r in rows
+                                      if (round(r["T"], 3), round(r["rho"], 3)) in sigma_frac),
+            "uncertainty_note": ("fractional, from the two 15 ps halves of each "
+                                 "dipole record (sigma_30 = |a-b|/2), applied to "
+                                 "this table's band-limited mean (A83)"),
             "band_cm": list(BAND), "columns": csv_header,
             "sorted_by": "T then rho",
             "kappa_P_range_cm2_g": [min(r["kappa_P_fp_cm2_g"] for r in rows),

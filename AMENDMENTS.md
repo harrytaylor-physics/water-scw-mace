@@ -131,6 +131,16 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   | `test_fp_units` baseline kappa_R | **re-pinned** 35.409 -> 17.498 |
   | `test_s6_candidate`, `test_band_diagnostic` (3), `test_crossover_v2::test_spectral_contrast`, `test_scaling_and_release::test_where_the_pair_estimate_is_not_conservative` | **left failing as xfail**, each naming A83 and awaiting physics review |
 
+  **ED Table 1 gains two uncertainty columns**, `kappa_P_sigma_cm2_g` and
+  `kappa_R_sigma_cm2_g`, at all 52 rows. One care: the stored sigma is absolute
+  on the pipeline's own 100-5000 cm^-1 Rosseland mean, while the table's kappa_R
+  is band-limited to 100-4000, and the two differ by about 10%. The **fractional**
+  error is what transports between band definitions -- it is a property of the
+  record length, not of the integration limits -- so the table takes the fraction
+  from the file and applies it to its own mean, which reproduces v5's
+  0.1-22.5% (median 5.0%) exactly. Quoting the absolute sigma against the
+  band-limited mean would have been wrong by that 10%.
+
   **The new gate** (`validation/test_a83_v5_estimator.py`) pins what the whole
   A78-A81 hunt bought: the sum rule holds to **1%** (measured 0.09%, against a
   taper-consistent reference), and the leakage floor stays **100x** below the

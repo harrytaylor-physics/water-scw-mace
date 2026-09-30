@@ -41,7 +41,7 @@
  "files": {
   "subneptune_kappa_R_mesa": {
    "path": "data/release/subneptune_kappa_R_mesa.txt",
-   "round_trip_max_abs_dex": 4.7495251021212326e-05,
+   "round_trip_max_abs_dex": 4.9916509207825754e-05,
    "n_finite": 100,
    "n_cells": 225,
    "written_decimals": 4,
@@ -49,7 +49,7 @@
   },
   "subneptune_kappa_P_mesa": {
    "path": "data/release/subneptune_kappa_P_mesa.txt",
-   "round_trip_max_abs_dex": 4.9617969795523464e-05,
+   "round_trip_max_abs_dex": 4.9735902656333764e-05,
    "n_finite": 100,
    "n_cells": 225,
    "written_decimals": 4,
@@ -60,13 +60,13 @@
  "fit": {
   "dense": {
    "n_points": 39,
-   "kappa_0_cm2_g": 32.4881682777721,
-   "a_rho_exponent": 1.0227760035338658,
-   "b_T_exponent": 0.5594590671855272,
+   "kappa_0_cm2_g": 17.443120558707143,
+   "a_rho_exponent": 1.1192293843908525,
+   "b_T_exponent": 1.66963876893234,
    "rho_0_kg_m3": 100.0,
    "T_0_K": 1000.0,
-   "rms_log10_residual": 0.19231255420374935,
-   "max_abs_log10_residual": 0.45468698687717335,
+   "rms_log10_residual": 0.14679695461122064,
+   "max_abs_log10_residual": 0.33372518325097483,
    "validity_rho_kg_m3": [
     100.0,
     2228.71
@@ -78,13 +78,13 @@
   },
   "dilute": {
    "n_points": 13,
-   "kappa_0_cm2_g": 31.54981974406686,
-   "a_rho_exponent": 0.1335767997410526,
-   "b_T_exponent": 1.0128366317705282,
+   "kappa_0_cm2_g": 14.590612481020985,
+   "a_rho_exponent": 0.21168978260906457,
+   "b_T_exponent": 2.9240225971957834,
    "rho_0_kg_m3": 100.0,
    "T_0_K": 1000.0,
-   "rms_log10_residual": 0.12366950595750204,
-   "max_abs_log10_residual": 0.29835121586887997,
+   "rms_log10_residual": 0.07423217622785289,
+   "max_abs_log10_residual": 0.15625001896491392,
    "validity_rho_kg_m3": [
     10.0,
     60.0

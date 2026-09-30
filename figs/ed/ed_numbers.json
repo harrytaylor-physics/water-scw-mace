@@ -3876,6 +3876,8 @@
  "ed_table1": {
   "n_rows": 52,
   "n_with_pokazatel": 27,
+  "n_with_uncertainty": 52,
+  "uncertainty_note": "fractional, from the two 15 ps halves of each dipole record (sigma_30 = |a-b|/2), applied to this table's band-limited mean (A83)",
   "band_cm": [
    100.0,
    4000.0
@@ -3884,7 +3886,9 @@
    "T_K",
    "rho_kg_m3",
    "kappa_P_cm2_g",
+   "kappa_P_sigma_cm2_g",
    "kappa_R_cm2_g",
+   "kappa_R_sigma_cm2_g",
    "planck_over_hitemp",
    "rosseland_over_hitemp",
    "planck_over_hitemp_mtckd",
@@ -3894,12 +3898,12 @@
   ],
   "sorted_by": "T then rho",
   "kappa_P_range_cm2_g": [
-   324.5823910721455,
-   4182.77650215849
+   409.7631376857054,
+   8051.768398102397
   ],
   "kappa_R_range_cm2_g": [
-   11.669946543828715,
-   4093.538311910776
+   2.7404880981209265,
+   7583.703530966697
   ],
   "files": [
    "figs/ed/ed_table1.csv",
@@ -3928,8 +3932,8 @@
   "n_interpolated": 10,
   "n_clamped": 0,
   "ratio_range": [
-   6.146268269599068,
-   47.078126044568656
+   2.548499775135335,
+   12.94695989465454
   ],
   "flip_threshold_range": [
    1.0098262916603553,
