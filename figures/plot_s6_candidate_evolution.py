@@ -93,15 +93,8 @@ def tau_ratios(cfg, eos, t_eq_k, band):
             c = replace(cfg, envelope=replace(cfg.envelope, f_env=f_env))
             base = build_structure(c, t_eq_k, t_int_ref, LINE_LIST, eos=eos, n_sample=400,
                                    band=band)
-            # A83: under v5 the composite is 5-11x less opaque at the cold end,
-            # so at the same T_int it cools to a lower entropy and the default
-            # bracket's 20 K floor no longer reaches the HITEMP reference. 12 K
-            # is the smallest floor that both brackets the root and integrates:
-            # at 10 K the interior integration stops converging (A57's guard).
-            # Where the old bracket worked the solve is unchanged.
             src = build_at_entropy(c, base.interior_entropy_j_kg_k, t_eq_k, "composite",
-                                   eos=eos, band=band, n_sample=400,
-                                   t_int_bracket_k=(12.0, 400.0))
+                                   eos=eos, band=band, n_sample=400)
             rows.append({
                 "t_int_ref_k": t_int_ref, "f_env": f_env,
                 "tau_kh_hitemp_s": base.tau_kh_s, "tau_kh_composite_s": src.tau_kh_s,

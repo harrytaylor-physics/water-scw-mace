@@ -4,6 +4,120 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (checking v5: the 6.07 was mine, and the v3 baseline was stale)
+
+- **A84 — The tau_KH jump A83 reported as 1.00 -> 6.07 was an artefact of a
+  bracket I widened, and the v3 number it was compared against was stale by
+  eleven commits. Measured properly, same code and same config, the change is
+  **2.230 -> 1.492** — the ratio *falls* by a third. The solve machinery is
+  sound, the composite has no discontinuity at any seam, and the remaining
+  headline claim (kappa_R above the line list everywhere) holds. No gate and no
+  manuscript number was changed here; the six xfails stay.**
+  Read-only checks; `figures/plot_s6_candidate_evolution.py` reverted to its
+  default entropy bracket and its outputs regenerated with the config its own
+  docstring specifies.
+
+  **(1) FP over the line list, all 52 points under v5.**
+
+  | quantity | min | median | max | points below 1 |
+  |---|---|---|---|---|
+  | kappa_R bare | 1.573 | 5.987 | 96.96 | **none** |
+  | kappa_R + MT_CKD | 1.570 | 3.522 | 71.23 | **none** |
+  | kappa_P bare | 1.246 | 2.158 | 34.11 | **none** |
+  | kappa_P + MT_CKD | 0.213 | 1.760 | 30.24 | **13** |
+
+  The Rosseland claim is unqualified: **the first-principles opacity exceeds the
+  line list at every one of the 52 points**, by a median of 6.0 bare and 3.5 with
+  the continuum on the line-list side. The Planck mean does not: with MT_CKD
+  included, 13 points fall below 1, all of them cold and dense — (650, 500) at
+  **0.213**, then (650, 300) 0.302, (650, 150) 0.390, (800, 500) 0.447,
+  (650, 100) 0.539, (800, 300) 0.570, (800, 150) 0.693, (700, 60) 0.695,
+  (1000, 500) 0.817, (1000, 300) 0.877, (800, 100) 0.884, (1000, 129.744) 0.982
+  and (700, 30) 0.992. Where the continuum dominates the Planck mean it exceeds
+  what the first-principles spectra produce, by up to a factor of five.
+
+  **(2) The tau_KH trace, and what A83 got wrong.** Two errors, both mine.
+
+  *The bracket.* A83 widened `build_at_entropy`'s T_int floor from 20 K to 12 K
+  because the solve failed. It failed because the script was run with
+  `config/fiducial.yaml`, whose first irradiation point is T_eq = 500 K, where
+  its own docstring specifies `config/candidate.yaml` at T_eq = 700 K. With the
+  right config the solve lands at **T_int = 27.15 K**, comfortably inside the
+  original bracket, and the widened bracket is what let the 500 K case run away
+  to 6.07. The bracket is reverted and the outputs regenerated.
+
+  *The baseline.* The v3 number, 1.001989, carries commit **4834c22** in the
+  ledger, and `manuscript_numbers.py` reads `outputs/S6_candidate_evolution.csv`
+  from disk without regenerating it. That CSV had not been rebuilt since
+  4834c22 — before the corner cells (A74) and everything after. **It was not a
+  v3 number at all.** Running the same script against the v3 spectra now gives
+  **2.230**, not 1.002. The 1.002 is, to four figures, what the identity control
+  in (3) returns, which is consistent with the composite having been
+  indistinguishable from the line list at that case when the CSV was written.
+
+  **The sound comparison, same code and same config, v3 spectra against v5:**
+
+  | | v3 | v5 |
+  |---|---|---|
+  | composite T_int (K) | 24.55 | **27.15** |
+  | tau_KH ratio | **2.230** | **1.492** |
+  | kappa_R FP/LL at the seam | 5.74-9.67 | **2.32-2.82** |
+  | kappa_P FP/LL at the seam | 1.32-1.34 | 1.49-1.55 |
+  | max radiative rho | 20.4 | 22.9 |
+
+  and the mechanism is monotone: v5's first-principles opacity is a smaller
+  multiple of the line list **at the seam** (rho = 17.3, where the blend lives)
+  than v3's was, so the composite is less opaque there, needs a *higher* T_int to
+  hold the reference entropy, and its cooling time is correspondingly closer to
+  the line list's. My earlier confusion came from comparing the FP/LL ratio at
+  (700, 10), which the envelope never visits; what matters is the seam.
+
+  **No discontinuity anywhere.** Both versions give a **single** radiative-
+  convective transition over 799 layers with no reversal; 407 layers sit below
+  the rho = 10 grid floor and read the A26 flat clamp, identically in both; the
+  clamp fraction is 0.5% with **zero** clamped radiative layers and
+  `clamp_reliable` true; and the seam ratios march monotonically across the
+  10-30 kg m^-3 blend in both. The composite is behaving.
+
+  **(3) Controls, all passing.**
+
+  | control | result |
+  |---|---|
+  | the line list matched against itself | T_int 29.986 K, ratio **1.0019** (identity, to solver tolerance) |
+  | the same, with kappa scaled x2 and x5 on both sides | 1.0019, 1.0017 — scale-invariant, as it must be |
+  | line list x1, x2 against the unscaled reference | T_int 27.15 -> 22.82, ratio **1.492 -> 2.986** — monotone |
+  | line list x5 | entropy unreachable in the default bracket: a genuine bracket limit at extreme contrast, the same failure A83 met and mis-diagnosed |
+
+  **(4) Plain statement.**
+
+  *The 6.07 was not physical.* It was the widened bracket acting on a case the
+  script was never meant to run. The physical number is **1.492**, against a
+  properly recomputed v3 value of **2.230** — so v5 moves this quantity **down**
+  by a third, not up by a factor of six. The solve is sound: it reproduces the
+  identity to 2e-3 and responds monotonically to a scaled opacity.
+
+  *The radius change is real but smaller than A83 said, and A83 mislabelled it.*
+  The keys `delta_radius_frac.5.0` and the rest are indexed by **age in Gyr, not
+  core mass**; A83's table called the first of them "M_c = 5" and that is wrong.
+  With the bracket reverted and the right config, the fractional radius
+  difference at 5 Gyr is **3.985e-05 -> 0.00347**, not the 0.0108 A83 reported,
+  and the entropy difference **8.2e-4 -> 0.0354**. Both still rest on the same
+  stale 4834c22 baseline, so the honest reading is that the v5 values stand on
+  their own and the "v3" column should not be quoted until it is recomputed.
+
+  *The S6 closure failure is real and is not any of the above.* It reproduces
+  unchanged under the corrected config: the composite's in-box radiative mass is
+  9.38e-04 against the line list's 3.03e-03, i.e. **31%** where the gate requires
+  under 20%. Nothing about the bracket, the config or the baseline touches it. It
+  is a genuine consequence of v5 being less opaque at the seam, and it remains
+  for physics review.
+
+  **What this says about the other A83 comparisons.** Every number whose v3 value
+  came from a CSV that `manuscript_numbers.py` reads rather than rebuilds is
+  suspect in the same way. A85 should regenerate the v3 column by checking out
+  the v3 spectra and rerunning the *producers*, not the ledger, before any of the
+  34 changed entries is quoted.
+
 ## 2026-09-30 (v5 is live: the estimator propagated, and three physics claims moved)
 
 - **A83 — All 52 spectra regenerated with the A81 estimator at sd = 10 cm^-1,
@@ -14,6 +128,14 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   `opacity/dipole_spectrum.py`, `tools/v5_regenerate.py` ->
   `outputs/v5_regenerate.json`, two gates in
   `validation/test_a83_v5_estimator.py`.
+
+  *Corrected by A84 in three places. The tau_KH ratio of 6.07 was an artefact of
+  the entropy bracket widened below, run on a case the script was not meant to
+  take; the real change is 2.230 -> 1.492, downward. The v3 column for every S6
+  quantity came from a CSV last rebuilt at commit 4834c22 and is not a v3 number.
+  And the `delta_radius`/`delta_entropy` keys are indexed by **age in Gyr**, not
+  core mass, so the row below labelled "M_c = 5" is at 5 Gyr. The bracket has
+  been reverted and those outputs regenerated. See A84.*
 
   **(1) v5.** Estimator settled: Hann-tapered periodogram, `sum(w^2)`
   normalisation, the harmonic correction once, **continuous `omega^2`**. A82's
