@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -247,7 +248,10 @@ def main(argv=None) -> int:
     ap.add_argument("config", type=Path)
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
-    root = Path(__file__).resolve().parents[1] / RELEASE_DIR
+    # A87: redirectable for the same reason as FIGS_DIR -- this writes outside
+    # cfg.output_path, and the A86 v3 pass clobbered the tracked v5 products.
+    root = Path(os.environ.get("SUBNEPTUNE_RELEASE_DIR",
+                               Path(__file__).resolve().parents[1] / RELEASE_DIR))
     root.mkdir(parents=True, exist_ok=True)
 
     t_pt, rho_pt, kr, kp, lr_pt, lt_pt, log_rs, log_ts = _grid(cfg)

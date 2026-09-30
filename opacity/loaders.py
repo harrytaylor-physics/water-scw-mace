@@ -53,6 +53,19 @@ def load_spectrum(
                 f"{path.parent} (the untouched originals live in "
                 f"{path.parent.name}_legacy_x1000/). See AMENDMENTS A50."
             )
+        # A87: the marker's value must match what the registry expects for the
+        # directory it is pointing at. A83 switched the first-principles source to
+        # a new directory with a new marker; without this check, pointing the
+        # registry back at the old directory silently loads old spectra under the
+        # new expectation, and a "v3 versus v5" comparison becomes v5 against v5.
+        if spec.units_value is not None:
+            got = str(d[spec.units_marker])
+            if got not in spec.units_value:
+                raise ValueError(
+                    f"{path.name}: {spec.units_marker} is {got!r} but the registry "
+                    f"entry for {spec.name!r} (subdir {spec.subdir!r}) expects "
+                    f"one of {spec.units_value}. The registry and the spectra on disk "
+                    f"are different versions; set both together. See A87.")
         wn = np.asarray(d["wn"], dtype=float)
         kappa = np.asarray(d["kappa"], dtype=float) * spec.scale
         temperature_k = float(d["T"])

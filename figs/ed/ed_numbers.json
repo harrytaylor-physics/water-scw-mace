@@ -29,7 +29,7 @@
      "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json"
     ],
     "source_commits": {
-     "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json": "7c219f1"
+     "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json": "162624b"
     }
    },
    "b": {
@@ -64,7 +64,7 @@
      "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md"
     ],
     "source_commits": {
-     "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md": "7c219f1"
+     "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md": "162624b"
     }
    }
   }
@@ -91,12 +91,12 @@
      4000.0
     ],
     "kappa_P_range_cm2_g": [
-     324.5823910721455,
-     4182.77650215849
+     409.7631376857054,
+     8051.768398102397
     ],
     "colourbar_range_cm2_g": [
-     324.6953178123809,
-     4182.77650215849
+     411.01728871105945,
+     8051.768398102402
     ],
     "colour_scale": "viridis, log",
     "blank_region": "outside the convex hull, where the model clamps",
@@ -105,8 +105,8 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "024e7f9",
-     "opacity/crossover.py": "e5bd46d"
+     "outputs/crossover_v3.json": "16b1a08",
+     "opacity/crossover.py": "90032e5"
     }
    },
    "b": {
@@ -123,12 +123,12 @@
      3003.6833855799373
     ],
     "planck_ratio_range": [
-     1.1911276374731379,
-     17.721249061854
+     1.2458546929834218,
+     34.113080891963754
     ],
     "colourbar_range": [
-     1.192574939879993,
-     17.721249061854
+     1.2483918286201416,
+     34.11308089196376
     ],
     "colour_scale": "viridis, log",
     "source_files": [
@@ -136,14 +136,14 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "024e7f9",
-     "opacity/crossover.py": "e5bd46d"
+     "outputs/crossover_v3.json": "16b1a08",
+     "opacity/crossover.py": "90032e5"
     }
    }
   }
  },
  "ed_fig3": {
-  "caption_hint": "a, kappa_R under three broadening conventions at six states. b, MT_CKD self-continuum share of the line-list kappa_R over the 48 points. c, band-truncation ratio for HITEMP over its own grid. d, kappa_R against the line-wing cut-off at the six states of a.",
+  "caption_hint": "a, kappa_R under three broadening conventions at six states. b, MT_CKD self-continuum share of the line-list kappa_R over the 52 points. c, band-truncation ratio for HITEMP over its own grid. d, kappa_R against the line-wing cut-off at the six states of a.",
   "panels": {
    "a": {
     "x_label": "state",
@@ -216,8 +216,8 @@
      "tools/broadening_sensitivity.py"
     ],
     "source_commits": {
-     "outputs/broadening_sensitivity.json": "162624b",
-     "tools/broadening_sensitivity.py": "604bb7e"
+     "outputs/broadening_sensitivity.json": "16b1a08",
+     "tools/broadening_sensitivity.py": "16b1a08"
     }
    },
    "b": {
@@ -233,7 +233,7 @@
      532.5,
      3117.5
     ],
-    "n_points": 48,
+    "n_points": 52,
     "share_range": [
      0.000576499572049749,
      0.9438065243194399
@@ -244,7 +244,7 @@
      "opacity/mtckd.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "162624b",
+     "outputs/crossover_v3.json": "16b1a08",
      "opacity/mtckd.py": "a7c1482"
     }
    },
@@ -467,8 +467,8 @@
      "tools/wing_cutoff.py"
     ],
     "source_commits": {
-     "outputs/wing_cutoff.json": "162624b",
-     "tools/wing_cutoff.py": "162624b"
+     "outputs/wing_cutoff.json": "16b1a08",
+     "tools/wing_cutoff.py": "16b1a08"
     }
    }
   }
@@ -486,8 +486,8 @@
      3.381
     ],
     "y_range": [
-     0.306073480989055,
-     5.024941954333499
+     0.9124971822569768,
+     3.3079242102550737
     ],
     "bands_cm": {
      "libration": [
@@ -554,66 +554,66 @@
     ],
     "ratio_bare": {
      "libration": [
-      0.5009723776939389,
-      0.40484982706605654,
-      0.5097282881820596,
-      0.3722312926612197,
-      0.39869317674683746,
-      0.36412058660156504,
-      0.3475896649861177,
-      0.4454136155133148,
-      0.3514580422400851
+      1.300020001713385,
+      1.140860770261213,
+      1.1226011916299214,
+      1.0512547621303763,
+      1.1420543184449743,
+      0.9675097517783943,
+      0.9714033392523628,
+      1.1886515937756126,
+      0.9965912643681442
      ],
      "bend": [
-      1.075407866933005,
-      1.1219742765181002,
-      1.08265963161707,
-      0.7081928204580916,
-      0.8085098718766351,
-      0.8455036227657083,
-      0.720710200954211,
-      0.7063056078443762,
-      0.7515235672404365
+      1.4911772605670568,
+      1.6045235683153152,
+      1.4734481538518123,
+      1.3779652965328113,
+      1.4115327086051683,
+      1.5150694167071033,
+      1.4361881197415138,
+      1.3665983561749941,
+      1.5093335610011795
      ],
      "window": [
-      2.5103634423371526,
-      2.1538016544726517,
-      2.8909908169860827,
-      1.41297234312136,
-      1.3868718301697598,
-      1.3474216328012902,
-      1.0601903154980536,
-      1.1361527723126377,
-      1.3186497404514412
+      2.6819798120356726,
+      2.2088854080028293,
+      2.3124832778340347,
+      1.8976157996868876,
+      1.9390818735195856,
+      1.8773674589872855,
+      1.6565453948870925,
+      1.9205223274327137,
+      1.9636593495133199
      ],
      "stretch": [
-      3.586643446267981,
-      3.935200068966676,
-      4.424761811580978,
-      3.0743877972181743,
-      2.803789793388558,
-      3.2309967877618395,
-      2.3759013845635972,
-      2.5240179321284937,
-      2.610901286053656
+      2.4014314982064864,
+      2.548232090728909,
+      2.8470140416939755,
+      2.7764272498443776,
+      2.6337777678713876,
+      2.912091478887945,
+      2.7887937375609573,
+      3.1198357592045896,
+      2.9651153190269284
      ]
     },
     "per_band_range": {
      "libration": [
-      0.3475896649861177,
-      0.5097282881820596
+      0.9675097517783943,
+      1.300020001713385
      ],
      "bend": [
-      0.7063056078443762,
-      1.1219742765181002
+      1.3665983561749941,
+      1.6045235683153152
      ],
      "window": [
-      1.0601903154980536,
-      2.8909908169860827
+      1.6565453948870925,
+      2.6819798120356726
      ],
      "stretch": [
-      2.3759013845635972,
-      4.424761811580978
+      2.4014314982064864,
+      3.1198357592045896
      ]
     },
     "source_files": [
@@ -622,8 +622,8 @@
      "opacity/bands.py"
     ],
     "source_commits": {
-     "outputs/text_checks.json": "7c219f1",
-     "tools/text_checks.py": "984b2f1",
+     "outputs/text_checks.json": "16b1a08",
+     "tools/text_checks.py": "16b1a08",
      "opacity/bands.py": "00398fd"
     }
    },
@@ -637,16 +637,16 @@
      4000.0
     ],
     "y_range": [
-     0.17784233782152906,
-     8952.735404013602
+     0.17713957130420913,
+     9728.966482723567
     ],
     "shown": [
      {
       "T_K": 1000.0,
       "rho_kg_m3": 10.0,
       "fp_range_cm2_g": [
-       1.0593760575342464,
-       2582.705264167306
+       0.5681252662503992,
+       5924.114918703676
       ],
       "line_list_range_cm2_g": [
        0.29091011495094116,
@@ -657,8 +657,8 @@
       "T_K": 1500.0,
       "rho_kg_m3": 30.0,
       "fp_range_cm2_g": [
-       5.425573626492669,
-       1902.7133480531356
+       3.5281483737966197,
+       4568.23732840246
       ],
       "line_list_range_cm2_g": [
        2.1526447810206544,
@@ -3876,7 +3876,7 @@
  "ed_table1": {
   "n_rows": 52,
   "n_with_pokazatel": 27,
-  "n_with_uncertainty": 0,
+  "n_with_uncertainty": 52,
   "uncertainty_note": "fractional, from the two 15 ps halves of each dipole record (sigma_30 = |a-b|/2), applied to this table's band-limited mean (A83)",
   "band_cm": [
    100.0,
@@ -3898,12 +3898,12 @@
   ],
   "sorted_by": "T then rho",
   "kappa_P_range_cm2_g": [
-   324.5823910721455,
-   4182.77650215849
+   409.7631376857054,
+   8051.768398102397
   ],
   "kappa_R_range_cm2_g": [
-   11.669946543828715,
-   4093.538311910776
+   2.7404880981209265,
+   7583.703530966697
   ],
   "files": [
    "figs/ed/ed_table1.csv",
@@ -3932,8 +3932,8 @@
   "n_interpolated": 10,
   "n_clamped": 0,
   "ratio_range": [
-   6.146268269599068,
-   47.078126044568656
+   2.548499775135335,
+   12.94695989465454
   ],
   "flip_threshold_range": [
    1.0098262916603553,

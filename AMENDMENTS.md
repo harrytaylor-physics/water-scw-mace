@@ -4,6 +4,119 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (A86's table was still v5 against v5 in every figure group)
+
+- **A87 — The direct version check caught it immediately: the spectra differ by
+  1.13x at 2550 cm^-1 and the ledger reported the **same number in both
+  columns**. Three producer groups write outside `cfg.output_path` and could not
+  be isolated, so A86's v3 column carried v5 figure numbers. Fixed, rerun, and
+  the honest count is **32 changed, not 23** — including the window value at
+  2550 cm^-1, which A86 reported as unchanged.**
+
+  **(1) The check, and what it found.** Straight from the npz, common band:
+
+  | T | rho | kappa(2550) v3 | v5 | kappa_R v3 | v5 | kappa_P v3 | v5 |
+  |---|---|---|---|---|---|---|---|
+  | 2000 | 1200 | 296.1 | 333.6 (x1.126) | 498.3 | 788.6 (x1.58) | 915.9 | 1296 (x1.42) |
+  | 700 | 10 | 14.68 | 1.405 (**x0.096**) | 28.65 | 2.74 (x0.096) | 423.1 | 486.9 (x1.15) |
+  | 1000 | 10 | 5.877 | 6.282 (x1.07) | 11.67 | 8.663 (x0.74) | 379.1 | 445.5 (x1.18) |
+  | 3000 | 2228.71 | 4426 | 8246 (x1.86) | 4094 | 7584 (x1.85) | 4183 | 8052 (x1.93) |
+
+  Against that, A86's ledger gave
+  `figures.fig1.b.marked_kappa_first_principles_cm2_g` = **333.5783 in both
+  columns**. The v3 column was the v5 number. After the fix it reads
+  **296.139 -> 333.578, x1.1264** — the npz ratio exactly.
+
+  **(2) How each producer finds its spectra, and where it writes.** Every
+  producer locates spectra through the **registry**, via `cfg.fp_opacity_path`
+  and `FP_OPACITY_SUBDIR`; none hard-codes a spectra path. The fault was on the
+  *output* side, and there were three:
+
+  | | reads spectra | writes to | isolated before A87? |
+  |---|---|---|---|
+  | scan, evolution, crossover, band diagnostic, text checks, scaling, wing cut-off | registry | `cfg.output_path` | yes |
+  | all figures and ED items/tables | registry | **`figs/`**, hard-coded in `figures/_manuscript.py` | **no** |
+  | release tables and fit | registry | **`data/release/`**, hard-coded | **no** (A86 caught this one) |
+  | the ledger's own `figures.*` block | — | — | **no**: read `ROOT / "figs"` directly |
+
+  `FIGS_DIR` (and `ED_DIR`, which derives from it), `RELEASE_DIR`, and the
+  ledger's figure-root now all honour `SUBNEPTUNE_FIGS_DIR` /
+  `SUBNEPTUNE_RELEASE_DIR`, defaulting to the repo paths so ordinary runs are
+  unchanged. The v3 driver sets all three.
+
+  **And the version guard the brief asks for.** The registry entry now carries
+  the marker *value* expected for the directory it points at —
+  `fp_opacity` -> `cm2_per_g:A50` or `:A74` (A74's four corner cells were stamped
+  later), `fp_opacity_v4` -> `:A80`, `fp_opacity_v5` -> `:A83` — and
+  `opacity/loaders.py` **raises** when a file's marker is not among them.
+  Verified three ways: v5 loads, v3 loads once the subdir is flipped (the
+  expectation follows it), and a deliberate mismatch refuses.
+
+  **(3) The corrected table.** Both columns rebuilt from every producer,
+  including the figures, into isolated roots. **697 entries, 141 scalars
+  comparable, 32 changed (22.7%).**
+
+  | group | scalars | changed |
+  |---|---|---|
+  | window value / factor at 2550 cm^-1 | 4 | **2** |
+  | boundary disputes / thresholds / shifts | 5 | **1** |
+  | candidate fiducial (S6) | 18 | 18 |
+  | water worlds + old fiducial (S9) | 3 | 3 |
+  | S6 closure | 3 | 2 |
+  | crossover agreement | 6 | 6 |
+  | wing cut-off ratios | 14 | **0** |
+  | other figures | 7 | **0** |
+  | dilute ranges, scaling indices, conservative bound, release/fit | — | **0** |
+
+  **What A86 got wrong**, now that the figure groups are honestly compared:
+
+  | number | v3 rebuilt | v5 | A86 said |
+  |---|---|---|---|
+  | `fig1.b` kappa at 2550 cm^-1 | **296.139** | **333.578** (x1.126) | unchanged |
+  | `fig1.b` marked ratio | **31.103** | **35.035** (x1.126) | unchanged |
+  | `fig3.a` boundary shift (dex) | **-0.68995** | **-0.572077** (x0.829) | unchanged |
+
+  Everything A86 reported about the candidate fiducial, the water worlds and the
+  closure stands unchanged: the candidate's 18 numbers all fall to 0.59-0.76x at
+  T_int = 30 K, the old fiducial's cooling ratio 6.750 -> 4.052, and **the two
+  wmf = 0.50 water worlds still move only 0.4% and 0.1%.** The six
+  `agreement.*` entries move from sub-percent to 60-100%, which is the expected
+  consequence of comparing v5 against the owner's v3-era RADIS analysis (A83).
+
+  **One group is still not comparable, and it is not the isolation's fault.**
+  `figures/ed_items.py` **cannot run to completion**: ED5 panel (e) reads
+  `outputs/window_residual.npz` expecting `band_centre_cm` and
+  `A_pred_over_A_label`, and the file on disk carries `nu`, `A_label`, `A_pred`,
+  `A_resid`, `M_label`, `M_pred`, `N`, `dt`. It fails identically under v3 and
+  v5, so it is a pre-existing breakage, not a version effect. The consequence is
+  that **neither column can freshly build the ED figures**: the 341 `ed.*`
+  entries in the v5 column are inherited from an earlier run whose provenance
+  cannot be established from here, and the v3 column has only the three the
+  tables supply. **The Extended Data group is therefore excluded from the table
+  rather than reported as unchanged**, which is what A86 did with it. A88 should
+  regenerate `window_residual.npz` from its producer, or fix ED5 to read the
+  format that exists.
+
+  **(4) The band tilt, re-pinned to the monomer test.** The gate asked for
+  `stretch/bend` over the line list **> 3**, which is what the v3 spectra
+  happened to give rather than what the monomer test predicts: the dipole
+  model's squared derivative ratios put it between about **1.2 and 3.0**. v5
+  gives **1.588 to 2.283** over the six dilute points — inside that window at
+  every one, where v3's values were above it. The gate now pins 1.2 to 3.0 and
+  passes; the tilt is the claim and it survives, its magnitude never was. The two
+  *monotonicity* assertions are a different claim and stay xfailed.
+
+  **The rho = 49.7 layer changes no quoted planetary number.** It is the
+  composite's in-box radiative sliver in the candidate structural case, T =
+  854.7-967.9 K, rho = 10.2-49.7, **9.38e-4 of the envelope mass**. Exactly three
+  ledger entries derive from in-box radiative quantities, and all three are the
+  closure numbers already recorded (`s6_closure.*`). The 22 quoted planetary
+  numbers come from `plot_s6_candidate_evolution.py` and
+  `plot_s9_case_evolution.py`, which are integrated structure and evolution
+  results computed from profiles that **already contain** the layer wherever it
+  sits. Nothing needs correcting: what moved is the closure *statement*, which is
+  recorded as a number, not any planetary quantity.
+
 ## 2026-09-30 (the stuck case was the critical point; the definitive table, at last)
 
 - **A86 — The case that blocked A85 stalls on water's critical point: an equation

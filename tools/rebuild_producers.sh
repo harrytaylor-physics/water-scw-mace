@@ -35,6 +35,10 @@ done
 # outputs/manuscript_numbers.json under ed.* keys, so the ledger has to be built
 # BEFORE it, not after -- running the ledger last overwrites the merge and
 # silently drops 341 ed.* entries. ed_tables feeds ed_index, so it comes first.
+# A87: the ED *figures* populate ed_numbers.json and must be built here. They
+# were not, in either A86 pass: v5 inherited 341 ed.* entries from an earlier run
+# and v3 started empty, so the Extended Data group was never actually compared.
+$P figures/ed_items.py $C >/dev/null 2>&1 || echo "    FAIL ed_items"
 echo "--- 13 ED tables";  $P figures/ed_tables.py $C >/dev/null 2>&1 || echo "    FAIL ed_tables"
 echo "--- 14 ledger";     $P tools/manuscript_numbers.py $C >/dev/null
 echo "--- 15 ED merge";   $P figures/ed_index.py $C >/dev/null 2>&1 || echo "    FAIL ed_index"

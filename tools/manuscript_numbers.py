@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from config import Config, load_config
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# A87: the figure ledger lives outside cfg.output_path, and reading it by a
+# hard-coded repo path made a v3 run pick up v5 figure numbers -- which is what
+# made A86's "every headline group unchanged" untrue for every figures.* entry.
+# Same override the producers honour.
+FIGS_ROOT = Path(os.environ.get("SUBNEPTUNE_FIGS_DIR", ROOT / "figs"))
 
 
 def _commit_for(script: str) -> str:
@@ -596,7 +603,7 @@ def radiogenic(cfg: Config, led: Ledger) -> None:
 
 
 def figures(cfg: Config, led: Ledger) -> None:
-    path = ROOT / "figs" / "fig_numbers.json"
+    path = FIGS_ROOT / "fig_numbers.json"
     if not path.exists():
         led.absent("figures", "-", "figures/_manuscript.py",
                    "run figures/fig1.py .. fig4.py")

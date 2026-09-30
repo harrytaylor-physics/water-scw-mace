@@ -15,6 +15,17 @@ from dataclasses import dataclass
 
 from config.schema import FP_OPACITY_SUBDIR
 
+# A87: which marker values belong with which first-principles directory. The
+# registry's subdir and the files on disk have to agree, or spectra from one
+# version load under another version's expectation -- which is how a "v3" ledger
+# column came to carry v5 numbers. v3 carries two values because A74's four
+# corner cells were stamped after A50's rewrite.
+_EXPECTED_MARKERS: dict[str, tuple[str, ...]] = {
+    "fp_opacity": ("cm2_per_g:A50", "cm2_per_g:A74"),
+    "fp_opacity_v4": ("cm2_per_g:A80",),
+    "fp_opacity_v5": ("cm2_per_g:A83",),
+}
+
 
 @dataclass(frozen=True)
 class SourceSpec:
@@ -29,6 +40,11 @@ class SourceSpec:
     # were rewritten in correct units by tools/fix_fp_units.py, which stamps this
     # marker; an un-stamped file is a legacy ×1000 one and must never load.
     units_marker: str | None = None
+    # A87: the marker's expected *value*, not just its presence. The subdir and
+    # the marker have to agree, or a file from one version is being read while
+    # the registry points at another -- which is how a "v3" ledger column came to
+    # carry v5 numbers. None = accept any value (line lists, which are versionless).
+    units_value: tuple[str, ...] | None = None
     # Additive continuum model applied to every loaded spectrum, by name in
     # ``opacity.mtckd.CONTINUUM_MODELS``. None = bare line absorption. The
     # continuum is a function of the spectrum's own (T, ρ), so it is applied at
@@ -53,6 +69,8 @@ REGISTRY: dict[str, SourceSpec] = {
         scale=1.0,
         scale_reason="units fixed at source by tools/fix_fp_units.py (A50); spectra regenerated with the A81 estimator at sd = 10 cm^-1 (A83)",
         units_marker="units_fixed",
+        units_value=_EXPECTED_MARKERS.get(FP_OPACITY_SUBDIR),
+
     ),
     # Line lists carry correct units -> no scaling. Filenames follow the
     # delivered POKAZATEL convention T{T}_rho{rho}.npz (no _opacity suffix);

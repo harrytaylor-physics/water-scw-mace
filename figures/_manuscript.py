@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 from typing import Any
 
@@ -32,7 +33,12 @@ import matplotlib
 matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt  # noqa: E402
 
-FIGS_DIR = Path(__file__).resolve().parents[1] / "figs"
+# A87: figure and Extended Data ledgers live outside cfg.output_path, so a run
+# against a different spectra version could not be isolated -- the v3 column of
+# A86's table silently carried v5 figure numbers because of it. The root is now
+# redirectable, defaulting to the repo's figs/ so ordinary runs are unchanged.
+FIGS_DIR = Path(os.environ.get("SUBNEPTUNE_FIGS_DIR",
+                               Path(__file__).resolve().parents[1] / "figs"))
 ED_DIR = FIGS_DIR / "ed"  # Extended Data items
 
 MM = 1.0 / 25.4  # millimetres -> inches

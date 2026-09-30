@@ -41,3 +41,6 @@ venv/
 
 # OS
 .DS_Store
+figs_v3/
+data_release_v3/
+outputs_v3/
