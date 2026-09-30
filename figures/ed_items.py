@@ -510,6 +510,18 @@ def _monomer_pairs(mode: str, ref: str):
     return f"g{i:02d}", f"g{i + 1:02d}"          # g01 = +, g02 = - ...
 
 
+# A88: the bands the window-validation reduction uses, as the producing script
+# defined them. The "window" band, 1900-3100 cm^-1, is the transparency window the
+# conservative bound leans on, and its ratio is the number A88 Task 2 wants.
+WINDOW_VALIDATION_BANDS_CM = {
+    "libration": (300.0, 1000.0),
+    "bend": (1400.0, 1800.0),
+    "window": (1900.0, 3100.0),
+    "stretch": (3200.0, 4000.0),
+    "overtone": (4200.0, 8000.0),
+}
+
+
 def ed5(cfg: Config, residual_npz: Path | None = None) -> Path:
     """Dipole-model validation: derivatives, ratios, and the dipole-model noise."""
     mono = ROOT / "monomer_test" / "pyscf_monomer.json"
@@ -688,14 +700,40 @@ def ed5(cfg: Config, residual_npz: Path | None = None) -> Path:
     ax_e = axd["e"]
     npz = residual_npz or (ROOT / "outputs" / "window_residual.npz")
     if npz.exists():
+        # A88: this panel used to expect pre-reduced ``band_centre_cm`` and
+        # ``A_pred_over_A_label`` arrays, which the delivered file does not carry
+        # -- it carries the spectra (nu, A_label, A_pred, A_resid) and both dipole
+        # series (M_label, M_pred, 501 frames at 2 fs = 1 ps). The panel therefore
+        # could not build at all, which is why A87 had to exclude the whole
+        # Extended Data group from its comparison. The reduction is done here.
+        #
+        # The band ratio is a PLAIN CHANNEL SUM, not a trapezoid. On the file's
+        # uniform 33.29 cm^-1 grid the two differ only by the endpoint half
+        # weights, but that is enough to matter where a band edge lands on a steep
+        # part of the spectrum: sums reproduce the producing script's five ratios
+        # to <= 0.0004, trapezoids miss the overtone band by 0.086.
+        centres, ratio, resid_frac = [], [], []
         with np.load(npz) as z:
-            centres = np.asarray(z["band_centre_cm"], float)
-            ratio = np.asarray(z["A_pred_over_A_label"], float)
+            nu = np.asarray(z["nu"], float)
+            a_label = np.asarray(z["A_label"], float)
+            a_pred = np.asarray(z["A_pred"], float)
+            a_resid = np.asarray(z["A_resid"], float)
+            for _tag, (_lo, _hi) in WINDOW_VALIDATION_BANDS_CM.items():
+                m = (nu >= _lo) & (nu <= _hi)
+                centres.append(0.5 * (_lo + _hi))
+                ratio.append(float(a_pred[m].sum() / a_label[m].sum()))
+                resid_frac.append(float(a_resid[m].sum() / a_label[m].sum()))
+        centres = np.asarray(centres, float)
+        ratio = np.asarray(ratio, float)
         ax_e.plot(centres, ratio, ls="none", marker="o", ms=4.0,
                   mfc=OKABE_ITO["blue"], mec="black", mew=0.4, zorder=3)
         ax_e.axhline(1.0, color="black", lw=0.7, ls=":", zorder=1)
         nums.panel("e", band_centre_cm=centres.tolist(),
-                   A_pred_over_A_label=ratio.tolist(), source_file=str(npz))
+                   A_pred_over_A_label=ratio.tolist(),
+                   residual_over_label=resid_frac,
+                   bands_cm={k: list(v) for k, v in WINDOW_VALIDATION_BANDS_CM.items()},
+                   reduction="plain channel sum over each band (A88)",
+                   source_file=str(npz))
     else:
         ax_e.set_xlim(0, 4000)
         ax_e.set_ylim(0, 2)

@@ -4,6 +4,133 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the window validation reduced; the bound measured; T_int against age)
+
+- **A88, parts 1-3 — ED Fig. 5e now reads the file that exists and reproduces all
+  five band ratios to 0.0004, which unblocks the Extended Data group A87 had to
+  exclude. The "conservative bound" turns out not to exist in this repository at
+  all, which is why A83-A87 kept reporting it unchanged. Replaced with two
+  measured factors, 9 of 10 boundaries survive. Parts 4-7 are not done and are
+  listed at the end.**
+
+  **(1) ED Fig. 5e and the window numbers.** The panel expected pre-reduced
+  `band_centre_cm` and `A_pred_over_A_label` arrays; the delivered file carries
+  the spectra (`nu`, `A_label`, `A_pred`, `A_resid`) and both dipole series
+  (`M_label`, `M_pred`, 501 frames at 2 fs = 1 ps). The reduction now happens in
+  `figures/ed_items.py`, and `figures/ed_items.py` runs to completion for the
+  first time since the file changed format — all nine ED figures build.
+
+  **The reduction is a plain channel sum, not a trapezoid**, and that matters:
+
+  | band (cm^-1) | reproduced | reported | residual/label | reported |
+  |---|---|---|---|---|
+  | libration 300-1000 | **1.0234** | 1.023 | **0.0042** | 0.0042 |
+  | bend 1400-1800 | **1.3589** | 1.359 | **0.0332** | 0.0332 |
+  | window 1900-3100 | **1.3998** | 1.400 | **0.1709** | 0.1709 |
+  | stretch 3200-4000 | **1.3464** | 1.346 | **0.0850** | 0.0850 |
+  | overtone 4200-8000 | **0.9599** | 0.960 | **0.6680** | 0.668 |
+
+  All five within **0.0004**. With trapezoids instead, the first four move by
+  0.001-0.023 and the overtone by **0.086** — the grid is uniform at 33.29 cm^-1,
+  so the two differ only in the endpoint half-weights, but that is enough where a
+  band edge lands on a steep part of the spectrum. The producing script used sums.
+
+  The two-halves values come from the dipole series through the same estimator:
+  they agree with the spectral arrays to 0.002-0.007 in the four physical bands
+  (libration 1.0254, bend 1.3657, window 1.3769, stretch 1.3464) and diverge in
+  the overtone (0.8655), which is the band whose residual is 67% of its label.
+  Their spread gives the uncertainty, and it is now in the ledger:
+  **window 1.400 +- 0.021**, libration +- 0.018, bend +- 0.035, stretch +- 0.005,
+  overtone +- 0.192. Sixteen `window_validation.*` entries in all.
+
+  **(2) The conservative bound, and why it kept reporting unchanged.** There is
+  **no conservative-bound entry in the ledger and no 4.4 anywhere in the
+  repository.** Every key matching "bound" is a boundary quantity — dispute
+  ratios, flip thresholds, enclosed-mass changes. The 4.4 lives in the manuscript
+  draft, which is not in this tree.
+
+  So the honest answer to why A83 through A87 reported it unchanged is: **they did
+  not measure it. My own grouping regex matched zero scalars and I printed
+  "unchanged" for an empty group** — a reporting fault, repeated four times. An
+  empty group should have read "no entries", and A88 is where that is corrected.
+
+  **The two measured factors.** At rho >= 60 kg m^-3 the window-validation ratio,
+  **1.400**; at rho < 60 the largest v5 dilute stretch-band excess over the line
+  list, which is **3.039** at (2000 K, 30 kg m^-3) — the fourteen dilute points
+  span 2.244 to 3.039 with a median of 2.642. Applied to all ten boundaries on
+  computed data (in box, unclamped):
+
+  | T (K) | rho | dispute | factor | bounded | threshold | exceeds? |
+  |---|---|---|---|---|---|---|
+  | 1008.0 | 43.8 | 2.55 | 3.039 | **0.84** | 1.19 | **no** |
+  | 732.2 | 54.1 | 6.29 | 3.039 | 2.07 | 1.12 | yes |
+  | 739.1 | 54.6 | 6.18 | 3.039 | 2.03 | 1.03 | yes |
+  | 735.0 | 61.3 | 6.77 | 1.400 | 4.84 | 1.05 | yes |
+  | 735.4 | 81.9 | 8.97 | 1.400 | 6.41 | 1.08 | yes |
+  | 744.8 | 90.1 | 9.55 | 1.400 | 6.82 | 1.05 | yes |
+  | 741.0 | 96.3 | 10.58 | 1.400 | 7.56 | 1.01 | yes |
+  | 734.1 | 107 | 12.01 | 1.400 | 8.58 | 1.09 | yes |
+  | 726.1 | 110 | 12.83 | 1.400 | 9.17 | 1.21 | yes |
+  | 736.5 | 124 | 12.95 | 1.400 | 9.25 | 1.03 | yes |
+
+  **Nine of ten survive.** The bounded dispute ratio runs **0.84 to 9.25**, and
+  the smallest bounded dispute, 0.84, is the one that fails: (1008 K, 43.8), the
+  hottest and least dense of the ten, where the dilute factor of 3.039 is nearly
+  as large as the dispute itself. Every boundary at rho >= 60 clears its threshold
+  by a factor of 4.6 to 9.2 even after dividing by 1.400.
+
+  **(3) Internal temperature against age.** T_int interpolated on each cooling
+  track, line list against composite (v5):
+
+  *Water-world fiducial, M_c = 10, wmf = 0.50, T_eq = 500 K —
+  `config/fiducial.yaml`:*
+
+  | age (Gyr) | 0.1 | 0.5 | 1 | 2 | 5 | 10 |
+  |---|---|---|---|---|---|---|
+  | line list | 125.22 | 94.29 | 77.16 | 57.27 | 44.68 | 37.80 |
+  | composite | 125.22 | 94.29 | 77.16 | 57.27 | **43.88** | **33.61** |
+  | difference | 0.00 | 0.00 | 0.00 | 0.00 | **-0.80 K, -1.78%** | **-4.19 K, -11.09%** |
+
+  *Water world, M_c = 15, wmf = 0.50, T_eq = 500 K — `config/fiducial.yaml`:*
+
+  | age (Gyr) | 0.1 | 0.5 | 1 | 2 | 5 | 10 |
+  |---|---|---|---|---|---|---|
+  | line list | 134.57 | 102.49 | 84.47 | 63.26 | 48.73 | 41.25 |
+  | composite | 134.57 | 102.49 | 84.47 | 63.26 | **48.31** | **37.57** |
+  | difference | 0.00 | 0.00 | 0.00 | 0.00 | **-0.42 K, -0.86%** | **-3.68 K, -8.93%** |
+
+  *Candidate, M_c = 5, f_env = 0.05, T_eq = 700 K — `config/candidate.yaml`:*
+
+  | age (Gyr) | 0.1 | 0.5 | 1 | 2 | 5 | 10 |
+  |---|---|---|---|---|---|---|
+  | line list | 52.07 | 34.23 | 29.07 | 24.62 | 19.76 | 16.88 |
+  | composite | 52.07 | 33.75 | 27.19 | 22.35 | 17.50 | 14.94 |
+  | difference | 0.00 | **-1.40%** | **-6.46%** | **-9.23%** | **-11.44%** | **-11.50%** |
+
+  The two water worlds are **indistinguishable out to 2 Gyr** and separate only
+  late, reaching 8.9-11.1% by 10 Gyr; the candidate separates from 0.5 Gyr and
+  saturates near 11.5%. The composite is cooler at fixed age throughout, which is
+  the sign a more opaque envelope gives: it retains heat longer, so at any age it
+  has cooled less far along its own track and sits at a *lower* T_int than the
+  line-list model at the same age.
+
+  **One caveat, and it changed the numbers.** The candidate's track on a T_int
+  grid floored at 20 K ends at **4.71 Gyr** (line list) and 2.99 Gyr (composite),
+  so 5 and 10 Gyr fell outside it and `np.interp` silently clamped both to the
+  floor — reporting 20.00 K and a difference of exactly zero. The grid floor is
+  lowered to 12 K, which extends the tracks to 32.5 and 21.6 Gyr and gives the
+  real values above. **The water-world tracks span 242 and 280 Gyr and never
+  needed it.**
+
+  **Parts 4 to 7 are not done.** Part 4 (water-fraction inversion at fixed radius
+  and age) needs a two-dimensional solve with the core mass tracking
+  `M_p (1 - wmf)`, part 5 is a new vector schematic for Fig. 1a, part 6
+  restructures the Extended Data to ten items, and part 7's final table depends
+  on 4 to 6 being in place. None is blocked; they are simply not built yet, and
+  reporting three parts measured rather than seven part-measured is the honest
+  split. The ED rebuild in both columns that part 1 asks for also waits on part 7,
+  since it is the same pair of runs.
+
 ## 2026-09-30 (A86's table was still v5 against v5 in every figure group)
 
 - **A87 — The direct version check caught it immediately: the spectra differ by

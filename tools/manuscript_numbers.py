@@ -540,6 +540,50 @@ def evolution(cfg: Config, led: Ledger) -> None:
                         "retired the chosen 20% bound; the gate now pins only that "
                         "this is strictly positive and strictly below 1")
 
+    # A88: the direct validation of the dipole model against DFT Wannier labels
+    # on a 1 ps trajectory at (1000 K, 130 kg m^-3). Band ratios are plain channel
+    # sums over each band (see figures/ed_items.py), and the uncertainty is the
+    # half-record spread of the same ratio recomputed from the two dipole series.
+    # The window band's 1.400 is the factor the conservative bound now uses at
+    # rho >= 60 kg m^-3.
+    wres = ROOT / "outputs" / "window_residual.npz"
+    if wres.exists():
+        import numpy as _np
+        from figures.ed_items import WINDOW_VALIDATION_BANDS_CM as _WB
+        from opacity.dipole_spectrum import C_CM as _CCM, two_sided_power_spectrum as _tsps
+        wsrc = "figures/ed_items.py"
+        with _np.load(wres) as _z:
+            _nu = _np.asarray(_z["nu"], float)
+            _al, _ap = _np.asarray(_z["A_label"], float), _np.asarray(_z["A_pred"], float)
+            _ar = _np.asarray(_z["A_resid"], float)
+            _ml, _mp = _np.asarray(_z["M_label"], float), _np.asarray(_z["M_pred"], float)
+            _dt = float(_z["dt"])
+        def _band_from_m(_m, _lo, _hi):
+            _om, _it = _tsps(_m, _dt * 1e-15)
+            _w = _om / (2.0 * _np.pi) / _CCM
+            _k = (_w >= _lo) & (_w <= _hi)
+            return float(_np.sum(_om[_k] ** 2 * _it[_k]))
+        _h = len(_ml) // 2
+        for _tag, (_lo, _hi) in _WB.items():
+            _m = (_nu >= _lo) & (_nu <= _hi)
+            led.add(f"window_validation.ratio.{_tag}",
+                    float(_ap[_m].sum() / _al[_m].sum()), "model / DFT label",
+                    wsrc, "outputs/window_residual.npz")
+            led.add(f"window_validation.residual_over_label.{_tag}",
+                    float(_ar[_m].sum() / _al[_m].sum()), "fractional",
+                    wsrc, "outputs/window_residual.npz")
+            _r1 = _band_from_m(_mp[:_h], _lo, _hi) / _band_from_m(_ml[:_h], _lo, _hi)
+            _r2 = _band_from_m(_mp[_h:], _lo, _hi) / _band_from_m(_ml[_h:], _lo, _hi)
+            led.add(f"window_validation.ratio_half_spread.{_tag}",
+                    abs(_r1 - _r2) / 2.0, "model / DFT label",
+                    wsrc, "outputs/window_residual.npz",
+                    "half-record spread of the same ratio recomputed from the "
+                    "dipole series; the uncertainty on the ratio above")
+        led.add("window_validation.case",
+                "1 ps labelled trajectory, 1000 K, 130 kg m^-3, "
+                "revPBE0-D3 Wannier-centre dipoles", "-", wsrc,
+                "outputs/window_residual.npz")
+
     cand = _csv(cfg, "S6_candidate_evolution.csv")
     if cand:
         for r in cand:
