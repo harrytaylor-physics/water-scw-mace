@@ -4,6 +4,177 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the ledger now refuses stale inputs; the definitive table is blocked on one case)
+
+- **A85 — The audit found one materially stale producer, and the ledger now
+  refuses to run on a stored file older than the spectra it derives from.
+  Rebuilding that producer changed which cells S9 selects, and one of the new
+  ones **does not integrate under v5** — the same failure at 1x, 2x, 5x and 10x
+  the evaluation budget, so it is stuck rather than slow. The v5 ledger and
+  therefore the definitive v3-versus-v5 table cannot be completed until that
+  case is resolved. Everything that does converge is reported below. No
+  manuscript number and no gate changed.**
+  `tools/manuscript_numbers.py` (freshness guard), `tools/rebuild_producers.sh`,
+  `tools/rebuild_v3_column.sh`.
+
+  **(1) The audit.** The ledger reads **15** stored files and rebuilds none of
+  them. That is the mechanism behind A84's finding, and it had a second victim.
+
+  | stored file | status |
+  |---|---|
+  | `S4_domain_scan_extended.csv` | **materially stale** — written 09-29 10:24, before the v5 switch |
+  | `S6_candidate_evolution.csv` | was stale from commit 4834c22 (A84); rebuilt |
+  | `crossover_hitemp_v2.json`, `crossover_v3.json`, `band_diagnostic.json`, `text_checks.json`, `rho_scaling.json`, `wing_cutoff.json`, `S8_rcb_flip.csv`, `S9_case_evolution.csv` | fresh — rebuilt during A83's propagation |
+  | `broadening_sensitivity.json`, `aqua_entropy_check.json`, `aguichine2025_compare.json`, `crossover_v3_before_a60.json`, `crossover_v3_after_a60.json` | old but **exempt**: each has **zero** first-principles references, so the v5 switch cannot move them |
+
+  **The stale one matters most.** `plot_s4_domain_scan.py` writes the extended
+  108-cell scan only when passed `--extended`, which costs about five minutes and
+  which A83's propagation never passed — it ran the script bare. So the entire
+  boundary group, categories included, was still the v3-era scan while
+  everything around it had moved to v5.
+
+  **The guard.** Every `_csv`/`_json` read now compares the stored file's mtime
+  against the newest spectrum under `cfg.fp_opacity_path` and the HITEMP
+  directory, and **raises** if the file is older. It is an mtime check and not a
+  dependency graph — it catches exactly the failure that bit us, a spectra switch
+  without a producer rerun, and nothing subtler. The five FP-independent files
+  are exempt by name, each with its reason in the source. Verified: the ledger
+  refuses on the stale scan and names it.
+
+  `tools/rebuild_producers.sh` runs all eleven producers in dependency order
+  before the ledger, with the S6 config trap commented in place so the A83/A84
+  mistake cannot recur silently.
+
+  **The first version of the guard was not enough, and finding that out is part
+  of the result.** Checking each stored file against the *spectra* catches a
+  spectra switch, but some producers depend on **another producer's output**: S9
+  and S8 take their case list from the extended scan, so rebuilding the scan
+  invalidates them while the spectra have not moved. The first guard passed a
+  ledger that mixed boundary numbers from the new scan with evolution numbers
+  computed against the old one. A small `_OUTPUT_DEPS` map now covers that, and
+  it was checked against the source rather than guessed: `plot_s8_rcb_flip.py`
+  and `plot_s9_case_evolution.py` reference the scan, `plot_s6_candidate_evolution.py`
+  does **not** (it takes a fixed f_env grid from `config/candidate.yaml`), so S6
+  is deliberately not listed — an entry for it produced a spurious refusal and
+  was removed.
+
+  **A hole remains that mtime cannot close.** A producer that fails partway
+  leaves a *partial* output with a *new* mtime, which looks fresher than its
+  inputs and passes every check here. That happened during this amendment:
+  diagnosing the S9 failure rewrote `S9_case_evolution.csv` with the **3 cases
+  that converge** where it previously held 4, and the guard cannot tell. The
+  producers should write atomically — temp file then rename — so a failed run
+  leaves no output at all. That is for A86; until then the case count is stated
+  wherever S9 is quoted.
+
+  **(2) Blocked, and by a real failure rather than a stale file.** Rebuilding the
+  scan changed its ranking, and S9 takes "the 3 strongest scan cells". The third
+  is now **M_c = 15, wmf = 0.20, T_eq = 500 K, T_int = 30 K**, which was not in
+  the stale scan's top three. It **fails the A57 integration guard**:
+
+  | evaluation budget | result |
+  |---|---|
+  | 200,000 (default) | fails after 29 s |
+  | 400,000 | fails after 23 s |
+  | 1,000,000 | fails after 23 s |
+  | 2,000,000 | fails after 23 s |
+
+  Identical wall time at ten times the budget means the interior integration is
+  **not making progress**, which is precisely what the guard exists to surface.
+  It is not a tuning problem. So `plot_s9_case_evolution.py` cannot complete, the
+  `evolution.*` ledger group cannot be rebuilt under v5, and the full ledger — and
+  with it the definitive v3-versus-v5 table the brief asks for — **is not
+  produced here.** Excluding the case would silently change the case set and make
+  the comparison the same kind of apples-to-oranges A84 was cleaning up, so it is
+  reported instead.
+
+  Note what this is *not*: a regression. With the stale scan S9 picked a
+  different third case and ran. The failure appeared because the scan was
+  un-staled, so it belongs to v5 and has simply never been exercised before.
+
+  Steps 1-3 of the v5 rebuild (extended scan, corner boundaries, S8) completed;
+  the extended scan itself converged at all 108 cells. The v3 column driver is
+  written and untested, since it would stop at the same step. `S9_case_evolution.csv`
+  currently holds **3 of its 4 cases** — the two wmf = 0.50 water worlds and the
+  old fiducial — with the M_c = 15, wmf = 0.20 case absent because it does not
+  integrate. Any `evolution.*` number read from it is a three-case number.
+
+  **(3) The planetary numbers, under v5, each with its config named.** The two
+  water worlds converge and reproduce the stored values exactly, so these are
+  genuine v5 numbers.
+
+  `figures/plot_s9_case_evolution.py`, **`config/fiducial.yaml`** (dR and ds are
+  composite minus line list, fractional; 44/88 nodes bracket the age-grid
+  sensitivity):
+
+  | case | dR 1 Gyr | dR 5 Gyr | dR 10 Gyr | ds 5 Gyr |
+  |---|---|---|---|---|
+  | M_c=10 wmf=0.50 T_eq=500 T_int=30 | -5.9e-08 / -1.1e-07 | 3.20e-05 / 4.00e-05 | 8.37e-04 / 9.17e-04 | 4.07e-04 / 4.59e-04 |
+  | M_c=15 wmf=0.50 T_eq=500 T_int=30 | -1.1e-07 / 5.5e-08 | -3.51e-06 / 9.76e-06 | 5.38e-04 / 5.71e-04 | 2.42e-05 / 1.43e-04 |
+  | old fiducial M_c=5 wmf=0.05 T_eq=500 T_int=20 | 3.08e-03 / 3.16e-03 | 9.80e-03 / 9.73e-03 | 1.24e-02 / 1.23e-02 | 1.67e-01 / 1.62e-01 |
+
+  **There is no M_c = 5, wmf = 0.50 water world to report**: the scan's three
+  strongest cells are M_c = 15 and 10 at wmf 0.50 and M_c = 15 at wmf 0.20, and
+  the only M_c = 5 case S9 carries is the old fiducial at wmf = 0.05. The brief's
+  "M_c = 5 and 15 water worlds" exists only as the M_c = 15 one.
+
+  `figures/plot_s6_candidate_evolution.py`, **`config/candidate.yaml`**
+  (M_c = 5, f_env 0.02/0.05/0.10, T_eq = **700 K** — not 500):
+
+  | quantity | 5 Gyr | 7 Gyr | 10 Gyr |
+  |---|---|---|---|
+  | delta R (R_earth) | 0.006102 | 0.006904 | 0.008363 |
+  | delta R / R | 0.003470 | 0.003933 | 0.004774 |
+  | delta S (J/kg/K) | 343.34 | 413.56 | 531.14 |
+  | delta S / S | 0.035386 | 0.043494 | 0.057329 |
+
+  | tau_KH ratio | f_env 0.02 | 0.05 | 0.10 |
+  |---|---|---|---|
+  | T_int = 30 K | 1.4917 | 1.4309 | 1.3723 |
+  | T_int = 40 K | 1.0020 | 1.0005 | 1.0020 |
+
+  **A third mislabelling, and it is in the ledger.** These S6 rows are stored
+  under the key prefix `water_world_fiducial.*`, and the ledger asserts the case
+  is "M_c = 10 M_earth, water mass fraction 0.50, T_eq = 500 K". That is an **S9**
+  case. S6 runs the candidate at M_c = 5, f_env 0.02-0.10, T_eq = 700 K. The
+  label and the numbers under it have never matched. Every quantity the
+  manuscript takes from `water_world_fiducial.*` is a *candidate* number, not a
+  water-world one.
+
+  **(4) The S6 closure, diagnosed.** What it compares: the envelope mass fraction
+  in layers that are both **radiative** and **inside the first-principles box**
+  (T >= 650 K, rho >= 10 kg m^-3), composite against line list. The claim is that
+  handing kappa to the first principles inside its own box removes the radiative
+  layers the line list leaves there.
+
+  **The 20% was chosen, not derived.** Commit `0ed64e7`, which set the blend
+  window to 10-30 and wrote the gate, records the measurement in its own message:
+  *"The candidate's closure becomes partial: 3025 ppm in-box under HITEMP, 377 ppm
+  under the composite, at the box's dilute edge."* That is **377/3025 = 12.5%**,
+  and 20% was put above it as margin. Under v5 the line-list side is unchanged at
+  3025 ppm and the composite side is **938 ppm**, so the ratio is **31%** — the
+  composite's in-box radiative mass has grown 2.5x and consumed the margin.
+
+  **Which of the three it is: the physics, read through a chosen threshold.** The
+  gate's own docstring already says the closure is partial because the box floor
+  (A55) reaches down to rho = 10, into the range where the composite is the line
+  list *by construction* — the blend window is 10-30 with its seam at rho = 17.3.
+  A84 measured what changed there: kappa_R first-principles over line list at the
+  seam fell from 5.74-9.67 to 2.32-2.82. A less opaque composite at the dilute
+  edge keeps more mass radiative, which is exactly what 377 -> 938 ppm is. So it
+  is **not** a method error and **not** a gate error in the sense of being wrongly
+  written; it is the physics of v5 moving a quantity past a bound that was set
+  with 1.6x of margin over a 12.5% measurement. The qualitative claim the gate
+  supports — shrinkage, not elimination — still holds at 31%. Whether 20% should
+  become a looser number or the claim should be restated is Harry's call, and the
+  xfail stays until he makes it.
+
+  **What A86 needs.** Decide the `M_c = 15, wmf = 0.20` case: whether its
+  non-convergence is a physical pathology (a two-phase envelope, a hull-clamp
+  cycle) or an integrator limitation. Until then no v5 ledger and no v3
+  comparison column is defensible, and the 34-entry diff A83 quoted should not be
+  quoted at all — its v3 side is stale and its v5 side is incomplete.
+
 ## 2026-09-30 (checking v5: the 6.07 was mine, and the v3 baseline was stale)
 
 - **A84 — The tau_KH jump A83 reported as 1.00 -> 6.07 was an artefact of a

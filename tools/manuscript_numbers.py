@@ -68,12 +68,87 @@ class Ledger:
         }
 
 
+# A85: the ledger READS these files; it does not rebuild them. That is how A83
+# came to quote a water-world number from a CSV last written eleven commits
+# earlier, and how the 108-boundary scan survived the v5 switch untouched
+# (``plot_s4_domain_scan.py`` needs ``--extended``, which the propagation did not
+# pass). So every read is now checked against the spectra it depends on, and a
+# stored file older than its inputs is a hard error rather than a silent stale
+# number.
+#
+# This is a mtime check, not a dependency graph: it catches exactly the failure
+# that bit us -- a spectra switch without a producer rerun -- and nothing subtler.
+# Four producers touch no first-principles spectrum at all and are exempt by
+# name, each for a stated reason.
+_STALE_EXEMPT = {
+    # line-list broadening only; no FP reference in tools/broadening_sensitivity.py
+    "broadening_sensitivity.json": "line-list broadening; independent of the FP spectra",
+    # AQUA EOS entropy; no FP reference
+    "aqua_entropy_check.json": "AQUA EOS only; independent of the FP spectra",
+    # published tracks; no FP reference
+    "aguichine2025_compare.json": "literature tracks; independent of the FP spectra",
+    # HITEMP grid rows at 2250/2750 K; line list only
+    "crossover_v3_before_a60.json": "HITEMP rows only; independent of the FP spectra",
+    "crossover_v3_after_a60.json": "HITEMP rows only; independent of the FP spectra",
+}
+# Some producers depend on ANOTHER producer's output, not only on the spectra.
+# S9 and the corner-boundary profiles both take their case list from the extended
+# scan, so rebuilding the scan invalidates them even though the spectra have not
+# moved -- which is precisely how the first version of this guard let a mixed
+# ledger through. Each entry is "this output must be newer than these outputs".
+_OUTPUT_DEPS = {
+    "S9_case_evolution.csv": ("S4_domain_scan_extended.csv",),
+    "S8_rcb_flip.csv": ("S4_domain_scan_extended.csv",),
+    # S6 takes its case from config/candidate.yaml and a fixed f_env grid, not
+    # from the scan (no scan reference in plot_s6_candidate_evolution.py), so it
+    # is deliberately NOT listed here.
+}
+ALLOW_STALE = False
+
+
+def _newest_input_mtime(cfg: Config) -> float:
+    """Newest mtime among the spectra the ledger's producers read."""
+    newest = 0.0
+    for d in (cfg.fp_opacity_path, cfg.data_root_path / "hitemp_opacity"):
+        if d.is_dir():
+            for f in d.glob("*.npz"):
+                newest = max(newest, f.stat().st_mtime)
+    return newest
+
+
+def _check_fresh(cfg: Config, name: str) -> None:
+    if ALLOW_STALE or name in _STALE_EXEMPT:
+        return
+    p = cfg.output_path / name
+    if not p.exists():
+        return
+    mine = p.stat().st_mtime
+    newest = _newest_input_mtime(cfg)
+    if mine < newest:
+        raise SystemExit(
+            f"{p} is older than the spectra it derives from "
+            f"({cfg.fp_opacity_path.name}). Rebuild its producer before "
+            f"running the ledger, or pass --allow-stale if you have a reason. "
+            f"A85 added this check because the ledger reads stored files and "
+            f"does not rebuild them.")
+    for dep in _OUTPUT_DEPS.get(name, ()):
+        d = cfg.output_path / dep
+        if d.exists() and mine < d.stat().st_mtime:
+            raise SystemExit(
+                f"{p} is older than {d}, which it depends on: its case list "
+                f"comes from that scan, so rebuilding the scan invalidates it. "
+                f"Rerun its producer (see tools/rebuild_producers.sh), or pass "
+                f"--allow-stale if you have a reason.")
+
+
 def _json(cfg: Config, name: str):
+    _check_fresh(cfg, name)
     p = cfg.output_path / name
     return json.loads(p.read_text()) if p.exists() else None
 
 
 def _csv(cfg: Config, name: str):
+    _check_fresh(cfg, name)
     p = cfg.output_path / name
     return list(csv.DictReader(p.open())) if p.exists() else None
 
@@ -618,9 +693,13 @@ def _json_path(rel: Path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("config", type=Path)
+    ap.add_argument("--allow-stale", action="store_true",
+                    help="skip the A85 freshness check (say why in the commit)")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
+    global ALLOW_STALE
+    ALLOW_STALE = args.allow_stale
 
     led = Ledger()
     for fn in (opacity_ratios, direct_and_broadening, clamp_and_agreement, bands,
