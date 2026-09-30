@@ -24,11 +24,14 @@ Writes ``outputs/S9_case_evolution.csv`` and ``outputs/S9_case_evolution.png``.
 from __future__ import annotations
 
 import csv
+
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # run as script or -m
+
+import atomicio
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -188,7 +191,7 @@ def _write_csv(csv_path, results) -> None:
                  "track_end_gyr",
                  "dR_reachable", "ds_reachable",
                  "dR_max_while_cooling", "ds_max_while_cooling"])
-    with csv_path.open("w", newline="") as fh:
+    with atomicio.open_write(csv_path, newline="") as fh:
         w = csv.writer(fh)
         w.writerow(fields)
         for r in results:

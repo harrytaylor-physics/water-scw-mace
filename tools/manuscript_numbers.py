@@ -502,6 +502,37 @@ def evolution(cfg: Config, led: Ledger) -> None:
                     _rng([float(r[f"ds_{age}"]) for r in base]), "fractional", s9,
                     "outputs/S9_case_evolution.csv")
 
+    # A86: the S6 closure ratio, recorded as a number rather than enforced as a
+    # chosen bound. The gate used to require < 20%, which commit 0ed64e7 put above
+    # its own 12.5% measurement as margin; v5 gives 31%, which consumes the margin
+    # without touching the claim (a shrinkage, not an elimination). The gate now
+    # pins the claim and this entry carries the number.
+    scan_rows = _csv(cfg, "S4_domain_scan_extended.csv")
+    if scan_rows:
+        cells = [r for r in scan_rows
+                 if abs(float(r["mass_core_mearth"]) - 5.0) < 1e-9
+                 and abs(float(r.get("t_eq_k", 0) or 0) - 700.0) < 1e-9
+                 and float(r.get("hitemp_in_box_radiative_mass_fraction", 0) or 0) > 0]
+        if cells:
+            c0 = cells[0]
+            ht = float(c0["hitemp_in_box_radiative_mass_fraction"])
+            comp_key = next((k for k in c0
+                             if k.startswith("composite") and "in_box_radiative_mass" in k), None)
+            if comp_key and c0[comp_key]:
+                cm = float(c0[comp_key])
+                led.add("s6_closure.in_box_radiative_mass_hitemp", ht, "envelope fraction",
+                        "figures/plot_s4_domain_scan.py",
+                        "outputs/S4_domain_scan_extended.csv")
+                led.add("s6_closure.in_box_radiative_mass_composite", cm, "envelope fraction",
+                        "figures/plot_s4_domain_scan.py",
+                        "outputs/S4_domain_scan_extended.csv")
+                led.add("s6_closure.composite_over_hitemp", cm / ht, "fractional",
+                        "figures/plot_s4_domain_scan.py",
+                        "outputs/S4_domain_scan_extended.csv",
+                        "the shrinkage the composite achieves inside the FP box. A86 "
+                        "retired the chosen 20% bound; the gate now pins only that "
+                        "this is strictly positive and strictly below 1")
+
     cand = _csv(cfg, "S6_candidate_evolution.csv")
     if cand:
         for r in cand:
@@ -510,15 +541,24 @@ def evolution(cfg: Config, led: Ledger) -> None:
             suffix = f"{key}.{age}"
             if r["t_int_ref_k"]:
                 suffix += f"_Tint{r['t_int_ref_k']}"
-            led.add(f"water_world_fiducial.{suffix}", float(r["value"]),
+            led.add(f"candidate_fiducial.{suffix}", float(r["value"]),
                     "fractional" if "frac" in key or "ratio" in key else "-",
                     s6, "outputs/S6_candidate_evolution.csv")
-        led.add("water_world_fiducial.case",
-                "M_c = 10 M_earth, water mass fraction 0.50, T_eq = 500 K",
+        # A86: these rows are the CANDIDATE, not a water world. The prefix used
+        # to be water_world_fiducial.* and the case string claimed
+        # "M_c = 10, wmf 0.50, T_eq = 500 K", which is an S9 case; S6 runs
+        # config/candidate.yaml at M_c = 5, f_env 0.02-0.10 and T_eq = 700 K, and
+        # the label had never matched the numbers under it. The wmf = 0.50 water
+        # worlds are in the evolution.* group, from S9.
+        led.add("candidate_fiducial.case",
+                "M_c = 5 M_earth, f_env 0.02/0.05/0.10, T_eq = 700 K",
                 "-", s6, "outputs/S6_candidate_evolution.csv",
-                "the recommended case: the wmf = 0.50 water worlds never reach "
-                "their radiogenic floor, so their smaller differences are the real "
-                "signal (A56)")
+                "producer figures/plot_s6_candidate_evolution.py on "
+                "config/candidate.yaml; renamed from water_world_fiducial.* at "
+                "A86, which mislabelled it as an S9 water world")
+        led.add("candidate_fiducial.producer",
+                "figures/plot_s6_candidate_evolution.py + config/candidate.yaml",
+                "-", s6, "outputs/S6_candidate_evolution.csv")
 
 
 def radiogenic(cfg: Config, led: Ledger) -> None:

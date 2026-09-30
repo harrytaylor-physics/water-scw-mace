@@ -32,6 +32,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import Config, load_config
@@ -408,7 +410,7 @@ def main(argv=None) -> int:
 
     if args.crossover:
         doc = crossover_rows(cfg)
-        (cfg.output_path / "corner_cells_crossover.json").write_text(
+        atomicio.write_text(cfg.output_path / "corner_cells_crossover.json", 
             json.dumps(doc, indent=1) + "\n")
         _print_crossover(doc)
         return 0
@@ -423,7 +425,7 @@ def main(argv=None) -> int:
         return 0
 
     doc = check(cfg)
-    (cfg.output_path / "corner_cells_check.json").write_text(
+    atomicio.write_text(cfg.output_path / "corner_cells_check.json", 
         json.dumps(doc, indent=1, default=str) + "\n")
     _print_check(doc)
     if args.stamp:

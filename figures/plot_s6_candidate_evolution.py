@@ -26,11 +26,14 @@ Outputs ``outputs/S6_candidate_evolution.csv`` and
 from __future__ import annotations
 
 import csv
+
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # run as script or -m
+
+import atomicio
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -180,7 +183,7 @@ def main(argv=None):
     out_dir = cfg.output_path
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / "S6_candidate_evolution.csv"
-    with csv_path.open("w", newline="") as fh:
+    with atomicio.open_write(csv_path, newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["quantity", "age_gyr_or_f_env", "t_int_ref_k", "value"])
         for age in AGES_GYR:

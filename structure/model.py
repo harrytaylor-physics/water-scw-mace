@@ -72,6 +72,7 @@ class StructureResult:
     hydrostatic_residual: float
     shoot_iterations: int
     shoot_residual_m: float
+    loosened_tolerance: bool = False
     composite_seam_ratio: dict | None = None  # FP/line-list κ ratio at seam (A12)
 
     # profile arrays (top -> core), excluded from the json summary
@@ -196,7 +197,52 @@ def build_structure(
     band: tuple[float, float] | None = None,
     rp_guess_rearth: float | None = None,
 ) -> StructureResult:
-    """Build one converged static structure model.
+    """Build one converged static structure model, with one tolerance fallback.
+
+    A86: a cold interior whose adiabat passes near water's critical point
+    (T_c = 647.096 K, P_c = 22.064 MPa) meets an equation of state that is
+    single-phase and smooth pointwise but violently stiff -- dln(rho)/dln(P)
+    reaches ~19 just below the crossing and rho swings by a factor of three over
+    20 K. At the default rtol = 1e-8 no step is accepted and the integration
+    grinds until A57's budget stops it: under LSODA, BDF and Radau alike, and at
+    1x, 2x, 5x and 10x the budget, so it is neither the solver nor the budget.
+
+    The solution exists and is well determined -- at rtol 1e-7, 1e-6 and 1e-5 the
+    planet radius agrees to 1e-4 R_earth, 0.01%. So rather than loosen the
+    tolerance globally, which would move every number in the repository, the
+    whole build is retried **once** at ten times looser rtol and atol, and only
+    after the budget has actually been exhausted. Cases that converge today never
+    reach this path and are bit-identical. ``StructureResult.loosened_tolerance``
+    records that a model needed it, so one is never silently mixed with the rest.
+    """
+    from dataclasses import replace as _replace
+
+    try:
+        return _build_structure_at_tol(cfg, t_eq_k, t_int_k, source_name, eos,
+                                       n_sample, band, rp_guess_rearth)
+    except RuntimeError as exhausted:
+        if "exceeded" not in str(exhausted):
+            raise
+    loose = _replace(cfg, numerics=_replace(cfg.numerics,
+                                            rtol=cfg.numerics.rtol * 10.0,
+                                            atol=cfg.numerics.atol * 10.0))
+    res = _build_structure_at_tol(loose, t_eq_k, t_int_k, source_name, eos,
+                                  n_sample, band, rp_guess_rearth)
+    object.__setattr__(res, "loosened_tolerance", True)
+    return res
+
+
+def _build_structure_at_tol(
+    cfg: Config,
+    t_eq_k: float,
+    t_int_k: float,
+    source_name: str | None = None,
+    eos: AquaEOS | None = None,
+    n_sample: int = 2000,
+    band: tuple[float, float] | None = None,
+    rp_guess_rearth: float | None = None,
+) -> StructureResult:
+    """Build one converged static structure model at the config's tolerances.
 
     ``band`` fixes the opacity band; None -> the source's own band (A21).
     Comparison figures pass the common band of all plotted sources so every

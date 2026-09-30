@@ -46,6 +46,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import Config, load_config
@@ -388,7 +390,7 @@ def main(argv=None) -> int:
     cfg = load_config(args.config)
     doc = run(cfg)
     path = cfg.output_path / "floor_check.json"
-    path.write_text(json.dumps(doc, indent=1) + "\n")
+    atomicio.write_text(path, json.dumps(doc, indent=1) + "\n")
     _print(doc)
     print(f"\n  wrote {path}")
     return 0

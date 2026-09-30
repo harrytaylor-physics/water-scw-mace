@@ -31,8 +31,11 @@ for f in figures/plot_*.py figures/fig1.py figures/fig2.py figures/fig3.py figur
   esac
   $P $f $C >/dev/null 2>&1 || echo "    FAIL $(basename $f)"
 done
-echo "--- 13 ED items + tables"
-$P figures/ed_index.py $C >/dev/null 2>&1 || echo "    FAIL ed_index"
-$P figures/ed_tables.py $C >/dev/null 2>&1 || echo "    FAIL ed_tables"
-echo "--- 14 ledger"; $P tools/manuscript_numbers.py $C >/dev/null
+# ORDER MATTERS HERE. ed_index.py MERGES its numbers into
+# outputs/manuscript_numbers.json under ed.* keys, so the ledger has to be built
+# BEFORE it, not after -- running the ledger last overwrites the merge and
+# silently drops 341 ed.* entries. ed_tables feeds ed_index, so it comes first.
+echo "--- 13 ED tables";  $P figures/ed_tables.py $C >/dev/null 2>&1 || echo "    FAIL ed_tables"
+echo "--- 14 ledger";     $P tools/manuscript_numbers.py $C >/dev/null
+echo "--- 15 ED merge";   $P figures/ed_index.py $C >/dev/null 2>&1 || echo "    FAIL ed_index"
 echo "--- rebuild complete"

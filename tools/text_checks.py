@@ -29,6 +29,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import Config, load_config
@@ -226,7 +228,7 @@ def main(argv=None) -> int:
     out = cfg.output_path
     out.mkdir(parents=True, exist_ok=True)
     path = out / "text_checks.json"
-    path.write_text(json.dumps({
+    atomicio.write_text(path, json.dumps({
         "meta": ("Two numbers the manuscript asserts, checked against the data "
                  "(A65). (a) the 2550 cm^-1 window value at (2000 K, 1200); "
                  "(b) the per-band ratios extended to rho = 60 and to the "

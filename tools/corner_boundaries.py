@@ -23,6 +23,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import load_config
@@ -101,7 +103,7 @@ def main(argv=None) -> int:
                                / rec["before"]["fp_over_hitemp"])
         out["cases"].append(rec)
 
-    (cfg.output_path / "corner_boundaries.json").write_text(
+    atomicio.write_text(cfg.output_path / "corner_boundaries.json", 
         json.dumps(out, indent=1) + "\n")
 
     print(f"\n  The six boundaries the corner cells brought inside "

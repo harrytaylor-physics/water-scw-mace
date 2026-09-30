@@ -54,6 +54,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
@@ -301,7 +303,7 @@ def main(argv=None) -> int:
     root = Path(__file__).resolve().parents[1]
     doc = run(cfg)
     path = cfg.output_path / "floor_identify.json"
-    path.write_text(json.dumps(doc, indent=1) + "\n")
+    atomicio.write_text(path, json.dumps(doc, indent=1) + "\n")
     _print(doc)
     if args.manifest:
         args.manifest.write_text(json.dumps(sha256_manifest(root), indent=1) + "\n")

@@ -31,6 +31,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import load_config
@@ -172,7 +174,7 @@ def main(argv=None) -> int:
     out = cfg.output_path
     out.mkdir(parents=True, exist_ok=True)
     path = out / "mtckd_ref_diff.json"
-    path.write_text(json.dumps({
+    atomicio.write_text(path, json.dumps({
         "meta": (
             "Diff of ARC's mtckd_ref.npz against the MT_CKD 4.3 self-continuum "
             "reference extracted from AER's netCDF in Task 19 (A58/A63)."),

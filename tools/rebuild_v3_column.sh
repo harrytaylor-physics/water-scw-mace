@@ -12,7 +12,12 @@ cd "$(dirname "$0")/.."
 SCHEMA=config/schema.py
 CONF=/tmp/scratch-501/fiducial_v3.yaml
 CAND=/tmp/scratch-501/candidate_v3.yaml
-mkdir -p outputs_v3
+# Seed from the live outputs so the auxiliaries the producers READ but do not
+# WRITE are present (outputs/pre52/state.json from A74's corner-cell work, and
+# the like). Everything a producer owns is overwritten below; outputs_v3 is
+# scratch, so a wholesale copy is the safe way to get the rest.
+rm -rf outputs_v3
+cp -R outputs outputs_v3
 python - <<'PY'
 import pathlib, re
 for src,dst in (("config/fiducial.yaml","/tmp/scratch-501/fiducial_v3.yaml"),
@@ -40,12 +45,20 @@ python tools/band_diagnostic.py $CONF >/dev/null
 python tools/text_checks.py $CONF >/dev/null
 python tools/rho_scaling.py $CONF >/dev/null
 python tools/wing_cutoff.py $CONF --summarise-only >/dev/null
-python tools/release_tables.py $CONF >/dev/null
+# release_tables.py writes to data/release/ via a hard-coded repo path, NOT
+# cfg.output_path, so running it here would clobber the tracked v5 products --
+# it did, once. It is skipped in the v3 pass; the ledger carries no release
+# scalar, so the v3 column loses nothing. If that changes, restore the v5 tables
+# after this script by rerunning tools/release_tables.py on config/fiducial.yaml.
+# python tools/release_tables.py $CONF   # DELIBERATELY NOT RUN -- see above
 for f in outputs/broadening_sensitivity.json outputs/aqua_entropy_check.json \
          outputs/aguichine2025_compare.json outputs/crossover_v3_before_a60.json \
          outputs/crossover_v3_after_a60.json; do
   [ -f "$f" ] && cp "$f" outputs_v3/   # FP-independent; copied so the ledger runs
 done
+# ledger BEFORE ed_index, which merges ed.* into it (see rebuild_producers.sh)
+python figures/ed_tables.py $CONF >/dev/null 2>&1 || true
 python tools/manuscript_numbers.py $CONF >/dev/null
+python figures/ed_index.py $CONF >/dev/null 2>&1 || true
 cp outputs_v3/manuscript_numbers.json outputs/manuscript_numbers_v3_rebuilt.json
 echo "=== v3 column written to outputs/manuscript_numbers_v3_rebuilt.json ==="

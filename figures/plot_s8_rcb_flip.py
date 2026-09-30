@@ -24,11 +24,14 @@ Writes ``outputs/S8_rcb_flip.csv`` and ``outputs/S8_rcb_flip.png``.
 from __future__ import annotations
 
 import csv
+
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # run as script or -m
+
+import atomicio
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -281,7 +284,7 @@ def main(argv=None):
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_out = out_dir / "S8_rcb_flip.csv"
     if rows_out:
-        with csv_out.open("w", newline="") as fh:
+        with atomicio.open_write(csv_out, newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=list(rows_out[0]))
             w.writeheader()
             w.writerows(rows_out)

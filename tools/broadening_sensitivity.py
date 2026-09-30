@@ -65,6 +65,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import Config, load_config
@@ -348,7 +350,7 @@ def _write(cfg, out_dir: Path, band, conventions, results, args) -> Path:
                            for n in results)]
         payload["results"] = keep + results
     payload["results"] = sorted(payload["results"], key=lambda r: (r["T"], r["rho"]))
-    path.write_text(json.dumps(payload, indent=1) + "\n")
+    atomicio.write_text(path, json.dumps(payload, indent=1) + "\n")
     return path
 
 

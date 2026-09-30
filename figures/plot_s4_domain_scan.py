@@ -38,11 +38,14 @@ Outputs ``outputs/S4_domain_scan{,_extended}.csv`` and one figure per core mass.
 from __future__ import annotations
 
 import csv
+
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # run as script or -m
+
+import atomicio
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -427,7 +430,7 @@ def main(argv=None):
               f" cells x {len(SOURCES)} sources, n_sample={N_SAMPLE} ...")
         rows = run_scan(cfg, eos=eos, t_eq_grid=t_eq_grid, t_int_grid=t_int_grid,
                         wmf_grid=wmf_grid, m_core_grid=m_core_grid, floors=floors)
-        with csv_path.open("w", newline="") as fh:
+        with atomicio.open_write(csv_path, newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=list(rows[0]))
             w.writeheader()
             w.writerows(rows)

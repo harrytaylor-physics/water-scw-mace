@@ -4,6 +4,194 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-09-30 (the stuck case was the critical point; the definitive table, at last)
+
+- **A86 — The case that blocked A85 stalls on water's critical point: an equation
+  of state that is smooth pointwise but violently stiff, at a tolerance no step
+  can meet. It is an integrator limitation, the solution is well determined, and
+  one bounded retry fixes it. With that, both ledger columns were rebuilt from
+  their producers and **23 of 197 comparable numbers changed — every headline
+  group is untouched.**
+
+  **(1) The stuck case.** M_c = 15, wmf = 0.20, T_eq = 500 K. First, it is not
+  the case that fails but **one node on its cooling track**: of the 44 T_int
+  nodes from 12 to 450 K, **exactly one fails — T_int = 12.00 K, the cold
+  endpoint — and only under the composite.** The line list converges at all 44.
+  A85 reported the case as failing at T_int = 30 K; it converges there in 344
+  right-hand-side evaluations.
+
+  Where it stops, from an instrumented right-hand side:
+
+  | | value |
+  |---|---|
+  | T | **647.391 K** |
+  | P | **22.343 MPa** |
+  | rho | 405.8 kg m^-3 |
+  | r | 1.630e7 m |
+  | m | 1.120e26 kg |
+  | grad_ad | 0.0867 |
+
+  Water's critical point is **T_c = 647.096 K, P_c = 22.064 MPa**. The stall sits
+  **0.30 K (0.046%) and 0.28 MPa (1.3%) away from it.** What triggers the A57
+  guard is not divergence but **step collapse**: consecutive evaluations move the
+  mass coordinate by 8.6e17 kg out of 1.1e26, a relative step of **8e-9**, with P
+  creeping 7 Pa and T 2e-5 K at a time, until the 200,000-evaluation budget runs
+  out.
+
+  **What it is not.** AQUA reports `two_phase = False` at the stall and on both
+  sides of it, so it is not a phase boundary; `grad_ad` varies smoothly through,
+  so it is not a layer flipping between radiative and convective; the state is
+  interior to the table, not on an edge. **What it is:** the critical region's
+  compressibility. Sweeping P at the stall temperature, `dln(rho)/dln(P)` runs
+  18.66, 3.73, 2.73, 2.37, 1.80 across 21 -> 25 MPa; sweeping T at the stall
+  pressure, rho goes 506 -> 155 kg m^-3 between 640 and 660 K. The equation of
+  state is single-valued and continuous but its derivatives are enormous, and at
+  `rtol = 1e-8` no step is accepted.
+
+  **It is the tolerance, and nothing else.** Fails under **LSODA, BDF and Radau**
+  alike, and at **1x, 2x, 5x and 10x** the evaluation budget with identical ~23 s
+  wall time each. But at `rtol = 1e-7, 1e-6, 1e-5` it converges in 1-2 s, and the
+  answer is stable: R_p = **2.5818, 2.5821, 2.5820 R_earth** — a spread of 1e-4
+  R_earth, **0.01%**, over three decades of tolerance.
+
+  **Plain statement: an integrator limitation in the critical region, not physics
+  and not a broken equation of state.** So a fix is warranted, and the case is
+  neither dropped nor swapped.
+
+  **The fix, and why it sits where it does.** `build_structure` retries **once**
+  at ten times looser `rtol`/`atol`, and only after the budget has actually been
+  exhausted. Loosening globally would move every number in the repository;
+  retrying only the *interior* integration does **not** work, because the outer
+  Guillot solve shares the tolerance and a looser outer solve gives a different
+  match state — the interior-only retry failed where the global loosening
+  succeeded, which is how the retry ended up at build level. Cases that converge
+  today never reach the path and are bit-identical.
+  `StructureResult.loosened_tolerance` records a model that needed it, so one is
+  never silently mixed with the rest. Verified: the stuck node now converges to
+  R_p = 2.5818 with the flag set; a node that always worked returns
+  2.626818 with the flag clear.
+
+  **(2) Atomic writes.** `atomicio.py` provides `write_text` and an `open_write`
+  context manager that writes to a temporary file beside the target and
+  `os.replace`s it on clean exit only; on an exception the temporary is removed
+  and the previous good file is untouched. Applied to the **four streaming CSV
+  producers** — the scan and the three evolution figures, which write row by row
+  over minutes and are where A85's partial file came from — and to **18 tool JSON
+  writers**, so there is one rule rather than two. A failed producer can no
+  longer leave a plausible-looking partial that reads as current.
+
+  **(3) The S6 closure gate, restated on its claim.** The 20% is retired. It was
+  never derived: commit `0ed64e7` measured 377 ppm against the line list's 3025
+  ppm and put 20% above that 12.5% as margin. The gate now pins the claim the
+  figure actually supports — the composite's in-box radiative mass is **strictly
+  positive** (a shrinkage, not an elimination) and **strictly below the line
+  list's** (there is a shrinkage at all) — and the measured ratio is recorded in
+  the ledger as `s6_closure.composite_over_hitemp`, to be quoted rather than met.
+
+  One thing fell out of this that is **not** the same claim. The test also
+  asserted that whatever survives sits below the blend window's top, rho = 30,
+  where the composite is the line list by construction. Under v5 the sliver spans
+  **rho = 10.2 to 49.7**, so part of it lies where the composite is fully first
+  principles. That is a separate statement about *where* the residue sits rather
+  than *how big* it is, so it has been split into its own test and left as an
+  xfail naming A86, not folded into the restated gate.
+
+  **(4) The labelling.** `water_world_fiducial.*` is renamed
+  **`candidate_fiducial.*`**, and the case string corrected from "M_c = 10
+  M_earth, water mass fraction 0.50, T_eq = 500 K" — an S9 case — to what S6
+  actually runs: **M_c = 5, f_env 0.02/0.05/0.10, T_eq = 700 K**. A
+  `candidate_fiducial.producer` entry now names the script and config. Where each
+  planetary quantity comes from:
+
+  | ledger prefix | producer | case | config |
+  |---|---|---|---|
+  | `candidate_fiducial.*` | `figures/plot_s6_candidate_evolution.py` | candidate, M_c = 5, f_env 0.02-0.10, T_eq = 700 K | **`config/candidate.yaml`** |
+  | `evolution.M_c10_wmf0.50_*`, `evolution.M_c15_wmf0.50_*` | `figures/plot_s9_case_evolution.py` | the wmf = 0.50 water worlds, T_eq = 500 K, T_int = 30 K | `config/fiducial.yaml` |
+  | `evolution.old_fiducial_*` | same | M_c = 5, wmf = 0.05, T_eq = 500 K, T_int = 20 K | `config/fiducial.yaml` |
+  | `s6_closure.*` | `figures/plot_s4_domain_scan.py --extended` | the candidate cell of the 108-cell scan | `config/fiducial.yaml` |
+
+  There is **no M_c = 5, wmf = 0.50 water world**: the scan's three strongest
+  cells are M_c = 15 and 10 at wmf 0.50 and M_c = 15 at wmf 0.20 (the once-stuck
+  one), and the only M_c = 5 case S9 carries is the old fiducial at wmf = 0.05.
+
+  **A fault in my own rebuild driver, found by counting.** The first rebuild
+  produced a 356-entry ledger where the stale snapshot had 693. `ed_index.py`
+  **merges** its numbers into `outputs/manuscript_numbers.json` under `ed.*`, so
+  the ledger has to be built *before* it; my driver ran the ledger last and
+  overwrote 341 Extended Data entries. Both drivers now run `ed_tables` ->
+  ledger -> `ed_index`, with the reason in a comment, and both columns come to
+  **697 entries including all 341 `ed.*`**.
+
+  **(5) The definitive table.** Both columns rebuilt from their producers — v5
+  live, and v3 by pointing `FP_OPACITY_SUBDIR` at the v3 spectra with
+  `output_dir` redirected to `outputs_v3/`, so the v3 side is a genuine v3 value
+  and not, as in A83, whatever file happened to be on disk.
+
+  **One leak in that isolation, caught by the gates.** `release_tables.py` writes
+  to `data/release/` through `Path(__file__).parents[1]`, a hard-coded repo path
+  rather than `cfg.output_path`, so the v3 pass overwrote the tracked v5 release
+  products and `test_release_table_is_the_models_own_table` and
+  `test_release_fit_matches_its_own_residual` failed. Rebuilding them under v5
+  restored both. The v3 driver no longer runs that producer, with the reason
+  recorded at the call: the ledger carries no release scalar, so the v3 column
+  loses nothing by skipping it. **197 scalars are
+  present and numeric in both. 23 changed, 11.7%.**
+
+  **Every headline group is unchanged**, and this is the result:
+
+  | group | scalars | changed |
+  |---|---|---|
+  | crossover / Planck-Rosseland ratio ranges | — | **0** |
+  | window value and factor at 2550 cm^-1 | 7 | **0** |
+  | dilute ranges | 1 | **0** |
+  | rho^2 scaling indices | 9 | **0** |
+  | wing cut-off ratios | 16 | **0** |
+  | boundary categories, disputes, thresholds, shifts | 7 | **0** |
+  | conservative bound | — | **0** |
+  | Extended Data | 40 | **0** |
+  | release tables and fit | — | **0** |
+  | candidate fiducial (S6) | 18 | **18** |
+  | water worlds + old fiducial (S9) | 3 | **3** |
+  | S6 closure | 3 | **2** |
+
+  The candidate fiducial, all of it in the same direction — v5 **reduces** every
+  difference at T_int = 30 K and leaves T_int = 40 K alone:
+
+  | number | v3 rebuilt | v5 | ratio |
+  |---|---|---|---|
+  | tau_KH ratio, f_env 0.02, T_int 30 K | **2.2304** | **1.4917** | 0.669 |
+  | tau_KH ratio, f_env 0.05, T_int 30 K | 2.0023 | 1.4309 | 0.715 |
+  | tau_KH ratio, f_env 0.10, T_int 30 K | 1.8114 | 1.3723 | 0.758 |
+  | tau_KH ratio, T_int 40 K (all f_env) | 1.0020 | 1.0005-1.0020 | ~1.000 |
+  | delta R / R at 5 Gyr | 0.0055488 | 0.0034695 | 0.625 |
+  | delta R / R at 7 Gyr | 0.0066264 | 0.0039328 | 0.594 |
+  | delta R / R at 10 Gyr | 0.0076126 | 0.0047743 | 0.627 |
+  | delta S / S at 5 Gyr | 0.054678 | 0.035386 | 0.647 |
+  | delta S / S at 10 Gyr | 0.086292 | 0.057329 | 0.664 |
+
+  The water worlds and the old fiducial:
+
+  | number | v3 rebuilt | v5 | ratio |
+  |---|---|---|---|
+  | old fiducial cooling-time ratio | **6.7500** | **4.0520** | 0.600 |
+  | M_c = 10, wmf 0.50 cooling-time ratio | 1.00993 | 1.00591 | 0.996 |
+  | M_c = 15, wmf 0.50 cooling-time ratio | 1.00227 | 1.00106 | 0.999 |
+
+  **The two water worlds barely move** — a 0.4% and a 0.1% change on a ratio
+  within 1% of unity — so the A56 reading that their small differences are the
+  real signal survives v5 intact. The old fiducial's cooling-time ratio falls by
+  40%, and the candidate's differences by a third.
+
+  The closure: `s6_closure.composite_over_hitemp` **0.3654 -> 0.4770** with the
+  line-list side unchanged, so the composite's in-box radiative mass grows by
+  1.31x. (These are the scan's candidate cell; the S6 test builds its own models
+  at its own parameters and reads 12.5% -> 31% on the same quantity. Both say the
+  same thing and the ledger's is the one to quote.)
+
+  **A83's 34-entry diff should be discarded.** Its v3 side was stale and its v5
+  side incomplete; the honest count is these 23, and the difference between the
+  two lists is what staleness was contributing.
+
 ## 2026-09-30 (the ledger now refuses stale inputs; the definitive table is blocked on one case)
 
 - **A85 — The audit found one materially stale producer, and the ledger now

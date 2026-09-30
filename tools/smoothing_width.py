@@ -50,6 +50,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
@@ -257,7 +259,7 @@ def main(argv=None) -> int:
     cfg = load_config(args.config)
     doc = run(cfg)
     path = cfg.output_path / "smoothing_width.json"
-    path.write_text(json.dumps(doc, indent=1) + "\n")
+    atomicio.write_text(path, json.dumps(doc, indent=1) + "\n")
     _print(doc)
     print(f"  wrote {path}")
     return 0

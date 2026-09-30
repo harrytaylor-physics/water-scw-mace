@@ -49,6 +49,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import Config, load_config
@@ -142,7 +144,7 @@ def main(argv=None) -> int:
     if args.summarise_only:
         path = cfg.output_path / "wing_cutoff.json"
         doc = add_fp_ratios(cfg, json.loads(path.read_text()))
-        path.write_text(json.dumps(doc, indent=1) + "\n")
+        atomicio.write_text(path, json.dumps(doc, indent=1) + "\n")
         print(f"\n  {'T':>6s} {'rho':>8s} {'kappa_R FP':>11s} "
               f"{'FP/LL range over the cut-offs':>32s}")
         for r in doc["results"]:
@@ -210,7 +212,7 @@ def main(argv=None) -> int:
         _write(cfg, results, truncs, args)
     _write(cfg, results, truncs, args)
     path = cfg.output_path / "wing_cutoff.json"
-    path.write_text(json.dumps(add_fp_ratios(cfg, json.loads(path.read_text())),
+    atomicio.write_text(path, json.dumps(add_fp_ratios(cfg, json.loads(path.read_text())),
                                indent=1) + "\n")
     return 0
 
@@ -233,7 +235,7 @@ def _write(cfg: Config, results: list[dict], truncs: list[float], args) -> None:
                             "radis/lbl/broadening.py)"),
         "results": results,
     }
-    (cfg.output_path / "wing_cutoff.json").write_text(json.dumps(doc, indent=1) + "\n")
+    atomicio.write_text(cfg.output_path / "wing_cutoff.json", json.dumps(doc, indent=1) + "\n")
 
 
 if __name__ == "__main__":

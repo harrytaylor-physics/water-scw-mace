@@ -26,6 +26,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import atomicio
+
 import numpy as np
 
 from config import Config, load_config
@@ -167,7 +169,7 @@ def main(argv=None) -> int:
     out_dir = cfg.output_path
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / "band_diagnostic.json"
-    path.write_text(json.dumps({
+    atomicio.write_text(path, json.dumps({
         "meta": (
             "Band-integrated absorption A = int nu (1 - exp(-hc nu / kT)) kappa(nu) dnu "
             "for first-principles vs bare line-list spectra at the six dilute points "
