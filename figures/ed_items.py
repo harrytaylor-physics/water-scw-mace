@@ -404,18 +404,280 @@ def ed3(cfg: Config) -> Path:
 
 
 # ===========================================================================
+def _scaling_panels(cfg: Config, fig, axd, nums: FigureNumbers,
+                    P: dict[str, str]) -> None:
+    """Draw the density-scaling panels into ``axd`` under the letters in ``P``.
+
+    A88 folded ED Fig. 9 into ED Fig. 4: the dilute band ratios and the rho^2
+    scaling are the same question asked at two densities, so they are one item.
+    ``P`` maps this block's own panel letters onto the host figure's, which keeps
+    the drawing code readable while the ledger records the letters a reader sees.
+    """
+    from matplotlib import colormaps
+
+    from opacity.build_tables import compute_point_means
+
+    doc = _json(cfg, "rho_scaling.json")
+    if doc is None:
+        raise SystemExit("outputs/rho_scaling.json not found — run "
+                         "tools/rho_scaling.py first")
+
+    temps = sorted({float(t) for t in doc["sources"]["fp"]})
+    cmap = colormaps["viridis"]
+    colour = {t: cmap(i / max(1, len(temps) - 1)) for i, t in enumerate(temps)}
+
+    # -- a, b, c: alpha/rho^2 -------------------------------------------
+    recorded = {}
+    for panel, (key, title) in zip("abc", SCALING_PANELS):
+        ax = axd[P[panel]]
+        per_panel = {}
+        for source, per_src in doc["sources"].items():
+            ls, lw, mk = SOURCE_STYLE[source]
+            for t_s, iso in per_src.items():
+                t_k = float(t_s)
+                if source != "fp" and t_k not in colour:
+                    continue  # only the isotherms the computed grid also has
+                rho = [r["rho_kg_m3"] for r in iso["rows"]]
+                q = [r["q"][key] for r in iso["rows"]]
+                ax.plot(rho, q, ls=ls, lw=lw, color=colour[t_k],
+                        marker=mk if source == "fp" else None, ms=2.6, mew=0.3,
+                        mec="black", alpha=1.0 if source == "fp" else 0.65, zorder=3)
+                per_panel.setdefault(source, {})[t_s] = {"rho_kg_m3": rho, "q": q}
+        # The rho^2 reference: alpha/rho^2 is flat for exactly pair-wise
+        # absorption, so a horizontal segment through each isotherm's densest
+        # point is what the data would lie on if it were. Drawn per isotherm
+        # rather than as one line because the level is not universal.
+        refs = {}
+        for t_s, iso in doc["sources"]["fp"].items():
+            rows = iso["rows"]
+            if not rows:
+                continue
+            anchor = rows[-1]
+            ax.plot([rows[0]["rho_kg_m3"], anchor["rho_kg_m3"]],
+                    [anchor["q"][key]] * 2, ls=(0, (1, 1)), lw=0.8, alpha=0.6,
+                    color=colour[float(t_s)], zorder=2)
+            refs[t_s] = {"rho_span_kg_m3": [rows[0]["rho_kg_m3"],
+                                            anchor["rho_kg_m3"]],
+                         "level": anchor["q"][key]}
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("Density ρ (kg m$^{-3}$)")
+        ax.set_ylabel("α / ρ$^2$   (cm$^5$ g$^{-2}$)")
+        ax.annotate(title, (0.03, 0.04), xycoords="axes fraction", fontsize=7.0,
+                    va="bottom")
+        if panel == "a":
+            ax.legend(handles=[Line2D([], [], ls=SOURCE_STYLE[k][0],
+                                      lw=SOURCE_STYLE[k][1], color="#666666",
+                                      marker=SOURCE_STYLE[k][2] if k == "fp" else None,
+                                      ms=2.8, mfc="#bbbbbb", mec="black", mew=0.3,
+                                      label=SOURCE_LABEL[k])
+                               for k in SOURCE_STYLE]
+                              + [Line2D([], [], ls=(0, (1, 1)), lw=0.8, alpha=0.6,
+                                        color="#666666", label="ρ$^2$ reference")],
+                      loc="lower left", fontsize=7.0, handlelength=2.0,
+                      labelspacing=0.3, borderpad=0.35,
+                      bbox_to_anchor=(0.0, 0.10))
+        nums.axes(P[panel], ax, "Density (kg/m^3)", "alpha/rho^2 (cm^5 g^-2)",
+                  xlog=True, ylog=True)
+        nums.panel(P[panel], diagnostic=key, curves=per_panel,
+                   flat_means="exactly pair-wise, alpha proportional to rho^2",
+                   rho2_reference_per_isotherm=refs,
+                   rho2_reference_note=("dotted: alpha/rho^2 held at each "
+                                        "first-principles isotherm's densest "
+                                        "point, which is where the data would lie "
+                                        "if absorption were exactly pair-wise"))
+        _src(nums, P[panel], "outputs/rho_scaling.json", "tools/rho_scaling.py")
+        recorded[key] = per_panel
+
+    # Colour is temperature in a-d; a colourbar says so once instead of a
+    # seven-entry legend in every panel.
+    from matplotlib.cm import ScalarMappable
+    from matplotlib.colors import BoundaryNorm
+
+    edges = [temps[0] - 100] + [0.5 * (a + b) for a, b in zip(temps, temps[1:])] \
+        + [temps[-1] + 100]
+    sm = ScalarMappable(norm=BoundaryNorm(edges, cmap.N), cmap=cmap)
+    cb = fig.colorbar(sm, ax=axd[P["c"]], pad=0.015, fraction=0.055, aspect=22,
+                      ticks=temps)
+    cb.set_label("Temperature T (K)", fontsize=7.6)
+    cb.ax.tick_params(labelsize=7.0)
+
+    # -- d: the local index ---------------------------------------------
+    ax_d = axd[P["d"]]
+    sig_ln = doc["scatter"]["per_diagnostic"]["rosseland"]["sigma_ln_alpha"]
+    for t_s, iso in doc["sources"]["fp"].items():
+        x = [i["rho_geom_kg_m3"] for i in iso["index"]]
+        y = [i["index"]["rosseland"] for i in iso["index"]]
+        e = [float(np.sqrt(2) * sig_ln / i["dln_rho"]) for i in iso["index"]]
+        ax_d.errorbar(x, y, yerr=e, ls="-", lw=1.0, color=colour[float(t_s)],
+                      marker="o", ms=2.8, mew=0.3, mec="black", elinewidth=0.6,
+                      capsize=1.6, zorder=3)
+    ax_d.axhline(2.0, color="black", lw=0.9, ls="--", zorder=4)
+    ax_d.axhline(1.0, color="#777777", lw=0.7, ls=":", zorder=4)
+    ax_d.annotate("ρ$^2$  pair-wise", (0.02, 0.97), xycoords="axes fraction",
+                  fontsize=7.0, va="top", ha="left")
+    ax_d.annotate("ρ$^1$  dilute lines", (0.02, 0.03), xycoords="axes fraction",
+                  fontsize=7.0, va="bottom", ha="left")
+    ax_d.set_xscale("log")
+    ax_d.set_xlabel("Density ρ (kg m$^{-3}$)")
+    ax_d.set_ylabel("d ln α / d ln ρ  (κ$_R$)")
+    ax_d.set_ylim(-3.5, 7.0)
+    nums.axes(P["d"], ax_d, "Density (kg/m^3)", "d ln alpha / d ln rho", xlog=True)
+    nums.panel(P["d"], diagnostic="rosseland",
+               sigma_ln_alpha_used=sig_ln,
+               error_bar=("+-sqrt(2) sigma_ln_alpha / dln_rho, with "
+                          "sigma_ln_alpha from the 729.344/810.382 pair at 3000 K "
+                          "as the brief specifies"),
+               index_by_isotherm={t: {"rho_geom_kg_m3": [i["rho_geom_kg_m3"]
+                                                         for i in iso["index"]],
+                                      "index": [i["index"]["rosseland"]
+                                                for i in iso["index"]]}
+                                  for t, iso in doc["sources"]["fp"].items()})
+    _src(nums, P["d"], "outputs/rho_scaling.json")
+
+    # -- e, f: the fitted slope, window and Rosseland ---------------------
+    fit = doc["fitted_slope_dense"]["per_source"]
+    pooled = doc["scatter_pooled"]["per_diagnostic"]
+    pair = doc["scatter"]["per_diagnostic"]
+    scale = {k: pooled[k]["sigma_ln_alpha"] / pair[k]["sigma_ln_alpha"] for k in pooled}
+    src_col = {"fp": OKABE_ITO["blue"], "hitemp": OKABE_ITO["vermillion"],
+               "hitemp_mtckd": OKABE_ITO["green"]}
+    for panel, key, title in (("e", "window_2550", "2550 cm$^{-1}$ window"),
+                              ("f", "rosseland", "κ$_R$, 100-4000 cm$^{-1}$")):
+        ax = axd[P[panel]]
+        rec = {}
+        for source, per_iso in fit.items():
+            ts = sorted(float(t) for t in per_iso)
+            y = [per_iso[f"{t:g}"][key]["slope"] for t in ts]
+            e = [per_iso[f"{t:g}"][key]["standard_error"] * scale[key] for t in ts]
+            ax.errorbar(ts, y, yerr=e, ls=SOURCE_STYLE[source][0], lw=1.0,
+                        color=src_col[source], marker=SOURCE_STYLE[source][2], ms=3.0,
+                        mew=0.3, mec="black", elinewidth=0.7, capsize=1.8, zorder=3,
+                        label=SOURCE_LABEL[source])
+            rec[source] = {"T_K": ts, "slope": y, "standard_error_pooled": e}
+        ax.axhline(2.0, color="black", lw=0.9, ls="--", zorder=4)
+        ax.axhline(1.0, color="#777777", lw=0.7, ls=":", zorder=4)
+        ax.set_xlabel("Temperature T (K)")
+        ax.set_ylabel("fitted d ln α / d ln ρ")
+        ax.annotate(f"{title}\nfitted over ρ ≥ 100", (0.97, 0.97),
+                    xycoords="axes fraction", fontsize=7.0, ha="right", va="top")
+        ax.set_ylim(0.3, 3.5)
+        if panel == "e":
+            ax.legend(loc="upper left", fontsize=7.0, labelspacing=0.3,
+                      borderpad=0.35)
+        nums.axes(P[panel], ax, "Temperature (K)", "fitted d ln alpha / d ln rho")
+        nums.panel(P[panel], diagnostic=key, rho_min_kg_m3=100.0, by_source=rec,
+                   error_bars=("pooled sigma_ln_alpha (23 dof) rather than the "
+                               "single-pair estimate, which has one"),
+                   sigma_ln_alpha_pair=pair[key]["sigma_ln_alpha"],
+                   sigma_ln_alpha_pooled=pooled[key]["sigma_ln_alpha"])
+        _src(nums, P[panel], "outputs/rho_scaling.json")
+
+    # -- g: the breakdown map -------------------------------------------
+    ax_f = axd[P["g"]]
+    bd = doc["breakdown_map"]
+    for lam, style in (("1", dict(color="black", lw=1.1, ls="-")),
+                       ("0.1", dict(color="black", lw=0.9, ls="--"))):
+        rho_l = bd["rho_at_lambda_kg_m3"][lam]
+        ax_f.axvline(rho_l, zorder=2, **style)
+        ax_f.annotate(f"Λ = {lam}", (rho_l, 0.985),
+                      xycoords=("data", "axes fraction"), fontsize=7.0, rotation=90,
+                      ha="right", va="top")
+    t_fp, rho_fp, _, _ = compute_point_means("fp", cfg, BAND)
+    ax_f.scatter(rho_fp, t_fp, s=9.0, facecolor="none", edgecolor="#555555",
+                 linewidth=0.45, zorder=3)
+    bnds = boundary_table(cfg)
+    for cat, (col, filled) in CATEGORY_STYLE.items():
+        sel = [b for b in bnds if b["category"] == cat]
+        if sel:
+            ax_f.scatter([b["rho"] for b in sel], [b["T"] for b in sel], s=7.0,
+                         marker="o", facecolor=col if filled else "none",
+                         edgecolor=col, linewidth=0.5, zorder=4)
+    lim_rec = {}
+    for name, lw, col in (("Freedman et al. 2014", 1.0, OKABE_ITO["vermillion"]),
+                          ("Kempton et al. 2023", 1.0, OKABE_ITO["orange"])):
+        ent = bd["table_limits"].get(name)
+        if not ent:
+            continue
+        ts = sorted(float(t) for t in ent["by_isotherm"])
+        rs = [ent["by_isotherm"][f"{t:g}"]["rho_kg_m3"] for t in ts]
+        ax_f.plot(rs, ts, color=col, lw=lw, marker="D", ms=3.2, mew=0.3,
+                  mec="black", zorder=5,
+                  label=f"{name.split(' et')[0]} {ent['pressure_bar']:g} bar")
+        # How much of the problem each published table is documented for. Its
+        # limit is known at two temperatures only, so it is interpolated linearly
+        # in T between them and held flat outside — stated, not hidden.
+        def _limit(t_query, ts=ts, rs=rs):
+            return float(np.interp(t_query, ts, rs))
+
+        lim_rec[name] = {
+            "T_K": ts, "rho_kg_m3": rs, "pressure_bar": ent["pressure_bar"],
+            "interpolation": ("linear in T between the two isotherms, flat "
+                              "outside them"),
+            "n_computed_points_denser": int(sum(1 for tt, rr in zip(t_fp, rho_fp)
+                                                if rr > _limit(tt))),
+            "n_boundaries_denser": int(sum(1 for b in bnds
+                                           if b["rho"] > _limit(b["T"]))),
+        }
+    ax_f.set_xscale("log")
+    ax_f.set_xlabel("Density ρ (kg m$^{-3}$)")
+    ax_f.set_ylabel("Temperature T (K)")
+    # The boundaries keep their four category colours, but naming all four here
+    # would need seven legend rows in a third-width panel; ED Fig. 6a is where the
+    # categories are read, and the counts are in this panel's ledger entry.
+    handles = [
+        Line2D([], [], ls="none", marker="o", mfc="none", mec="#555555", ms=3.4,
+               label=f"computed points ({int(np.asarray(t_fp).size)})"),
+        Line2D([], [], ls="none", marker="o", mfc=CATEGORY_STYLE["on computed data"][0],
+               mec=CATEGORY_STYLE["on computed data"][0], ms=3.4,
+               label="boundaries (108), coloured by category as ED Fig. 6a"),
+    ] + ax_f.get_legend_handles_labels()[0]
+    # upper left: nothing hot sits below 10 kg m^-3
+    leg = ax_f.legend(handles=handles, loc="upper left", fontsize=7.0, ncol=2,
+                      labelspacing=0.3, handletextpad=0.4, borderpad=0.35,
+                      columnspacing=1.0, frameon=True, framealpha=0.93,
+                      edgecolor="#bbbbbb")
+    leg.get_frame().set_linewidth(0.4)
+    ax_f.set_ylim(200.0, 3350.0)
+    nums.axes(P["g"], ax_f, "Density (kg/m^3)", "Temperature (K)", xlog=True)
+    nums.panel(P["g"], lambda_definition=bd["definition"],
+               rho_at_lambda_kg_m3=bd["rho_at_lambda_kg_m3"],
+               lambda_depends_on=bd["depends_on"],
+               n_computed_points=int(np.asarray(t_fp).size),
+               n_boundaries=len(bnds),
+               counts_by_category={c: sum(1 for b in bnds if b["category"] == c)
+                                   for c in CATEGORY_STYLE},
+               table_limits=lim_rec)
+    _src(nums, P["g"], "outputs/rho_scaling.json", "eos/aqua.py")
+
+
+# ===========================================================================
 def ed4(cfg: Config) -> Path:
     """Dilute-limit band structure."""
     from tools.text_checks import _load
 
     nums = FigureNumbers(figure="ed_fig4", caption_hint=(
         "a, first-principles / HITEMP band-integrated absorption ratio at nine "
-        "dilute states. b, kappa(nu) for both sources at two of them."))
+        "dilute states. b, kappa(nu) for both sources at two of them. c-e, "
+        "alpha/rho^2 against density along each isotherm with at least three "
+        "densities, at three places in the spectrum; flat is exact pair-wise "
+        "absorption. f, the local power-law index. g, h, the index fitted over "
+        "rho >= 100 against temperature, by source, at the 2550 cm^-1 window and "
+        "in kappa_R. i, the mean-free-path ratio Lambda with the computed points, "
+        "the 108 boundaries and the published tables' documented pressure "
+        "limits."))
     doc = _json(cfg, "text_checks.json")
     rows = sorted(doc["band_check"], key=lambda r: (r["T"], r["rho"]))
     band_names = list(BANDS_CM)
 
-    fig, (ax_a, ax_b) = figure(78.0, ncols=2)
+    # A88: the dilute band ratios (a, b) and the density scaling (c-i) are one
+    # item, so they share a figure. Six columns is the common multiple of the top
+    # row's two panels and the scaling block's three.
+    fig, axd = mosaic(236.0, [["a", "a", "a", "b", "b", "b"],
+                              ["c", "c", "d", "d", "e", "e"],
+                              ["f", "f", "g", "g", "h", "h"],
+                              ["i", "i", "i", "i", "i", "i"]])
+    ax_a, ax_b = axd["a"], axd["b"]
     temps = sorted({r["T"] for r in rows})
     rhos = sorted({r["rho"] for r in rows})
     from matplotlib import colormaps
@@ -487,9 +749,14 @@ def ed4(cfg: Config) -> Path:
     nums.panel("b", shown=shown, bands_shaded_cm={b: list(v)
                                                   for b, v in BANDS_CM.items()})
     _src(nums, "b", "opacity/loaders.py")
-    # a's y-label is the longest in the figure; -0.18 puts the bold letter on it.
-    panel_label(ax_a, "a", dx=-0.26, dy=1.06)
-    panel_label(ax_b, "b", dx=-0.16, dy=1.06)
+    _scaling_panels(cfg, fig, axd, nums,
+                    {"a": "c", "b": "d", "c": "e", "d": "f", "e": "g", "f": "h",
+                     "g": "i"})
+    # a's y-label is the longest in the figure; -0.26 puts the bold letter on it.
+    for letter, dx in (("a", -0.26), ("b", -0.16),
+                       ("c", -0.30), ("d", -0.26), ("e", -0.26),
+                       ("f", -0.26), ("g", -0.30), ("h", -0.30), ("i", -0.075)):
+        panel_label(axd[letter], letter, dx=dx, dy=1.06)
     return save_pdf(fig, "ed_fig4", nums, out_dir=ED_DIR, ledger_name=LEDGER)
 
 
@@ -1127,263 +1394,11 @@ SOURCE_LABEL = {"fp": "first principles", "hitemp": "HITEMP",
                 "hitemp_mtckd": "HITEMP + MT_CKD"}
 
 
-def ed9(cfg: Config) -> Path:
-    """Does the absorption grow faster than rho^2, and where do the tables stop?"""
-    from matplotlib import colormaps
-
-    from opacity.build_tables import compute_point_means
-
-    doc = _json(cfg, "rho_scaling.json")
-    if doc is None:
-        raise SystemExit("outputs/rho_scaling.json not found — run "
-                         "tools/rho_scaling.py first")
-    nums = FigureNumbers(figure="ed_fig9_scaling", caption_hint=(
-        "a-c, alpha/rho^2 against density along each isotherm with at least three "
-        "densities, at three places in the spectrum; flat is exact pair-wise "
-        "absorption. d, the local power-law index. e, the index fitted over "
-        "rho >= 100 against temperature, by source. f, the mean-free-path ratio "
-        "Lambda with the computed points, the 108 boundaries and the published "
-        "tables' documented pressure limits."))
-    # The map carries the whole bottom row: at a third of the width its key covers
-    # the data it is a key to.
-    fig, axd = mosaic(158.0, [["a", "b", "c"], ["d", "e", "f"], ["g", "g", "g"]])
-
-    temps = sorted({float(t) for t in doc["sources"]["fp"]})
-    cmap = colormaps["viridis"]
-    colour = {t: cmap(i / max(1, len(temps) - 1)) for i, t in enumerate(temps)}
-
-    # -- a, b, c: alpha/rho^2 -------------------------------------------
-    recorded = {}
-    for panel, (key, title) in zip("abc", SCALING_PANELS):
-        ax = axd[panel]
-        per_panel = {}
-        for source, per_src in doc["sources"].items():
-            ls, lw, mk = SOURCE_STYLE[source]
-            for t_s, iso in per_src.items():
-                t_k = float(t_s)
-                if source != "fp" and t_k not in colour:
-                    continue  # only the isotherms the computed grid also has
-                rho = [r["rho_kg_m3"] for r in iso["rows"]]
-                q = [r["q"][key] for r in iso["rows"]]
-                ax.plot(rho, q, ls=ls, lw=lw, color=colour[t_k],
-                        marker=mk if source == "fp" else None, ms=2.6, mew=0.3,
-                        mec="black", alpha=1.0 if source == "fp" else 0.65, zorder=3)
-                per_panel.setdefault(source, {})[t_s] = {"rho_kg_m3": rho, "q": q}
-        # The rho^2 reference: alpha/rho^2 is flat for exactly pair-wise
-        # absorption, so a horizontal segment through each isotherm's densest
-        # point is what the data would lie on if it were. Drawn per isotherm
-        # rather than as one line because the level is not universal.
-        refs = {}
-        for t_s, iso in doc["sources"]["fp"].items():
-            rows = iso["rows"]
-            if not rows:
-                continue
-            anchor = rows[-1]
-            ax.plot([rows[0]["rho_kg_m3"], anchor["rho_kg_m3"]],
-                    [anchor["q"][key]] * 2, ls=(0, (1, 1)), lw=0.8, alpha=0.6,
-                    color=colour[float(t_s)], zorder=2)
-            refs[t_s] = {"rho_span_kg_m3": [rows[0]["rho_kg_m3"],
-                                            anchor["rho_kg_m3"]],
-                         "level": anchor["q"][key]}
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlabel("Density ρ (kg m$^{-3}$)")
-        ax.set_ylabel("α / ρ$^2$   (cm$^5$ g$^{-2}$)")
-        ax.annotate(title, (0.03, 0.04), xycoords="axes fraction", fontsize=7.0,
-                    va="bottom")
-        if panel == "a":
-            ax.legend(handles=[Line2D([], [], ls=SOURCE_STYLE[k][0],
-                                      lw=SOURCE_STYLE[k][1], color="#666666",
-                                      marker=SOURCE_STYLE[k][2] if k == "fp" else None,
-                                      ms=2.8, mfc="#bbbbbb", mec="black", mew=0.3,
-                                      label=SOURCE_LABEL[k])
-                               for k in SOURCE_STYLE]
-                              + [Line2D([], [], ls=(0, (1, 1)), lw=0.8, alpha=0.6,
-                                        color="#666666", label="ρ$^2$ reference")],
-                      loc="lower left", fontsize=7.0, handlelength=2.0,
-                      labelspacing=0.3, borderpad=0.35,
-                      bbox_to_anchor=(0.0, 0.10))
-        nums.axes(panel, ax, "Density (kg/m^3)", "alpha/rho^2 (cm^5 g^-2)",
-                  xlog=True, ylog=True)
-        nums.panel(panel, diagnostic=key, curves=per_panel,
-                   flat_means="exactly pair-wise, alpha proportional to rho^2",
-                   rho2_reference_per_isotherm=refs,
-                   rho2_reference_note=("dotted: alpha/rho^2 held at each "
-                                        "first-principles isotherm's densest "
-                                        "point, which is where the data would lie "
-                                        "if absorption were exactly pair-wise"))
-        _src(nums, panel, "outputs/rho_scaling.json", "tools/rho_scaling.py")
-        recorded[key] = per_panel
-
-    # Colour is temperature in a-d; a colourbar says so once instead of a
-    # seven-entry legend in every panel.
-    from matplotlib.cm import ScalarMappable
-    from matplotlib.colors import BoundaryNorm
-
-    edges = [temps[0] - 100] + [0.5 * (a + b) for a, b in zip(temps, temps[1:])] \
-        + [temps[-1] + 100]
-    sm = ScalarMappable(norm=BoundaryNorm(edges, cmap.N), cmap=cmap)
-    cb = fig.colorbar(sm, ax=axd["c"], pad=0.015, fraction=0.055, aspect=22,
-                      ticks=temps)
-    cb.set_label("Temperature T (K)", fontsize=7.6)
-    cb.ax.tick_params(labelsize=7.0)
-
-    # -- d: the local index ---------------------------------------------
-    ax_d = axd["d"]
-    sig_ln = doc["scatter"]["per_diagnostic"]["rosseland"]["sigma_ln_alpha"]
-    for t_s, iso in doc["sources"]["fp"].items():
-        x = [i["rho_geom_kg_m3"] for i in iso["index"]]
-        y = [i["index"]["rosseland"] for i in iso["index"]]
-        e = [float(np.sqrt(2) * sig_ln / i["dln_rho"]) for i in iso["index"]]
-        ax_d.errorbar(x, y, yerr=e, ls="-", lw=1.0, color=colour[float(t_s)],
-                      marker="o", ms=2.8, mew=0.3, mec="black", elinewidth=0.6,
-                      capsize=1.6, zorder=3)
-    ax_d.axhline(2.0, color="black", lw=0.9, ls="--", zorder=4)
-    ax_d.axhline(1.0, color="#777777", lw=0.7, ls=":", zorder=4)
-    ax_d.annotate("ρ$^2$  pair-wise", (0.02, 0.97), xycoords="axes fraction",
-                  fontsize=7.0, va="top", ha="left")
-    ax_d.annotate("ρ$^1$  dilute lines", (0.02, 0.03), xycoords="axes fraction",
-                  fontsize=7.0, va="bottom", ha="left")
-    ax_d.set_xscale("log")
-    ax_d.set_xlabel("Density ρ (kg m$^{-3}$)")
-    ax_d.set_ylabel("d ln α / d ln ρ  (κ$_R$)")
-    ax_d.set_ylim(-3.5, 7.0)
-    nums.axes("d", ax_d, "Density (kg/m^3)", "d ln alpha / d ln rho", xlog=True)
-    nums.panel("d", diagnostic="rosseland",
-               sigma_ln_alpha_used=sig_ln,
-               error_bar=("+-sqrt(2) sigma_ln_alpha / dln_rho, with "
-                          "sigma_ln_alpha from the 729.344/810.382 pair at 3000 K "
-                          "as the brief specifies"),
-               index_by_isotherm={t: {"rho_geom_kg_m3": [i["rho_geom_kg_m3"]
-                                                         for i in iso["index"]],
-                                      "index": [i["index"]["rosseland"]
-                                                for i in iso["index"]]}
-                                  for t, iso in doc["sources"]["fp"].items()})
-    _src(nums, "d", "outputs/rho_scaling.json")
-
-    # -- e, f: the fitted slope, window and Rosseland ---------------------
-    fit = doc["fitted_slope_dense"]["per_source"]
-    pooled = doc["scatter_pooled"]["per_diagnostic"]
-    pair = doc["scatter"]["per_diagnostic"]
-    scale = {k: pooled[k]["sigma_ln_alpha"] / pair[k]["sigma_ln_alpha"] for k in pooled}
-    src_col = {"fp": OKABE_ITO["blue"], "hitemp": OKABE_ITO["vermillion"],
-               "hitemp_mtckd": OKABE_ITO["green"]}
-    for panel, key, title in (("e", "window_2550", "2550 cm$^{-1}$ window"),
-                              ("f", "rosseland", "κ$_R$, 100-4000 cm$^{-1}$")):
-        ax = axd[panel]
-        rec = {}
-        for source, per_iso in fit.items():
-            ts = sorted(float(t) for t in per_iso)
-            y = [per_iso[f"{t:g}"][key]["slope"] for t in ts]
-            e = [per_iso[f"{t:g}"][key]["standard_error"] * scale[key] for t in ts]
-            ax.errorbar(ts, y, yerr=e, ls=SOURCE_STYLE[source][0], lw=1.0,
-                        color=src_col[source], marker=SOURCE_STYLE[source][2], ms=3.0,
-                        mew=0.3, mec="black", elinewidth=0.7, capsize=1.8, zorder=3,
-                        label=SOURCE_LABEL[source])
-            rec[source] = {"T_K": ts, "slope": y, "standard_error_pooled": e}
-        ax.axhline(2.0, color="black", lw=0.9, ls="--", zorder=4)
-        ax.axhline(1.0, color="#777777", lw=0.7, ls=":", zorder=4)
-        ax.set_xlabel("Temperature T (K)")
-        ax.set_ylabel("fitted d ln α / d ln ρ")
-        ax.annotate(f"{title}\nfitted over ρ ≥ 100", (0.97, 0.97),
-                    xycoords="axes fraction", fontsize=7.0, ha="right", va="top")
-        ax.set_ylim(0.3, 3.5)
-        if panel == "e":
-            ax.legend(loc="upper left", fontsize=7.0, labelspacing=0.3,
-                      borderpad=0.35)
-        nums.axes(panel, ax, "Temperature (K)", "fitted d ln alpha / d ln rho")
-        nums.panel(panel, diagnostic=key, rho_min_kg_m3=100.0, by_source=rec,
-                   error_bars=("pooled sigma_ln_alpha (23 dof) rather than the "
-                               "single-pair estimate, which has one"),
-                   sigma_ln_alpha_pair=pair[key]["sigma_ln_alpha"],
-                   sigma_ln_alpha_pooled=pooled[key]["sigma_ln_alpha"])
-        _src(nums, panel, "outputs/rho_scaling.json")
-
-    # -- g: the breakdown map -------------------------------------------
-    ax_f = axd["g"]
-    bd = doc["breakdown_map"]
-    for lam, style in (("1", dict(color="black", lw=1.1, ls="-")),
-                       ("0.1", dict(color="black", lw=0.9, ls="--"))):
-        rho_l = bd["rho_at_lambda_kg_m3"][lam]
-        ax_f.axvline(rho_l, zorder=2, **style)
-        ax_f.annotate(f"Λ = {lam}", (rho_l, 0.985),
-                      xycoords=("data", "axes fraction"), fontsize=7.0, rotation=90,
-                      ha="right", va="top")
-    t_fp, rho_fp, _, _ = compute_point_means("fp", cfg, BAND)
-    ax_f.scatter(rho_fp, t_fp, s=9.0, facecolor="none", edgecolor="#555555",
-                 linewidth=0.45, zorder=3)
-    bnds = boundary_table(cfg)
-    for cat, (col, filled) in CATEGORY_STYLE.items():
-        sel = [b for b in bnds if b["category"] == cat]
-        if sel:
-            ax_f.scatter([b["rho"] for b in sel], [b["T"] for b in sel], s=7.0,
-                         marker="o", facecolor=col if filled else "none",
-                         edgecolor=col, linewidth=0.5, zorder=4)
-    lim_rec = {}
-    for name, lw, col in (("Freedman et al. 2014", 1.0, OKABE_ITO["vermillion"]),
-                          ("Kempton et al. 2023", 1.0, OKABE_ITO["orange"])):
-        ent = bd["table_limits"].get(name)
-        if not ent:
-            continue
-        ts = sorted(float(t) for t in ent["by_isotherm"])
-        rs = [ent["by_isotherm"][f"{t:g}"]["rho_kg_m3"] for t in ts]
-        ax_f.plot(rs, ts, color=col, lw=lw, marker="D", ms=3.2, mew=0.3,
-                  mec="black", zorder=5,
-                  label=f"{name.split(' et')[0]} {ent['pressure_bar']:g} bar")
-        # How much of the problem each published table is documented for. Its
-        # limit is known at two temperatures only, so it is interpolated linearly
-        # in T between them and held flat outside — stated, not hidden.
-        def _limit(t_query, ts=ts, rs=rs):
-            return float(np.interp(t_query, ts, rs))
-
-        lim_rec[name] = {
-            "T_K": ts, "rho_kg_m3": rs, "pressure_bar": ent["pressure_bar"],
-            "interpolation": ("linear in T between the two isotherms, flat "
-                              "outside them"),
-            "n_computed_points_denser": int(sum(1 for tt, rr in zip(t_fp, rho_fp)
-                                                if rr > _limit(tt))),
-            "n_boundaries_denser": int(sum(1 for b in bnds
-                                           if b["rho"] > _limit(b["T"]))),
-        }
-    ax_f.set_xscale("log")
-    ax_f.set_xlabel("Density ρ (kg m$^{-3}$)")
-    ax_f.set_ylabel("Temperature T (K)")
-    # The boundaries keep their four category colours, but naming all four here
-    # would need seven legend rows in a third-width panel; ED Fig. 6a is where the
-    # categories are read, and the counts are in this panel's ledger entry.
-    handles = [
-        Line2D([], [], ls="none", marker="o", mfc="none", mec="#555555", ms=3.4,
-               label="computed points (48)"),
-        Line2D([], [], ls="none", marker="o", mfc=CATEGORY_STYLE["on computed data"][0],
-               mec=CATEGORY_STYLE["on computed data"][0], ms=3.4,
-               label="boundaries (108), coloured by category as ED Fig. 6a"),
-    ] + ax_f.get_legend_handles_labels()[0]
-    # upper left: nothing hot sits below 10 kg m^-3
-    leg = ax_f.legend(handles=handles, loc="upper left", fontsize=7.0, ncol=2,
-                      labelspacing=0.3, handletextpad=0.4, borderpad=0.35,
-                      columnspacing=1.0, frameon=True, framealpha=0.93,
-                      edgecolor="#bbbbbb")
-    leg.get_frame().set_linewidth(0.4)
-    ax_f.set_ylim(200.0, 3350.0)
-    nums.axes("g", ax_f, "Density (kg/m^3)", "Temperature (K)", xlog=True)
-    nums.panel("g", lambda_definition=bd["definition"],
-               rho_at_lambda_kg_m3=bd["rho_at_lambda_kg_m3"],
-               lambda_depends_on=bd["depends_on"],
-               n_computed_points=int(np.asarray(t_fp).size),
-               n_boundaries=len(bnds),
-               counts_by_category={c: sum(1 for b in bnds if b["category"] == c)
-                                   for c in CATEGORY_STYLE},
-               table_limits=lim_rec)
-    _src(nums, "g", "outputs/rho_scaling.json", "eos/aqua.py")
-
-    for letter, dx in (("a", -0.30), ("b", -0.26), ("c", -0.26),
-                       ("d", -0.26), ("e", -0.30), ("f", -0.30), ("g", -0.075)):
-        panel_label(axd[letter], letter, dx=dx, dy=1.06)
-    return save_pdf(fig, "ed_fig9_scaling", nums, out_dir=ED_DIR, ledger_name=LEDGER)
 
 
+# A88: nine items, not ten -- ED Fig. 9's scaling panels are now ED Fig. 4c-i.
 ITEMS = {"ed1": ed1, "ed2": ed2, "ed3": ed3, "ed4": ed4, "ed5": ed5,
-         "ed6": ed6, "ed7": ed7, "ed8": ed8, "ed9": ed9}
+         "ed6": ed6, "ed7": ed7, "ed8": ed8}
 
 
 def main(argv=None) -> int:

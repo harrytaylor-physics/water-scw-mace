@@ -30,7 +30,7 @@
   ]
  },
  "ed_fig4": {
-  "description": "Dilute-limit band structure: the band-integrated absorption ratio at nine states, and kappa(nu) for both sources at two of them.",
+  "description": "Density dependence of the absorption: the dilute-limit band-integrated absorption ratio at nine states and kappa(nu) at two of them (a, b); then alpha/rho^2 against density at three places in the spectrum, the local and fitted power-law index by source, and the mean-free-path breakdown map with the published tables' documented limits (c-i).",
   "status": "built",
   "files": [
    "figs/ed/ed_fig4.pdf"
@@ -38,16 +38,10 @@
  },
  "ed_fig5": {
   "description": "Dipole-model validation: dipole derivatives against revPBE0 at two bond lengths, the model/DFT ratio per mode, and the dipole-model residual autocorrelation.",
-  "status": "partly built",
+  "status": "built",
   "files": [
    "figs/ed/ed_fig5.pdf"
-  ],
-  "placeholder_panels": [
-   "e"
-  ],
-  "placeholder_needs": {
-   "e": "/Users/harrytaylor/subneptune/outputs/window_residual.npz (band_centre_cm, A_pred_over_A_label)"
-  }
+  ]
  },
  "ed_fig6": {
   "description": "The 108 scanned planets: boundary positions against the computed grid by category, and the dispute ratio against the factor that would flip each analysed boundary.",
@@ -70,15 +64,8 @@
    "figs/ed/ed_fig8.pdf"
   ]
  },
- "ed_fig9_scaling": {
-  "description": "Density scaling: alpha/rho^2 against density at three places in the spectrum, the local and fitted power-law index by source, and the mean-free-path breakdown map with the published tables' documented limits.",
-  "status": "built",
-  "files": [
-   "figs/ed/ed_fig9_scaling.pdf"
-  ]
- },
  "ed_table1": {
-  "description": "The 48 state points: first-principles Planck and Rosseland means and the ratios to each line-list reference.",
+  "description": "The 52 state points: first-principles Planck and Rosseland means and the ratios to each line-list reference.",
   "status": "built",
   "files": [
    "figs/ed/ed_table1.csv",

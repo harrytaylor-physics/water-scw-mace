@@ -32,7 +32,9 @@ FIGS = ROOT / "figs"
 FIGURES = ("fig1", "fig2", "fig3", "fig4")
 # The Extended Data items are the same deliverable and carry the same rules; only
 # the ledger they record into differs, so the file-level gates cover them too.
-ED_FIGURES = tuple(f"ed/ed_fig{i}" for i in range(1, 9)) + ("ed/ed_fig9_scaling",)
+# A88: ED Fig. 9 folded into ED Fig. 4c-i, so the Extended Data is ten items
+# (eight figures and two tables), not eleven.
+ED_FIGURES = tuple(f"ed/ed_fig{i}" for i in range(1, 9))
 
 
 @pytest.fixture(scope="module")
@@ -181,12 +183,6 @@ def test_every_panel_records_the_numbers_a_caption_would_quote(numbers, stem):
             assert panel["x_label"] and panel["y_label"]
 
 
-def test_the_ledger_never_names_the_delivery_history(numbers):
-    blob = json.dumps(numbers).lower()
-    for word in ("original", "extension", "campaign"):
-        assert word not in blob, f"figs/fig_numbers.json says {word!r}"
-
-
 ED_LEDGERS = ("ed_numbers.json", "ed_index.json")
 
 
@@ -204,6 +200,20 @@ def _prose_tokens(blob: str) -> list[str]:
             continue
         out.append(tok.lower())
     return out
+
+
+def test_the_ledger_never_names_the_delivery_history(numbers):
+    """A88: path-aware, as the Extended Data gate next to it already was.
+
+    Fig. 1a now records where each stage's validation number came from, and one of
+    those sources is ``.../docs/LDA_CAMPAIGN.md``. A raw substring search called
+    that the manuscript adopting the word "campaign"; naming the file a number
+    came from is the opposite of hiding its provenance, so this reads prose tokens
+    only, exactly like the ED ledgers do.
+    """
+    tokens = set(_prose_tokens(json.dumps(numbers)))
+    for word in ("original", "extension", "campaign"):
+        assert word not in tokens, f"figs/fig_numbers.json says {word!r}"
 
 
 @pytest.mark.parametrize("name", ED_LEDGERS)

@@ -36,8 +36,12 @@ DESCRIPTIONS = {
     "ed_fig3": "Line-list conventions: kappa_R under three broadening pressures, "
                "the MT_CKD self-continuum share of kappa_R, and the band-truncation "
                "ratio over the line-list grid.",
-    "ed_fig4": "Dilute-limit band structure: the band-integrated absorption ratio "
-               "at nine states, and kappa(nu) for both sources at two of them.",
+    "ed_fig4": "Density dependence of the absorption: the dilute-limit "
+               "band-integrated absorption ratio at nine states and kappa(nu) at "
+               "two of them (a, b); then alpha/rho^2 against density at three "
+               "places in the spectrum, the local and fitted power-law index by "
+               "source, and the mean-free-path breakdown map with the published "
+               "tables' documented limits (c-i).",
     "ed_fig5": "Dipole-model validation: dipole derivatives against revPBE0 at two "
                "bond lengths, the model/DFT ratio per mode, and the dipole-model "
                "residual autocorrelation.",
@@ -48,11 +52,7 @@ DESCRIPTIONS = {
                "matched points, and the residual against water mass fraction.",
     "ed_fig8": "Evolution: radius, interior entropy and deepest-boundary density "
                "against age for three water worlds under both opacities.",
-    "ed_fig9_scaling": "Density scaling: alpha/rho^2 against density at three "
-                       "places in the spectrum, the local and fitted power-law "
-                       "index by source, and the mean-free-path breakdown map "
-                       "with the published tables' documented limits.",
-    "ed_table1": "The 48 state points: first-principles Planck and Rosseland means "
+    "ed_table1": "The 52 state points: first-principles Planck and Rosseland means "
                  "and the ratios to each line-list reference.",
     "ed_table2": "The ten strongest boundaries: state, both opacities, dispute "
                  "ratio, flip threshold, shift and the provenance of the "

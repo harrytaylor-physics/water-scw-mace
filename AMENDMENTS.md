@@ -4,6 +4,155 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-01 (A88 finished; the remaining manuscript numbers, from v5)
+
+- **A89 — A88's parts 4-7 are done and every number below is rebuilt from its
+  producer against v5, both columns from producers. The headline: **A70's
+  "faster than rho^2" survives v5** at +3.73 sigma (2500 K) and +3.86 sigma
+  (3000 K) on A70's own pooled-sigma convention — 3000 K strengthens — but the
+  producer's own `sigma_above_2` field uses a different sigma and reports +1.9;
+  which to quote is a statistics fork for Harry, below. Two validation numbers in
+  the A88 brief are not in this repository. And a gate has been asserting one
+  thing instead of four since A83.**
+
+  **(4) Water-fraction inversion** — `tools/wmf_inversion.py`, new. At fixed core
+  mass and age, `dwmf = w0 - w_LL = -(R_comp - R_LL)/(dR/dwmf)`; negative means the
+  line list would have overstated the water fraction. `np.gradient` and a plain
+  secant agree to five decimals, and the per-wmf radii are stored so the gradient
+  can be audited.
+
+  | case | 1 Gyr | 5 Gyr | 10 Gyr |
+  |---|---|---|---|
+  | water world M_c = 10, w0 = 0.50 | no shift | -0.00004 (-0.007%) | **-0.00125 (-0.251%)** |
+  | water world M_c = 15, w0 = 0.50 | no shift | no shift | **-0.00080 (-0.159%)** |
+  | candidate M_c = 5, w0 = 0.05 | -0.00041 (-0.814%) | -0.00277 (-5.534%) | **-0.00399 (-7.977%)** |
+
+  "No shift" is `|dwmf| < 1e-5`, the solver-noise floor: dR between the tracks is
+  ~1e-6 R_E where they agree and dR/dwmf is ~2, so nothing smaller is real. **The
+  candidate needs wmf < 0.05 at all three ages**, below the bottom of the tested
+  set {0.05, 0.20, 0.50}; reported, not extrapolated. One grid point
+  (M_c = 15, wmf = 0.30) does not build under the integration guard. These
+  supersede the one-off numbers quoted mid-session (-0.00284, -0.00191 at 10 Gyr),
+  whose grid is not reconstructible.
+
+  **(5) Fig. 1a — four stages, not six.** The six-box version drew the dipole
+  autocorrelation as a stage of its own, giving it the weight of the whole DFT
+  campaign. Each box now carries the number that validates it, and those numbers
+  come from `tools/pipeline_facts.py`, which is also where the ledger's
+  `pipeline.*` entries come from — one source, so the schematic cannot quote a
+  number the ledger does not carry.
+
+  **Two numbers in the A88 brief are not in this repository.** It gave a held-out
+  force error of 44 meV/A and 7 meV/atom. Neither string appears anywhere in the
+  pull. `benchmarks/reference/reference.json` carries **41 meV/A (bulk) and
+  58 meV/A (RCB)** and calls them TRAINING-SET parity, "optimistic vs true
+  held-out error", frames above 3000 K excluded; the only held-out parity in the
+  pull is 12.3 / 20.2 meV/A and belongs to the **LDA** model, not this one. The NVE
+  number is not an energy error but a **drift rate**, 0.017 meV/atom/ps worst over
+  21 runs against a 2 meV/atom/ps gate. The figure states what the files state.
+
+  **(6) Extended Data is ten items.** ED Fig. 9's seven scaling panels are now ED
+  Fig. 4c-i: the dilute band ratios and the rho^2 scaling are one question asked at
+  two densities. 183 x 236 mm, 118 recorded numbers, nine panels in the ledger. Two
+  stale counts fixed in passing — ED Fig. 4i's legend said "computed points (48)"
+  and `ed_index.py` called ED Table 1 "the 48 state points"; the grid has been 52
+  since Tasks 42-44.
+
+  **(7) Both columns rebuilt from producers. 736 keys each, 731 shared, 213
+  numeric, 38 changed (17.8%).**
+
+  | group | numeric | changed |
+  |---|---|---|
+  | agreement | 6 | **6** |
+  | candidate_fiducial | 18 | **18** |
+  | evolution | 3 | **3** |
+  | s6_closure | 3 | **2** |
+  | ed | 50 | 6 |
+  | figures | 13 | 3 |
+  | broadening | 56 | 0 |
+  | window_validation | 15 | 0 |
+  | g5 | 15 | 0 |
+  | wing_cutoff | 13 | 0 |
+  | pipeline | 6 | 0 |
+  | boundaries, opacity, planets, aqua_entropy, direct | 28 | 0 |
+
+  `pipeline.*` unchanged is the right answer: those describe the MD campaign, not
+  the spectra. The S9 case set is **not** the same on both sides — v3 built
+  `M_c5_wmf0.50` and v5 built `M_c15_wmf0.20` — so five keys each way are reported
+  as present-in-one-column, not as unchanged. `tools/column_diff.py`, new, keeps
+  that distinction, which is the distinction A86 lost. Two scripts failed under v3
+  only (`plot_f3_cooling_ratio.py`, `plot_sensitivity.py`); neither writes ledger
+  keys, so the comparison is unaffected.
+
+  **Item 3 — the rho^2 excess survives v5, and there are two sigmas in the file.**
+  `outputs/rho_scaling.json` carries both: `scatter.per_diagnostic` is a
+  **single-pair** estimate (1 dof, 0.5436 at 2550 cm^-1 under v5) and
+  `scatter_pooled.per_diagnostic` is pooled over the isotherms (**23 dof**, 0.2743).
+  The stored `standard_error` and `sigma_above_2` use the pair one; **A70's text
+  says "errors from the pooled sigma", and ED Fig. 4g/h rescale by pooled/pair
+  before drawing.** Running today's producer against the **v3** spectra and
+  applying that rescaling returns A70 exactly — 2.759 +- 0.201 = **+3.78 sigma**
+  at 2500 K and 2.423 +- 0.132 = **+3.20 sigma** at 3000 K, against A70's
+  2.76 +- 0.20 = 3.7 and 2.42 +- 0.13 = 3.1. **Nothing changed between A70 and
+  now.** Under v5, on that same convention:
+
+  | 2550 cm^-1 | slope | pooled sigma (A70, ED 4g/h) | pair sigma (JSON field) |
+  |---|---|---|---|
+  | v3, 2500 K | 2.759 | **+3.78** | +2.08 |
+  | v5, 2500 K | 2.638 | **+3.73** | +1.88 |
+  | v3, 3000 K | 2.423 | **+3.20** | +1.76 |
+  | v5, 3000 K | 2.434 | **+3.86** | +1.95 |
+
+  **FORK, not resolved here.** Pooled has the dof but assumes the scatter is
+  common across isotherms; the pair estimate is local but rests on one degree of
+  freedom. A70 chose pooled and the figure follows it, so the manuscript is
+  self-consistent as it stands and the claim holds. Flagged for Harry rather than
+  decided. Every other `sigma_above_2` quoted in this entry — including the
+  +-50 cm^-1 variant's +3.39 — is the **pair** figure.
+
+  Where v5 moves the physics is the cold end, and upward: 650 K goes
+  1.578 -> 2.238, 800 K 1.719 -> 2.153, 1000 K 1.675 -> 1.917, so the cold
+  isotherms now sit at rho^2 where v3 had them sub-rho^2. That part is spectral.
+  **Two corrections of my own this session: I first reported this group as
+  "+0.25 sigma", and then as a 3.7 -> 1.9 collapse caused by an error model. Both
+  were wrong; the first read the wrong statistic and the second read the wrong
+  field.**
+
+  **Item 6 — the first 100 Myr is identical, and the reason is the composite's
+  definition.** Radius and interior entropy agree to |dR| <= 1e-6 R_E and
+  |dS| <= 0.023 J/kg/K at 10, 30, 50 and 100 Myr for both water worlds and the
+  candidate. Not a clamped interpolation this time: the composite blends first
+  principles in only above `blend_window_kg_m3 = [10, 30]`, and over that span the
+  radiative-convective boundary sits at rho = 0.017-3.97 kg/m^3, **below the
+  window**, so the composite evaluates to the pure line list and the tracks are
+  identical by construction. They first part company at 4909 Myr (M_c = 10),
+  5604 Myr (M_c = 15) and 497 Myr (candidate) — in each case as rho_rcb enters the
+  window. `tools/early_evolution.py`, new.
+
+  **A gate has been asserting one thing instead of four since A83.** A83 restated
+  `test_agreement_with_the_delivered_analysis`'s Planck pin for v5 and left a bare
+  `return` in front of the three assertions after it, which made them unreachable
+  rather than restated — the comment said "Restated, not loosened" and the code did
+  neither. All three would have failed: measured under v5 the deviations from the
+  v3-era RADIS reference are **82.5% (on grid), 102.1% (T-interpolated) and 96.2%
+  (density-clamped)** in kappa_R. Restored and restated on A83's own logic, that
+  the delivered analysis describes the v3 spectra so the useful pin is that the two
+  now differ substantially. This is **not** the density-clamp cost, a different
+  comparison that stays pinned at <= 6.5% by
+  `test_the_density_clamp_costs_at_most_six_percent`.
+
+  **Gate changed.** `test_the_ledger_never_names_the_delivery_history` now reads
+  prose tokens rather than raw substrings, as the Extended Data gate beside it
+  already did: Fig. 1a records `.../docs/LDA_CAMPAIGN.md` as the source of its
+  drift number, and naming the file a number came from is the opposite of hiding
+  its provenance.
+
+  **Still open.** The S6 blend-window claim (the sliver spans rho = 10.2-49.7) and
+  the band-diagnostic monotonicity xfails are untouched. `METHODS.md` contradicts
+  the delivered data on two counts — it says 60 ps per state point and a 27-point
+  grid, where the dipole series give 30 ps and the spectra directory holds 52
+  cells; `tools/pipeline_facts.py` records the data and says so per fact.
+
 ## 2026-09-30 (the window validation reduced; the bound measured; T_int against age)
 
 - **A88, parts 1-3 — ED Fig. 5e now reads the file that exists and reproduces all

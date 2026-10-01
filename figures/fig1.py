@@ -49,43 +49,71 @@ POINT = (2000.0, 1200.0)
 MARK_WN = 2550.0
 BAND_CM = (100.0, 4000.0)
 
+# A88: four stages, each carrying the number that validates it. The six-box
+# version drew the spectral steps as separate stages, which gave the dipole
+# autocorrelation the same visual weight as the whole DFT campaign; they are one
+# stage of the route to kappa(nu). Captions come from tools/pipeline_facts.py,
+# which is also where the ledger's pipeline.* entries come from.
 STAGES = [
     ("Configuration\nsampling", "(T, ρ) states"),
     ("Hybrid DFT\nlabels", "energies, forces,\ndipoles"),
     ("MACE potential\n+ dipole model", "trained to the\nDFT labels"),
-    ("NVE molecular\ndynamics", "microcanonical\ntrajectories"),
-    ("Dipole\nautocorrelation", "spectral density"),
-    ("κ(ν)", "mass opacity"),
+    ("NVE dynamics → κ(ν)", "dipole autocorrelation,\nmass opacity"),
 ]
 
 
-def panel_a(ax, nums: FigureNumbers) -> None:
+def panel_a(ax, cfg, nums: FigureNumbers) -> None:
+    from tools.pipeline_facts import pipeline_facts, stage_captions
+
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
 
+    facts = pipeline_facts(cfg)
+    if not facts:
+        raise SystemExit(
+            f"{cfg.fp_opacity_path} holds no spectra, so the stage captions have "
+            f"no source — Fig. 1a would be a schematic with blank validation")
+    captions = stage_captions(facts)
+
     n = len(STAGES)
-    gap = 0.026  # room for the arrow between boxes
+    gap = 0.030  # room for the arrow between boxes
     w = (1.0 - gap * (n - 1)) / n
-    y0, h = 0.10, 0.80
-    for i, (title, sub) in enumerate(STAGES):
+    y0, h = 0.40, 0.56
+    for i, ((title, sub), cap) in enumerate(zip(STAGES, captions)):
         x = i * (w + gap)
         face = OKABE_ITO["sky"] if i < n - 1 else OKABE_ITO["blue"]
         ax.add_patch(FancyBboxPatch(
             (x, y0), w, h, boxstyle="round,pad=0.0,rounding_size=0.02",
             linewidth=0.7, edgecolor="black",
             facecolor=face, alpha=0.28 if i < n - 1 else 0.55, zorder=2))
-        ax.text(x + w / 2, y0 + h * 0.66, title, ha="center", va="center",
+        ax.text(x + w / 2, y0 + h * 0.70, title, ha="center", va="center",
                 fontsize=7.0, fontweight="bold", zorder=3, linespacing=1.25)
-        ax.text(x + w / 2, y0 + h * 0.24, sub, ha="center", va="center",
+        ax.text(x + w / 2, y0 + h * 0.28, sub, ha="center", va="center",
                 fontsize=7.0, color="#333333", zorder=3, linespacing=1.25)
         if i < n - 1:
             ax.add_patch(FancyArrowPatch(
                 (x + w + 0.003, y0 + h / 2), (x + w + gap - 0.003, y0 + h / 2),
                 arrowstyle="-|>", mutation_scale=6.0, linewidth=0.7,
                 color="black", zorder=4))
+        # What validates the stage, hung under it on a short leader so the reader
+        # reads the check against the step rather than hunting a caption.
+        ax.plot([x + w / 2] * 2, [y0 - 0.015, y0 - 0.075], color="#888888",
+                lw=0.5, zorder=2)
+        ax.text(x + w / 2, y0 - 0.095, cap, ha="center", va="top", fontsize=7.0,
+                color="#333333", style="italic", zorder=3, linespacing=1.3)
     nums.panel("a", stages=[t.replace("\n", " ") for t, _ in STAGES],
-               n_stages=n, kind="schematic (no data)")
+               n_stages=n, kind="schematic; the captions are measured values",
+               stage_captions=[c.replace("\n", " ") for c in captions],
+               pipeline_facts={k: v["value"] for k, v in facts.items()},
+               caption_correction=(
+                   "a draft caption gave 44 meV/A and 7 meV/atom. Neither appears "
+                   "in the pull: the force parity is 41 (bulk) and 58 (RCB) meV/A "
+                   "and is TRAINING-SET parity, and the NVE number is a drift rate "
+                   "of 0.017 meV/atom/ps against a 2 meV/atom/ps gate"))
+    nums.panel("a", source_files=sorted({v["source_script"] for v in facts.values()}),
+               source_per_fact={k: v["source_script"] for k, v in facts.items()},
+               fact_notes={k: v["note"] for k, v in facts.items() if v["note"]})
 
 
 def panel_b(ax, cfg, nums: FigureNumbers) -> None:
@@ -181,8 +209,9 @@ def main(argv=None) -> int:
             "2000 K, 1200 kg/m^3, first principles vs HITEMP at identical "
             "conditions (same ideal-gas broadening pressure)."),
     )
-    fig, (ax_a, ax_b) = figure(122.0, nrows=2, gridspec_kw={"height_ratios": [1.0, 2.3]})
-    panel_a(ax_a, nums)
+    # the schematic grew a caption row under each box, so it needs more height
+    fig, (ax_a, ax_b) = figure(132.0, nrows=2, gridspec_kw={"height_ratios": [1.0, 1.9]})
+    panel_a(ax_a, cfg, nums)
     panel_b(ax_b, cfg, nums)
     panel_label(ax_a, "a", dx=-0.045, dy=1.14)
     panel_label(ax_b, "b", dx=-0.045, dy=1.06)

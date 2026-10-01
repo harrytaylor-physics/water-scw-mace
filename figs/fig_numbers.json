@@ -10,12 +10,65 @@
      "Configuration sampling",
      "Hybrid DFT labels",
      "MACE potential + dipole model",
-     "NVE molecular dynamics",
-     "Dipole autocorrelation",
-     "\u03ba(\u03bd)"
+     "NVE dynamics \u2192 \u03ba(\u03bd)"
     ],
-    "n_stages": 6,
-    "kind": "schematic (no data)"
+    "n_stages": 4,
+    "kind": "schematic; the captions are measured values",
+    "stage_captions": [
+     "52 states, 650-3000 K",
+     "1193 configurations revPBE0-D3",
+     "force parity 41/58 meV $\\mathrm{\\AA}^{-1}$ (bulk/RCB, training set)",
+     "64-216 molecules, 0.5 fs 30 ps after 10 ps; drift 0.017"
+    ],
+    "pipeline_facts": {
+     "n_state_points": 52,
+     "molecules_per_cell": [
+      64,
+      216
+     ],
+     "md_timestep_fs": 0.5,
+     "equilibration_ps": 10.0,
+     "n_training_configurations": 1193,
+     "training_temperature_range_k": [
+      650,
+      3000
+     ],
+     "label_level_of_theory": "revPBE0-D3 (CP2K), ADMM, DZVP-MOLOPT-SR-GTH, 600 Ry",
+     "production_ps": 30,
+     "force_parity_mev_per_a": {
+      "bulk": 41,
+      "rcb": 58
+     },
+     "nve_drift_mev_per_atom_per_ps": 0.017
+    },
+    "caption_correction": "a draft caption gave 44 meV/A and 7 meV/atom. Neither appears in the pull: the force parity is 41 (bulk) and 58 (RCB) meV/A and is TRAINING-SET parity, and the NVE number is a drift rate of 0.017 meV/atom/ps against a 2 meV/atom/ps gate",
+    "source_files": [
+     "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json",
+     "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md",
+     "ed_data/arc/water-scw-mace/docs/METHODS.md",
+     "ed_data/arc_a78/scw/run_prod_md_05fs.py",
+     "tools/v5_regenerate.py"
+    ],
+    "source_per_fact": {
+     "n_state_points": "tools/v5_regenerate.py",
+     "molecules_per_cell": "tools/v5_regenerate.py",
+     "md_timestep_fs": "tools/v5_regenerate.py",
+     "equilibration_ps": "ed_data/arc_a78/scw/run_prod_md_05fs.py",
+     "n_training_configurations": "ed_data/arc/water-scw-mace/docs/METHODS.md",
+     "training_temperature_range_k": "ed_data/arc/water-scw-mace/docs/METHODS.md",
+     "label_level_of_theory": "ed_data/arc/water-scw-mace/docs/METHODS.md",
+     "production_ps": "tools/v5_regenerate.py",
+     "force_parity_mev_per_a": "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json",
+     "nve_drift_mev_per_atom_per_ps": "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md"
+    },
+    "fact_notes": {
+     "molecules_per_cell": "39 cells at 64 and 13 at 216",
+     "equilibration_ps": "Langevin at 0.5 fs for 20000 steps (line 48), then VelocityVerlet at constant energy (line 50)",
+     "n_training_configurations": "train_v4.xyz: 800 bulk pools 650-2250 K, 344 RCB fill 2500-3000 K, 49 above 3000 K",
+     "production_ps": "from the dipole series length (60002 frames); METHODS.md says 60 ps, which the data do not support",
+     "force_parity_mev_per_a": "TRAINING-SET parity by regime, which reference.json itself calls 'optimistic vs true held-out error'; frames above 3000 K excluded. The only held-out parity in the pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not this one",
+     "nve_drift_mev_per_atom_per_ps": "worst over 21 NVE runs against a 2 gate; a bound, not a distribution"
+    }
    },
    "b": {
     "x_label": "Wavenumber (cm^-1)",

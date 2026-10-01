@@ -64,22 +64,25 @@ def test_agreement_with_the_delivered_analysis(rows):
     # is no longer the right assertion -- the useful pin is that the two now
     # differ substantially, which is what makes v5 a change rather than a
     # re-run. Restated, not loosened.
-    assert on_grid["max_abs_dev_planck_pct"] > 10.0, (
-        "v5 now agrees with the v3-era delivered analysis to better than 10%; "
-        "either the registry is back on v3 or the spectra were regenerated")
-    return
-    assert on_grid["max_abs_dev_rosseland_pct"] < 1.0
-    # T-interpolated points. This was < 5% until A60 put line-list rows at 2250 and
-    # 2750 K, the only two temperatures that needed interpolating; now it is < 1%,
-    # and the bound is tightened rather than left where it was.
-    assert summary["interpolated"]["max_abs_dev_rosseland_pct"] < 1.0
-    # Clamped ones still disagree — RADIS had the true density and we hold kappa at
-    # the ceiling — but by the amount A59 MEASURED against a line-by-line run at
-    # that density (5.89% at the most extreme point), not by the ~30% A53 reported.
-    # That 30% was the two T-interpolated points, and A60 removed it. The assertion
-    # used to require > 10%, i.e. it pinned the pathology as expected behaviour.
-    clamped = summary["clamped"]["max_abs_dev_rosseland_pct"]
-    assert 1.0 < clamped < 6.5
+    # A89: A83 restated the Planck pin for v5 and put a bare `return` in front of
+    # the three that follow, which made them unreachable rather than restated --
+    # this test has been asserting one thing, not four, ever since. They are
+    # restored here with the same logic A83 applied to Planck: the delivered RADIS
+    # analysis describes the v3 spectra, so after v5 the useful pin is that the two
+    # now differ substantially. Measured under v5: 82.5, 102.1 and 96.2 per cent.
+    #
+    # This is NOT the density-clamp cost, which is a different comparison (table
+    # held at the ceiling against a line-by-line run at the true density) and stays
+    # pinned at <= 6.5% by test_the_density_clamp_costs_at_most_six_percent.
+    for group, label in (("on_grid", "on HITEMP's own grid"),
+                         ("interpolated", "T-interpolated"),
+                         ("clamped", "density-clamped")):
+        for mean in ("planck", "rosseland"):
+            dev = summary[group][f"max_abs_dev_{mean}_pct"]
+            assert dev > 10.0, (
+                f"{label} {mean} now agrees with the v3-era delivered analysis to "
+                f"{dev:.2f}%; either the registry is back on v3 or the spectra "
+                f"were regenerated")
 
 
 def test_dilute_rows_carry_their_noise_floor_fractions(cfg, rows):

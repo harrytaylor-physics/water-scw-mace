@@ -546,6 +546,17 @@ def evolution(cfg: Config, led: Ledger) -> None:
     # half-record spread of the same ratio recomputed from the two dipole series.
     # The window band's 1.400 is the factor the conservative bound now uses at
     # rho >= 60 kg m^-3.
+    # A89: the pipeline numbers Fig. 1a quotes. The extraction lives in
+    # tools/pipeline_facts.py because the figure annotates its stages with these
+    # same numbers, and a schematic quoting a number the ledger does not carry is
+    # one no reader can check. Where METHODS.md disagrees with the delivered data
+    # (it says 60 ps per state point and a 27-point grid) the data win; that
+    # module says so per fact.
+    from tools.pipeline_facts import pipeline_facts as _pf
+    for _k, _f in _pf(cfg).items():
+        led.add(f"pipeline.{_k}", _f["value"], _f["unit"], _f["source_script"],
+                _f["source_file"], _f["note"])
+
     wres = ROOT / "outputs" / "window_residual.npz"
     if wres.exists():
         import numpy as _np
