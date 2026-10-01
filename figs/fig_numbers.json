@@ -101,10 +101,23 @@
      "rho_kg_m3": 1200.0,
      "line_list_broadening_pressure_bar": 11076.553547740335
     },
-    "marked_wavenumber_cm": 2550.0,
-    "marked_kappa_first_principles_cm2_g": 333.5783,
-    "marked_kappa_line_list_cm2_g": 9.5213,
-    "marked_ratio": 35.035,
+    "median_window_cm": [
+     2400.0,
+     2600.0
+    ],
+    "median_first_principles_cm2_g": 370.548,
+    "median_line_list_cm2_g": {
+     "50": 13.1662,
+     "500": 30.2576
+    },
+    "median_ratio_fp_over_line_list": {
+     "50": 28.144,
+     "500": 12.246
+    },
+    "line_list_truncation_cm": [
+     50.0,
+     500.0
+    ],
     "band_envelopes_cm": {
      "libration": [
       300.0,
@@ -130,32 +143,9 @@
      "stretch": "stretch"
     },
     "line_list_note": "direct line-by-line computation at the true density; 1200 kg/m^3 is above the tabulated ceiling of 1000, so the table would clamp",
-    "line_list_truncation_cm": 50.0,
-    "truncation_sensitivity": {
-     "note": "the delivered convention is 50 cm^-1 and every line-list table in the manuscript uses it, so this panel does too. The ratio is NOT cut-off-independent and the caption must name the cap.",
-     "kappa_2550_cm2_g": {
-      "50": 9.5213,
-      "200": 12.1568,
-      "500": 28.9124
-     },
-     "fp_over_line_list_at_2550": {
-      "50": 35.0,
-      "200": 27.4,
-      "500": 11.5
-     },
-     "fp_over_line_list_band_median_2400_2600": {
-      "50": 28.1,
-      "200": 27.8,
-      "500": 12.2
-     },
-     "pedestal_steps_above_2pct_in_2400_2600": {
-      "50": 8,
-      "200": 1,
-      "500": 0
-     },
-     "producer": "tools/broadening_sensitivity.py --only 2000,1200 --conventions ideal --truncation <cap> --out-dir ..."
-    },
-    "caption_correction": "a draft caption marked 4 and ~200 cm^2/g at 2550 cm^-1; at identical conditions the line-list value is 9.5, and 3.0 is what a 1 bar reference broadening gives"
+    "why_two_cut_offs": "A91: the line profiles are truncated at the cut-off and renormalised to unit area, so where the true HWHM exceeds it a line becomes a ~2*cut-off-wide rectangle. The comparison does not converge in the cut-off -- these two medians differ by more than 2x -- so the panel shows both rather than quoting one. 50 cm^-1 is the delivered convention every line-list table in the manuscript is built at; 500 cm^-1 is the widest A71 studied",
+    "single_channel_marker_removed": "the 2550 cm^-1 point marker is gone: A91 showed it sat on the pedestal of the line at 2543.07, so it measured the cut-off",
+    "producer_for_the_500_spectrum": "tools/broadening_sensitivity.py config/fiducial.yaml --only 2000,1200 --conventions ideal --truncation 500 --out-dir outputs/broadening_trunc500"
    }
   }
  },

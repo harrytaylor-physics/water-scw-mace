@@ -4,6 +4,45 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-01 (Fig. 1b states the cut-off dependence instead of hiding it)
+
+- **A92 — Fig. 1b now plots the line list at both wing cut-offs and quotes medians
+  over a window. The single-channel 2550 cm^-1 marker is gone: A91 showed it sat
+  on the pedestal of the line at 2543.07, so what it measured was the cut-off.**
+
+  A91 established that the comparison does not converge in the truncation and
+  then left the panel quoting one number from one cap with the sensitivity buried
+  in the ledger. That was the wrong way round. The panel now shows the line list
+  at **50 cm^-1** (the delivered convention, which every line-list table in the
+  manuscript is built at) and at **500 cm^-1** (the widest A71 scanned, dashed and
+  lighter), shades 2400-2600 cm^-1, and draws a median bar across that window for
+  each of the three curves.
+
+  | curve | median over 2400-2600 cm^-1 | first principles / line list |
+  |---|---|---|
+  | first principles (v5) | **370.5** | — |
+  | HITEMP, 50 cm^-1 cut-off | **13.17** | **x28.1** |
+  | HITEMP, 500 cm^-1 cut-off | **30.26** | **x12.2** |
+
+  Every one is computed from the three spectra when the figure is built, not
+  carried over from A91's text. The two ratios differ by more than a factor of
+  two, and that *is* the statement: a reader sees the cut-off dependence on the
+  face of the figure rather than meeting a single "x35" that happens to be where
+  a pedestal edge fell.
+
+  **Ledger.** `figures.fig1.b.marked_wavenumber_cm`, `marked_kappa_*`,
+  `marked_ratio`, `caption_correction` and `truncation_sensitivity` are **removed**;
+  `median_window_cm`, `median_first_principles_cm2_g`, `median_line_list_cm2_g`,
+  `median_ratio_fp_over_line_list`, `why_two_cut_offs`,
+  `single_channel_marker_removed` and `producer_for_the_500_spectrum` are **added**;
+  `line_list_truncation_cm` goes 50.0 -> [50.0, 500.0]. **Nothing else in the
+  ledger moves** — the diff is confined to `figures.fig1.b.*`, because no spectrum
+  or table was regenerated.
+
+  The panel raises `SystemExit` naming the exact
+  `tools/broadening_sensitivity.py` invocation if either line-list spectrum is
+  absent, so the second cut-off cannot silently go missing on another machine.
+
 ## 2026-10-01 (the notch is the wing cut-off; six figure changes)
 
 - **A91 — Fig. 1b's "notch" is RADIS's line-wing truncation, not line structure,
