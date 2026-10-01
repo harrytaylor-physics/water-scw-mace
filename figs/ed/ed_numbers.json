@@ -70,8 +70,39 @@
   }
  },
  "ed_fig2": {
-  "caption_hint": "a, Planck-mean opacity over the 52 first-principles points. b, the first-principles / HITEMP Planck ratio on the same axes.",
+  "caption_hint": "a, Planck-mean opacity over the 52 first-principles points. b, the first-principles / HITEMP Planck ratio on the same axes. c, the first-principles / POKAZATEL ratio in both means at the 27 states POKAZATEL covers, which Fig. 2b no longer carries.",
   "panels": {
+   "c": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "first principles / POKAZATEL",
+    "x_scale": "log",
+    "y_scale": "log",
+    "x_range": [
+     2.800299999999993,
+     2334.7057
+    ],
+    "y_range": [
+     0.8013413162767087,
+     104.67229915229576
+    ],
+    "n_states": 27,
+    "rosseland_range": [
+     2.747678386801864,
+     83.87823798041006
+    ],
+    "planck_range": [
+     1.4806744836166388,
+     35.87358204186142
+    ],
+    "moved_from": "Fig. 2b (A91)",
+    "isotopologue_caveat": "HITEMP spectra carry isotopologues 1, 2 and 3; POKAZATEL the main one only, so this ratio is not matched in coverage to the HITEMP ratios in a and b",
+    "source_files": [
+     "opacity/crossover.py"
+    ],
+    "source_commits": {
+     "opacity/crossover.py": "90032e5"
+    }
+   },
    "a": {
     "x_label": "Density (kg/m^3)",
     "y_label": "Temperature (K)",
@@ -105,7 +136,7 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "5470506",
+     "outputs/crossover_v3.json": "ffc1b64",
      "opacity/crossover.py": "90032e5"
     }
    },
@@ -136,7 +167,7 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "5470506",
+     "outputs/crossover_v3.json": "ffc1b64",
      "opacity/crossover.py": "90032e5"
     }
    }

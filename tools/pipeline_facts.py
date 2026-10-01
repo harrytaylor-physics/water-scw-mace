@@ -157,8 +157,11 @@ def stage_captions(facts: dict[str, dict]) -> list[str]:
         f"held out {v['mlip_heldout_force_mev_per_a']:g} meV "
         f"$\\mathrm{{\\AA}}^{{-1}}$, {v['mlip_heldout_energy_mev_per_atom']:g} meV/atom\n"
         f"parity {par['bulk']:g}/{par['rcb']:g} (bulk/RCB, train)",
+        # A91: the NVE drift bound stays in the ledger as
+        # pipeline.nve_drift_mev_per_atom_per_ps, but off the figure -- it is a
+        # stability check on the integrator, not a validation of the opacity, and
+        # it was the one caption number a reader could not place.
         (f"{min(mol):g}-{max(mol):g} molecules, {v['md_timestep_fs']:g} fs\n"
-         f"{prod:g} ps after {v['equilibration_ps']:g} ps; drift "
-         f"{v['nve_drift_mev_per_atom_per_ps']:g}"
+         f"{prod:g} ps after {v['equilibration_ps']:g} ps equilibration"
          if prod else f"{min(mol):g}-{max(mol):g} molecules, {v['md_timestep_fs']:g} fs"),
     ]

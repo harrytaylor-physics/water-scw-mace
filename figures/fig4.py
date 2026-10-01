@@ -29,6 +29,8 @@ import numpy as np
 from matplotlib.colors import LogNorm
 from matplotlib.lines import Line2D
 
+CBAR_TICKS = (2, 5, 10, 20, 50)   # A91
+
 from config import load_config
 from figures._manuscript import (
     FigureNumbers,
@@ -95,6 +97,15 @@ def main(argv=None) -> int:
     cb = fig.colorbar(mesh, ax=ax, pad=0.015, fraction=0.045)
     cb.set_label("First-principles / HITEMP κ$_R$", fontsize=8.0)
     cb.ax.tick_params(labelsize=7.0)
+    # A91: a log colour bar defaults to decade ticks, which on a 1-100 range
+    # labels three values. These are round numbers inside the range the data
+    # actually occupy; any that fall outside it are dropped rather than drawn.
+    from matplotlib.ticker import FixedLocator, FixedFormatter
+
+    wanted = [t for t in CBAR_TICKS if mesh.norm.vmin <= t <= mesh.norm.vmax]
+    cb.ax.yaxis.set_major_locator(FixedLocator(wanted))
+    cb.ax.yaxis.set_major_formatter(FixedFormatter([f"{t:g}" for t in wanted]))
+    cb.ax.yaxis.set_minor_locator(FixedLocator([]))
 
     hull = _hull(np.column_stack([np.log10(rho_pts), t_pts]))
     ax.plot(10.0 ** hull[:, 0], hull[:, 1], color="black", lw=0.9, ls="-",
@@ -135,8 +146,10 @@ def main(argv=None) -> int:
                      for t, r in zip(rcb_t, rcb_rho)])
     cat_style = {
         "on computed data": ("#000000", True),
+        # A91: vermillion and orange are adjacent hues and read as one colour at
+        # print size; the rho category moves to blue, which no other category uses.
         "T below the grid": ("#D55E00", False),
-        "ρ below the grid": ("#E69F00", False),
+        "ρ below the grid": ("#0072B2", False),
         "between computed points": ("#CC79A7", False),
     }
     teq_levels = sorted(set(t_eq.tolist()))
@@ -151,6 +164,8 @@ def main(argv=None) -> int:
                        facecolor=col if filled else "none", edgecolor=col,
                        linewidth=0.8, zorder=6)
     for cat, (col, filled) in cat_style.items():
+        if not counts[cat]:
+            continue   # A91: a category with no members is not a key to anything
         ax.scatter([], [], marker="o", s=19.0,
                    facecolor=col if filled else "none", edgecolor=col, linewidth=0.8,
                    label=f"{cat} ({counts[cat]})")
@@ -181,6 +196,8 @@ def main(argv=None) -> int:
         boundary_rho_range_kg_m3=[float(rcb_rho.min()), float(rcb_rho.max())],
         t_eq_levels_K=[float(v) for v in teq_levels],
         counts_by_category=counts,
+        categories_in_legend=[c for c in cat_style if counts[c]],
+        colourbar_ticks=CBAR_TICKS,
         category_rule=("filled where the opacity table's own triangulation contains "
                        "the point, open where the model clamps, with the clamp cause "
                        "distinguished — the same four categories as ED Fig. 6a"),

@@ -229,6 +229,13 @@ def main(argv=None) -> int:
     ap.add_argument("--wavenum-min", type=float, default=WAVENUM_MIN_CM,
                     help=f"line-loading lower edge, cm^-1 (default {WAVENUM_MIN_CM:g}; "
                          f"use 10 where the 0-50 HITEMP file is cached)")
+    ap.add_argument("--truncation", type=float, default=TRUNCATION_CM,
+                    help=f"Lorentzian half-width cap in cm^-1 (default "
+                         f"{TRUNCATION_CM:g}, the delivered convention). A92/A71: "
+                         f"where the true HWHM exceeds this, each line is "
+                         f"renormalised into a ~2x truncation-wide rectangle, so "
+                         f"this is the knob that sets the pedestal width. Use "
+                         f"--out-dir to keep a non-default run separate.")
     ap.add_argument("--dry-run", action="store_true",
                     help="print the broadening pressures and stop (no RADIS)")
     args = ap.parse_args(argv)
@@ -248,7 +255,7 @@ def main(argv=None) -> int:
             raise SystemExit(f"--only {args.only} matches none of {POINTS}")
 
     print(f"[broadening] band {band[0]:g}-{band[1]:g} cm^-1, wstep {WSTEP_CM} cm^-1, "
-          f"truncation (Lorentz half-width cap) {TRUNCATION_CM:g} cm^-1")
+          f"truncation (Lorentz half-width cap) {args.truncation:g} cm^-1")
     head = (f"  {'T [K]':>6s} {'rho':>9s} | {'1 bar':>11s} {'ideal [bar]':>13s} "
             f"{'AQUA [bar]':>13s} {'AQUA/ideal':>11s}  phase")
     print(head)
@@ -260,7 +267,7 @@ def main(argv=None) -> int:
     if args.dry_run:
         return 0
 
-    sf = build_factory(args.wavenum_min)
+    sf = build_factory(args.wavenum_min, truncation_cm=args.truncation)
     results = []
     for r in table:
         t_k, rho = r["T"], r["rho"]
@@ -285,7 +292,7 @@ def main(argv=None) -> int:
             npz = out_dir / f"T{t_k:g}_rho{rho:g}_{conv}.npz"
             np.savez_compressed(npz, wn=wn, kappa=kappa, T=t_k, rho_kg_m3=rho,
                                 p_bar=p_pa / 1e5, convention=conv,
-                                truncation_cm=TRUNCATION_CM, wstep_cm=WSTEP_CM,
+                                truncation_cm=args.truncation, wstep_cm=WSTEP_CM,
                                 isotopes=ISOTOPES, source="RADIS/hitemp")
             entry[f"kappa_R_{conv}_cm2_g"] = kr
             entry[f"kappa_P_{conv}_cm2_g"] = kp
@@ -324,7 +331,7 @@ def _write(cfg, out_dir: Path, band, conventions, results, args) -> Path:
             "(the structure model's own EOS). Mass opacity is convention-independent "
             "by construction (kappa = sigma*N_A/M), so the broadening pressure moves "
             "only the Voigt widths. Lorentzian profiles are truncated at "
-            f"{TRUNCATION_CM:g} cm^-1 from line centre AND RENORMALISED to unit area, "
+            f"{args.truncation:g} cm^-1 from line centre AND RENORMALISED to unit area, "
             "so line strength is conserved (verified: at T = 1000 K the integral of "
             "kappa over the delivered range is constant to 1e-4 across a 1e4 range in "
             "broadening pressure). The truncation redistributes far-wing absorption "
@@ -335,14 +342,33 @@ def _write(cfg, out_dir: Path, band, conventions, results, args) -> Path:
         "band_cm": list(band),
         "rel_floor": cfg.opacity.rel_floor,
         "wstep_cm": WSTEP_CM,
-        "truncation_cm": TRUNCATION_CM,
+        "truncation_cm": args.truncation,
         "wavenum_range_cm": [args.wavenum_min, WAVENUM_MAX_CM],
         "points": [list(pt) for pt in POINTS],
         "isotopes": ISOTOPES,
         "conventions": conventions,
         "results": results,
     }
-    path = out_dir.parent / "broadening_sensitivity.json"
+    # A91: a run that is not the full default set must not merge into the
+    # canonical summary. It used to: --out-dir redirected the spectra but
+    # ``out_dir.parent`` sent the JSON back to outputs/, so a single-point run at
+    # a non-default truncation silently replaced one row of a six-point file
+    # whose header still claimed the default cap, and dropped the two conventions
+    # it had not been asked for. Partial runs now keep their summary beside their
+    # own spectra.
+    partial = (args.only is not None
+               or args.truncation != TRUNCATION_CM
+               or set(conventions) != set(CONVENTIONS))
+    path = (out_dir / "broadening_sensitivity.json" if partial
+            else out_dir.parent / "broadening_sensitivity.json")
+    if partial:
+        payload["partial_run"] = {
+            "only": args.only, "truncation_cm": args.truncation,
+            "conventions": conventions,
+            "note": ("not the full default set, so this summary is written beside "
+                     "its own spectra and does NOT merge into "
+                     "outputs/broadening_sensitivity.json")}
+        print(f"  [partial run] summary -> {path} (canonical file untouched)")
     existing = json.loads(path.read_text()) if path.exists() else None
     if existing:  # keep points this invocation is not recomputing
         keep = [r for r in existing["results"]

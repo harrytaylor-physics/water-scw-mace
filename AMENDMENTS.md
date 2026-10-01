@@ -4,6 +4,99 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-01 (the notch is the wing cut-off; six figure changes)
+
+- **A91 — Fig. 1b's "notch" is RADIS's line-wing truncation, not line structure,
+  and raising the cap does not converge the comparison: the marked ratio is 35 at
+  50 cm^-1, 27 at 200 and 12 at 500. The figure therefore keeps the delivered
+  convention and names it. Five other figure changes, and one product I corrupted
+  and restored.**
+
+  **(1) The notch.** At (2000 K, 1200 kg/m^3) the spectrum has flat plateaus with
+  sharp rectangular edges. The edges pair at **exactly 100.01 cm^-1 = 2 x 50**:
+  lines at 2473.76 and 2543.07 switch on at nu_0 - 50 and off at nu_0 + 50. That
+  is the `truncation` cap, and `tools/broadening_sensitivity.py`'s own docstring
+  predicts it -- RADIS renormalises each truncated profile to unit area, so where
+  the true HWHM greatly exceeds the cap (here O(1e3) cm^-1 against 50) a line
+  becomes a ~100 cm^-1-wide rectangle carrying its full strength. **The marked
+  2550 cm^-1 channel sits on the pedestal of the 2543.07 line.** Artefact, not
+  physics.
+
+  Regenerated at 200 and 500 cm^-1 (A71's range; `--truncation`, new):
+
+  | cap | kappa(2550) | FP/LL at 2550 | band median 2400-2600 | FP/LL median | steps >2% | LL kappa_R |
+  |---|---|---|---|---|---|---|
+  | **50** (delivered) | 9.5213 | **35.0** | 13.1662 | 28.1 | 8 | 50.64 |
+  | 200 | 12.1568 | **27.4** | 13.3448 | 27.8 | 1 | 63.48 |
+  | 500 | 28.9124 | **11.5** | 30.2576 | 12.2 | 0 | 116.27 |
+
+  The pedestals do disappear (8 steps -> 1 -> 0) but **nothing converges**: the
+  ratio moves by a factor of 3 and kappa_R more than doubles. A band median is not
+  the escape either -- it looks stable from 50 to 200 and then jumps 2.3x at 500.
+  Monotone and physical: the wider the retained wing, the more far-wing absorption
+  from the bend and stretch bands fills the transparency window.
+
+  **So Fig. 1b keeps 50 cm^-1** -- every line-list table in the manuscript is built
+  at that cap, and changing this panel alone would make it inconsistent with them
+  -- and now **records the cap and the sensitivity** in its ledger entry, with the
+  caption naming it. This is A71's systematic ("any 'N times the line list' claim
+  has to name the cut-off") landing on a specific figure. **No downstream number
+  changes**, because nothing downstream was regenerated: the delivered spectra and
+  tables are untouched.
+
+  **A product I corrupted, and the guard that stops it recurring.** The 200 cm^-1
+  run silently damaged `outputs/broadening_sensitivity.json`. `--out-dir`
+  redirects the spectra but the summary path was `out_dir.parent`, so a
+  single-point, single-convention run at a non-default cap replaced one row of the
+  six-point file -- whose header still said `truncation_cm: 50.0` -- and dropped
+  that row's `ref1bar` and `aqua` conventions. Restored exactly from the intact
+  50 cm^-1 spectra (`kappa_R_ideal` back to 50.6427, matching the ledger to every
+  digit). A run that is not the full default set now writes its summary beside its
+  own spectra and is stamped `partial_run`; the banner and the JSON header record
+  the cap **actually used** rather than the module constant, which they did not.
+
+  **(2) Fig. 1a** drops "drift 0.017". It is a stability check on the integrator,
+  not a validation of the opacity, and it was the one caption number a reader
+  could not place. Still in the ledger as `pipeline.nve_drift_mev_per_atom_per_ps`.
+
+  **(3) Fig. 3b** gains the bounded dispute as a second marker per boundary --
+  ratio / 1.400 at rho >= 60, / 3.039 below. Both are ledger quantities, not
+  choices made in the figure: 1.400 is `window_validation.ratio.window`, measured
+  against Wannier-centre dipole labels, and 3.039 is A88's largest v5 dilute
+  stretch-band excess, at (2000 K, 30 kg m^-3). Nine of ten boundaries stay above
+  their flip threshold once bounded; the tenth (1008 K, 44 kg m^-3) does not, and
+  now shows it. **Fig. 3a** gets a fixed 1-1e4 kg/m^3 axis and reads "first
+  principles" where it said "composite".
+
+  **(4) Fig. 2b** is Rosseland only, against HITEMP and HITEMP + MT_CKD; it
+  carried three references x two means = six overlapping series, and kappa_R is
+  what the structure model integrates. POKAZATEL and the Planck ratios move to a
+  new **ED Fig. 2c**, which also forced ED Fig. 2 into two rows -- three panels
+  with colour bars do not fit across one journal width, and b's colour-bar label
+  ran into c's y-label. The b label aligns with a (dy 1.30 -> 1.06).
+
+  **Fig. 2a's faceting was real.** The model interpolates linearly on a Delaunay
+  triangulation, so the facets *are* the model, not a rendering artefact. The
+  surface is therefore re-interpolated **for display only** with a C1
+  Clough-Tocher scheme on the same 52 points, keeping the model's own hull mask,
+  and `display_vs_model_max_dex` records how far the displayed surface departs
+  from the one the model uses. The stepped lower edge was genuinely only the
+  `pcolormesh` cell size (NGRID 320 -> 480, `contourf`).
+
+  **(5) Fig. 4**: colour-bar ticks at 2, 5, 10, 20, 50; "rho below the grid" moves
+  from orange to blue, because vermillion and orange are adjacent hues and read as
+  one colour at print size; and the zero-count category leaves the legend, since a
+  category with no members is not a key to anything. **(6) Fig. 1b**'s first band
+  reads "rotation/libration" -- it is "rotation" in the manuscript and "libration"
+  in `opacity/bands.py`, and this is where a reader meets it first.
+
+  **Two faults of my own in the figures, both caught by looking at them.**
+  `contourf` puts a tick on every contour level, so Fig. 2a's colour bar printed
+  `1.00634 x 10^3` and nothing else; and ED Fig. 2 at three panels across one width
+  had overlapping labels. Both fixed before commit.
+
+  validation: 251 passed, 8 skipped, 5 xfailed.
+
 ## 2026-10-01 (the pooling assumption tested; the held-out errors found)
 
 - **A90 — the pooled sigma survives a test on the diagnostic that matters, so

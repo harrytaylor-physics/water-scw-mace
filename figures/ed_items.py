@@ -185,7 +185,9 @@ def ed2(cfg: Config) -> Path:
 
     nums = FigureNumbers(figure="ed_fig2", caption_hint=(
         "a, Planck-mean opacity over the 52 first-principles points. b, the "
-        "first-principles / HITEMP Planck ratio on the same axes."))
+        "first-principles / HITEMP Planck ratio on the same axes. c, the "
+        "first-principles / POKAZATEL ratio in both means at the 27 states "
+        "POKAZATEL covers, which Fig. 2b no longer carries."))
     t_pts, rho_pts, _, kp = compute_point_means("fp", cfg, BAND)
     src = get_source("fp", cfg, band=BAND)
     rows = crossover_v3_rows(cfg, BAND)
@@ -196,7 +198,11 @@ def ed2(cfg: Config) -> Path:
     TT, LR = np.meshgrid(t_lin, lr_lin)
     q = np.column_stack([TT.ravel(), LR.ravel()])
 
-    fig, (ax_a, ax_b) = figure(80.0, ncols=2)
+    # A91: three panels each carrying a colour bar will not fit across one
+    # journal width -- b's colour-bar label ran into c's y-label. Two rows, with
+    # the scatter spanning the lower one.
+    fig, axd = mosaic(150.0, [["a", "b"], ["c", "c"]])
+    ax_a, ax_b, ax_c = axd["a"], axd["b"], axd["c"]
     surf = (10.0 ** src.table._lin(q)[:, 1].reshape(TT.shape)) / CM2_PER_G_TO_SI
     ok = np.isfinite(surf)
     m = ax_a.pcolormesh(10.0**LR, TT, np.ma.masked_invalid(surf), cmap="viridis",
@@ -218,14 +224,66 @@ def ed2(cfg: Config) -> Path:
                          norm=LogNorm(np.nanmin(rsurf[ok2]), np.nanmax(rsurf[ok2])),
                          shading="auto", rasterized=True)
     cb2 = fig.colorbar(m2, ax=ax_b, pad=0.012, fraction=0.05, aspect=28)
-    cb2.set_label("first principles / HITEMP, Planck", fontsize=7.6)
+    cb2.set_label("first principles / HITEMP, κ$_P$", fontsize=7.6)
     cb2.ax.tick_params(labelsize=7.0)
+
+    # -- c: FP / POKAZATEL, both means (A91: moved off Fig. 2b) --------------
+    t_pk, rho_pk, kr_pk, kp_pk = compute_point_means("pokazatel", cfg, BAND)
+    by_state = {(round(t, 3), round(r, 3)): (kr, kp)
+                for t, r, kr, kp in zip(t_pk, rho_pk, kr_pk, kp_pk)}
+    pk = []
+    for r in rows:
+        key = (round(r["T"], 3), round(r["rho"], 3))
+        if key in by_state:
+            kr_p, kp_p = by_state[key]
+            pk.append({"T": r["T"], "rho": r["rho"],
+                       "rosseland": r["kappa_R_fp_cm2_g"] / kr_p,
+                       "planck": r["kappa_P_fp_cm2_g"] / kp_p})
+    if pk:
+        cc = [d["T"] for d in pk]
+        s_pk = ax_c.scatter([d["rho"] for d in pk], [d["rosseland"] for d in pk],
+                            c=cc, cmap="viridis", marker="s", s=19.0,
+                            edgecolor="black", linewidth=0.25, zorder=3)
+        ax_c.scatter([d["rho"] for d in pk], [d["planck"] for d in pk],
+                     facecolors="none",
+                     edgecolors=np.array([s_pk.cmap(s_pk.norm(v)) for v in cc]),
+                     marker="s", s=30.0, linewidth=0.9, zorder=2)
+        ax_c.axhline(1.0, color="black", lw=0.6, ls=":", zorder=1)
+        ax_c.set_yscale("log")
+        ax_c.set_ylabel("First principles / POKAZATEL")
+        ax_c.set_xlim(auto=True)
+        cb3 = fig.colorbar(s_pk, ax=ax_c, pad=0.012, fraction=0.05, aspect=28)
+        cb3.set_label("Temperature T (K)", fontsize=7.6)
+        cb3.ax.tick_params(labelsize=7.0)
+        ax_c.legend(handles=[
+            Line2D([], [], ls="none", marker="s", mfc="#7f7f7f", mec="black",
+                   ms=4.0, label="filled: Rosseland"),
+            Line2D([], [], ls="none", marker="s", mfc="none", mec="#7f7f7f",
+                   ms=4.6, mew=0.9, label="open: Planck")],
+            loc="upper left", fontsize=7.0)
+        nums.axes("c", ax_c, "Density (kg/m^3)", "first principles / POKAZATEL",
+                  xlog=True, ylog=True)
+        nums.panel("c", n_states=len(pk),
+                   rosseland_range=[min(d["rosseland"] for d in pk),
+                                    max(d["rosseland"] for d in pk)],
+                   planck_range=[min(d["planck"] for d in pk),
+                                 max(d["planck"] for d in pk)],
+                   moved_from="Fig. 2b (A91)",
+                   isotopologue_caveat=(
+                       "HITEMP spectra carry isotopologues 1, 2 and 3; POKAZATEL "
+                       "the main one only, so this ratio is not matched in "
+                       "coverage to the HITEMP ratios in a and b"))
+        _src(nums, "c", "opacity/crossover.py")
+    else:
+        _blocked(ax_c, nums, "c", "first principles / POKAZATEL",
+                 "no POKAZATEL state matches a first-principles state")
 
     for ax in (ax_a, ax_b):
         ax.scatter(rho_pts, t_pts, s=8.0, facecolors="none", edgecolors="white",
                    linewidths=0.55, zorder=3)
         ax.scatter(rho_pts, t_pts, s=8.0, facecolors="none", edgecolors="black",
                    linewidths=0.3, zorder=4)
+    for ax in (ax_a, ax_b, ax_c):
         ax.set_xscale("log")
         ax.set_xlabel("Density ρ (kg m$^{-3}$)")
     ax_a.set_ylabel("Temperature T (K)")
@@ -247,6 +305,7 @@ def ed2(cfg: Config) -> Path:
         _src(nums, p, "outputs/crossover_v3.json", "opacity/crossover.py")
     panel_label(ax_a, "a", dx=-0.17, dy=1.06)
     panel_label(ax_b, "b", dx=-0.17, dy=1.06)
+    panel_label(ax_c, "c", dx=-0.17, dy=1.06)
     return save_pdf(fig, "ed_fig2", nums, out_dir=ED_DIR, ledger_name=LEDGER)
 
 

@@ -54,9 +54,15 @@ CASE = {"mass_core_mearth": 10.0, "wmf": 0.50, "t_eq_k": 500.0, "t_int_k": 30.0}
 # resolution in finding the crossing, not physics — but the figure must agree with
 # the table it sits next to.
 N_SAMPLE = 1500
+# A91 (Fig. 3b): see panel_b. 1.400 is window_validation.ratio.window, measured
+# against Wannier-centre dipole labels; 3.039 is the largest dilute stretch-band
+# excess (2000 K, 30 kg m^-3) and applies where rho is below the blend window.
+BOUND_RHO_SPLIT = 60.0
+BOUND_FACTOR_DENSE = 1.400
+BOUND_FACTOR_DILUTE = 3.039
 # Order matters: the composite uses the line list below the blend window, so the
 # two curves coincide there. The line list is drawn last and dashed so both read.
-SOURCES = (("composite", COMPOSITE_C, "-", "composite"),
+SOURCES = (("composite", COMPOSITE_C, "-", "first principles"),
            ("hitemp", HITEMP_C, "--", "line list"))
 
 
@@ -99,6 +105,7 @@ def panel_a(ax, cfg, nums: FigureNumbers) -> dict:
     ax.axhline(1.0, color="black", lw=0.7, ls=":", zorder=1)
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_xlim(1.0, 1.0e4)   # A91: fixed decades, so the two panels' rho axes read alike
     ax.set_xlabel("Density ρ (kg m$^{-3}$)")
     ax.set_ylabel("∇$_{rad}$ / ∇$_{ad}$")
     ax.legend(loc="upper left", fontsize=7.0)
@@ -141,6 +148,16 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
     x = np.arange(len(rows))
     ratio = np.array([float(r["fp_over_hitemp"]) for r in rows])
     thresh = np.array([float(r["threshold_factor"]) for r in rows])
+    rho_b = np.array([float(r["rho_si"]) for r in rows])
+    # A91: the bounded dispute -- the ratio divided by the largest factor the
+    # dipole model could be overstating the first-principles opacity by. A88
+    # measured that directly against Wannier-centre labels in the transparency
+    # window (1.400); below the blend window there is no such measurement, so the
+    # bound falls back to the largest v5 dilute stretch-band excess over the line
+    # list, 3.039 at (2000 K, 30 kg m^-3). Both are ledger quantities, not choices
+    # made here: window_validation.ratio.window and A88's dilute span 2.244-3.039.
+    bound = np.where(rho_b >= BOUND_RHO_SPLIT, BOUND_FACTOR_DENSE, BOUND_FACTOR_DILUTE)
+    bounded = ratio / bound
 
     ax.bar(x, thresh - 1.0, width=0.55, bottom=1.0, color=OKABE_ITO["sky"],
            edgecolor="black", linewidth=0.4, zorder=2,
@@ -148,6 +165,9 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
     ax.plot(x, ratio, ls="none", marker="o", ms=4.2, mfc=OKABE_ITO["blue"],
             mec="black", mew=0.4, zorder=4,
             label="first-principles / line-list κ$_R$ at the boundary")
+    ax.plot(x, bounded, ls="none", marker="v", ms=4.0,
+            mfc=OKABE_ITO["orange"], mec="black", mew=0.4, zorder=4,
+            label="bounded by the dipole-model factor (1.400 / 3.039)")
     ax.vlines(x, thresh, ratio, color=OKABE_ITO["grey"], lw=0.8, zorder=3)
 
     ax.axhline(1.0, color="black", lw=0.7, ls=":", zorder=1)
@@ -158,7 +178,7 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
         fontsize=7.0)
     ax.set_xlabel("Boundary:  T (K)  /  ρ (kg m$^{-3}$)")
     ax.set_ylabel("Factor")
-    ax.set_ylim(0.85, ratio.max() * 3.2)
+    ax.set_ylim(min(0.85, bounded.min() * 0.85), ratio.max() * 3.2)
     for xi, rr, th in zip(x, ratio, thresh):
         ax.annotate(f"×{rr / th:.0f}", (xi, rr), textcoords="offset points",
                     xytext=(0, 6), ha="center", fontsize=7.0, zorder=5)
@@ -190,9 +210,18 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
         kappa_ratio_range=[float(ratio.min()), float(ratio.max())],
         flip_threshold_range=[float(thresh.min()), float(thresh.max())],
         margin_range=[float((ratio / thresh).min()), float((ratio / thresh).max())],
+        bounded_ratio_range=[float(bounded.min()), float(bounded.max())],
+        n_bounded_still_above_threshold=int((bounded > thresh).sum()),
+        bound_factors={"rho_ge_60": BOUND_FACTOR_DENSE,
+                       "rho_lt_60": BOUND_FACTOR_DILUTE},
+        bound_provenance=(
+            "1.400 is window_validation.ratio.window, measured against "
+            "Wannier-centre dipole labels; 3.039 is the largest v5 dilute "
+            "stretch-band excess over the line list, at (2000 K, 30 kg m^-3)"),
         boundaries=[{"T_K": float(r["t_k"]), "rho_kg_m3": float(r["rho_si"]),
                      "kappa_ratio": float(r["fp_over_hitemp"]),
-                     "flip_threshold": float(r["threshold_factor"])} for r in rows],
+                     "flip_threshold": float(r["threshold_factor"]),
+                     "bounded_ratio": float(bd)} for r, bd in zip(rows, bounded)],
         selection="boundaries with first-principles data interpolated, not clamped",
         input_vintage=(
             "boundary locations and kappa ratios come from the stored boundary "

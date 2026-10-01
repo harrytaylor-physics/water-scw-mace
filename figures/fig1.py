@@ -45,6 +45,11 @@ from figures._manuscript import (
 )
 from opacity.bands import BANDS
 
+# A91: the 300-1000 cm^-1 window is "rotation" in the manuscript and "libration"
+# in the code (opacity/bands.py). Fig. 1b is where a reader meets it first, so it
+# carries both names; ED Fig. 4 uses BAND_DISPLAY's single "rotation".
+BAND_DISPLAY = {"libration": "rotation/libration"}
+
 POINT = (2000.0, 1200.0)
 MARK_WN = 2550.0
 BAND_CM = (100.0, 4000.0)
@@ -174,8 +179,8 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:
     for name, (blo, bhi) in BANDS.items():
         ax.plot([blo, bhi], [ytop / 2.6] * 2, color=OKABE_ITO["grey"], lw=2.2,
                 solid_capstyle="butt", alpha=0.8, zorder=1)
-        ax.text(0.5 * (blo + bhi), ytop / 2.1, name, ha="center", va="bottom",
-                fontsize=7.0, color="#444444", zorder=1)
+        ax.text(0.5 * (blo + bhi), ytop / 2.1, BAND_DISPLAY.get(name, name),
+                ha="center", va="bottom", fontsize=7.0, color="#444444", zorder=1)
 
     nums.axes("b", ax, "Wavenumber (cm^-1)", "Opacity (cm^2/g)", xlog=False, ylog=True)
     nums.panel(
@@ -187,9 +192,34 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:
         marked_kappa_line_list_cm2_g=round(v_ll, 4),
         marked_ratio=round(v_fp / v_ll, 3),
         band_envelopes_cm={k: list(v) for k, v in BANDS.items()},
+        band_display_names={k: BAND_DISPLAY.get(k, k) for k in BANDS},
         line_list_note=(
             "direct line-by-line computation at the true density; 1200 kg/m^3 is "
             "above the tabulated ceiling of 1000, so the table would clamp"),
+        # A91. The marked channel sits on a RECTANGULAR PEDESTAL, not on line
+        # structure. RADIS truncates each Lorentzian at `truncation` from line
+        # centre and renormalises it to unit area, so where the true HWHM greatly
+        # exceeds the cap -- here it is O(1e3) cm^-1 against a 50 cm^-1 cap --
+        # every strong line becomes a ~2*cap-wide rectangle. The pedestal edges
+        # pair at exactly 100.01 cm^-1 = 2 x 50 about lines at 2473.76 and
+        # 2543.07, and 2550 lies on the second one.
+        #
+        # Raising the cap does NOT converge the comparison, so no cut-off here is
+        # "the right one"; this is A71's systematic, measured at this state:
+        line_list_truncation_cm=50.0,
+        truncation_sensitivity={
+            "note": ("the delivered convention is 50 cm^-1 and every line-list "
+                     "table in the manuscript uses it, so this panel does too. "
+                     "The ratio is NOT cut-off-independent and the caption must "
+                     "name the cap."),
+            "kappa_2550_cm2_g": {"50": 9.5213, "200": 12.1568, "500": 28.9124},
+            "fp_over_line_list_at_2550": {"50": 35.0, "200": 27.4, "500": 11.5},
+            "fp_over_line_list_band_median_2400_2600": {
+                "50": 28.1, "200": 27.8, "500": 12.2},
+            "pedestal_steps_above_2pct_in_2400_2600": {"50": 8, "200": 1, "500": 0},
+            "producer": ("tools/broadening_sensitivity.py --only 2000,1200 "
+                         "--conventions ideal --truncation <cap> --out-dir ..."),
+        },
         caption_correction=(
             "a draft caption marked 4 and ~200 cm^2/g at 2550 cm^-1; at identical "
             "conditions the line-list value is 9.5, and 3.0 is what a 1 bar "
@@ -211,7 +241,10 @@ def main(argv=None) -> int:
         caption_hint=(
             "a, pipeline from configuration sampling to kappa(nu). b, kappa(nu) at "
             "2000 K, 1200 kg/m^3, first principles vs HITEMP at identical "
-            "conditions (same ideal-gas broadening pressure)."),
+            "conditions (same ideal-gas broadening pressure), with the line "
+            "profiles truncated at 50 cm^-1 from line centre -- the delivered "
+            "convention. The marked ratio depends on that cap (A71): it is 35 at "
+            "50 cm^-1, 27 at 200 and 12 at 500."),
     )
     # the schematic grew a caption row under each box, so it needs more height
     fig, (ax_a, ax_b) = figure(132.0, nrows=2, gridspec_kw={"height_ratios": [1.0, 1.9]})
