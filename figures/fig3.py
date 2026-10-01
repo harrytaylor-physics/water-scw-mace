@@ -177,7 +177,9 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
         [f"{float(r['t_k']):.0f}\n{float(r['rho_si']):.0f}" for r in rows],
         fontsize=7.0)
     ax.set_xlabel("Boundary:  T (K)  /  ρ (kg m$^{-3}$)")
-    ax.set_ylabel("Factor")
+    # A93: the axis carries two different things -- the measured ratio and the
+    # threshold it has to beat -- so "Factor" named neither.
+    ax.set_ylabel("Ratio or threshold")
     ax.set_ylim(min(0.85, bounded.min() * 0.85), ratio.max() * 3.2)
     for xi, rr, th in zip(x, ratio, thresh):
         ax.annotate(f"×{rr / th:.0f}", (xi, rr), textcoords="offset points",
@@ -202,8 +204,8 @@ def panel_b(ax, cfg, nums: FigureNumbers) -> None:  # noqa: C901
         drift.append(abs(now / float(r["fp_over_hitemp"]) - 1.0))
     max_drift = max(drift)
 
-    nums.axes("b", ax, "Radiative-convective boundary (ordered by ratio)", "Factor",
-              ylog=True)
+    nums.axes("b", ax, "Radiative-convective boundary (ordered by ratio)",
+              "Ratio or threshold", ylog=True)
     nums.panel(
         "b",
         n_boundaries=len(rows),

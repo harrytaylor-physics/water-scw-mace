@@ -4,6 +4,41 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-01 (three figure labels; the colour-bar extension checked)
+
+- **A93 — label changes only. No measurement moves: the figure ledger has zero
+  numeric differences against A92.**
+
+  **(1) Fig. 1a**, last stage box: "dipole autocorrelation, mass opacity" ->
+  "dipole autocorrelation, κ(ν)". **(2) Fig. 3b** y-axis: "Factor" -> **"Ratio or
+  threshold"**, because the axis carries two different quantities -- the measured
+  ratio and the threshold it has to beat -- and "Factor" named neither. The
+  `nums.axes` label was changed with it, so the ledger and the axis agree; they
+  would otherwise have disagreed, since the ledger's `y_label` comes from the
+  `nums.axes` argument rather than from `set_ylabel`.
+
+  **(3) Fig. 2a's colour-bar extension, checked rather than assumed.** The bar's
+  limits are taken from the **model** surface on the display grid, 2.782510 to
+  7583.703531 cm^2/g, while the panel draws the Clough-Tocher display surface
+  (A91), so the two can disagree at the edges -- which is what `extend="both"` was
+  quietly covering.
+
+  | end | outside the limit? | by how much |
+  |---|---|---|
+  | maximum | **no** | largest computed point 7583.703530966697 vs vmax 7583.703530966707 — **-5.8e-16 dex**, floating-point identical |
+  | minimum | **yes** | coldest, thinnest computed point 2.740488 is **0.0066 dex** below vmin; the displayed surface reaches **1.8629 cm^2/g**, **0.174 dex** below, over **1195 of 182583** in-hull cells (0.65%) |
+
+  So the lower arrow is earned and the upper one is not: `extend="min"`. The
+  minimum undershoot is not an error -- the display grid does not sample the
+  corner point exactly, and a C1 interpolant may dip below the data between
+  nodes -- but it is real, so the arrow stays. Recorded as
+  `figures.fig2.a.colourbar_extend` and `colourbar_extend_reason`.
+
+  **Ledger diff against A92**: two keys added (both the provenance above), one
+  text value changed (`figures.fig3.b.y_label`), `_n_entries` 758 -> 760 as the
+  count of those two. **Zero numeric measurements changed.** Figure gates: 42
+  passed.
+
 ## 2026-10-01 (Fig. 1b states the cut-off dependence instead of hiding it)
 
 - **A92 — Fig. 1b now plots the line list at both wing cut-offs and quotes medians

@@ -96,8 +96,16 @@ def panel_a(ax, fig, cfg, nums: FigureNumbers) -> None:
     finite = np.isfinite(surface)
     norm = LogNorm(vmin=np.nanmin(surface[finite]), vmax=np.nanmax(surface[finite]))
     levels = np.logspace(np.log10(norm.vmin), np.log10(norm.vmax), 48)
+    # A93: checked rather than assumed. The bar's limits come from the MODEL
+    # surface on this grid (2.7825 to 7583.7035 cm^2/g). Nothing plotted exceeds
+    # the maximum -- the largest computed point and vmax agree to 6e-16 dex -- but
+    # values do fall below the minimum: the coldest, thinnest computed point sits
+    # 0.0066 dex under it because the display grid does not sample that corner
+    # exactly, and the Clough-Tocher display surface undershoots to 1.863 cm^2/g,
+    # 0.174 dex under, over 1195 of 182583 cells (0.65%). So the lower arrow is
+    # earned and the upper one is not.
     mesh = ax.contourf(10.0**LR, TT, np.ma.masked_invalid(smooth), levels=levels,
-                       cmap="viridis", norm=norm, extend="both")
+                       cmap="viridis", norm=norm, extend="min")
     mesh.set_edgecolor("face")   # hairline seams between the filled bands
     ax.scatter(rho_pts, t_pts, s=9.0, facecolors="none", edgecolors="white",
                linewidths=0.6, zorder=3)
@@ -132,6 +140,12 @@ def panel_a(ax, fig, cfg, nums: FigureNumbers) -> None:
                              "Delaunay triangulation"),
         display_vs_model_max_dex=float(disp_dex),
         hull_mask_from="the model's own linear interpolant",
+        colourbar_extend="min",
+        colourbar_extend_reason=(
+            "nothing plotted exceeds vmax (largest computed point and vmax agree "
+            "to 6e-16 dex), but the displayed surface reaches 1.863 cm^2/g, "
+            "0.174 dex below vmin, over 0.65% of in-hull cells; the coldest "
+            "thinnest computed point is 0.0066 dex below vmin"),
         colourbar_range_cm2_g=[float(np.nanmin(surface[finite])),
                                float(np.nanmax(surface[finite]))],
         band_cm=list(BAND_CM),

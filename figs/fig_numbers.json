@@ -182,6 +182,8 @@
     "display_interpolant": "Clough-Tocher C1 on the same 52 points, for display only; the model itself interpolates linearly on a Delaunay triangulation",
     "display_vs_model_max_dex": 0.7147141969280866,
     "hull_mask_from": "the model's own linear interpolant",
+    "colourbar_extend": "min",
+    "colourbar_extend_reason": "nothing plotted exceeds vmax (largest computed point and vmax agree to 6e-16 dex), but the displayed surface reaches 1.863 cm^2/g, 0.174 dex below vmin, over 0.65% of in-hull cells; the coldest thinnest computed point is 0.0066 dex below vmin",
     "colourbar_range_cm2_g": [
      2.782509606994551,
      7583.703530966707
@@ -307,7 +309,7 @@
    },
    "b": {
     "x_label": "Radiative-convective boundary (ordered by ratio)",
-    "y_label": "Factor",
+    "y_label": "Ratio or threshold",
     "x_scale": "linear",
     "y_scale": "log",
     "x_range": [

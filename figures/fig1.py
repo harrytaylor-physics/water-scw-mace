@@ -69,7 +69,7 @@ STAGES = [
     ("Configuration\nsampling", "(T, ρ) states"),
     ("Hybrid DFT\nlabels", "energies, forces,\ndipoles"),
     ("MACE potential\n+ dipole model", "trained to the\nDFT labels"),
-    ("NVE dynamics → κ(ν)", "dipole autocorrelation,\nmass opacity"),
+    ("NVE dynamics → κ(ν)", "dipole autocorrelation,\nκ(ν)"),
 ]
 
 
