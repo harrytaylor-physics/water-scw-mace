@@ -204,6 +204,7 @@ def run(cfg: Config) -> dict:
         out["sources"][source] = per_iso
     out["scatter"] = _scatter(out)
     out["scatter_pooled"] = _scatter_pooled(out)
+    out["scatter_homogeneity"] = _variance_homogeneity(out)
     out["breakdown"] = _breakdown(out)
     out["fitted_slope_dense"] = _fitted_slope(out)
     out["breakdown_map"] = _lambda_map(cfg)
@@ -288,6 +289,59 @@ def _fitted_slope(doc: dict) -> dict:
                     "n_points": len(rows),
                     "sigma_above_2": float((slope - 2.0) / se) if se > 0 else None}
         out["per_source"][source] = per_iso
+    return out
+
+
+def _variance_homogeneity(doc: dict) -> dict:
+    """Does pooling the scatter across isotherms survive a test? (A90)
+
+    ``_scatter_pooled`` pools residuals over every isotherm, which assumes the
+    residual variance is common to all of them. That assumption is what buys the
+    ~23 degrees of freedom A70 quoted its errors on, and the alternative -- the
+    single-pair estimate -- carries one. The two give materially different
+    significances for the same slope, so the assumption is worth testing rather
+    than asserting.
+
+    Construction is identical to ``_scatter_pooled``: quadratic in ln rho, every
+    first-principles isotherm with >= 4 densities, residuals per isotherm. Levene
+    is reported first because it does not assume normality; Bartlett is more
+    powerful when the residuals are normal and much more sensitive when they are
+    not. Groups here are small (n - 3 dof, so an isotherm with four densities
+    contributes one), which is itself a caveat on both.
+    """
+    from scipy import stats
+
+    out = {"method": ("per-isotherm residuals of a quadratic in ln rho (the same "
+                      "construction scatter_pooled uses); Levene (robust, median-"
+                      "centred) and Bartlett (normal-theory) on their variances"),
+           "null_hypothesis": "all isotherms share one residual variance",
+           "per_diagnostic": {}}
+    for key in doc["scatter"]["per_diagnostic"]:
+        groups, sizes, temps = [], [], []
+        for t_s, iso in doc["sources"]["fp"].items():
+            rhos = np.array([r["rho_kg_m3"] for r in iso["rows"]])
+            if rhos.size < 4:
+                continue
+            y = np.log(np.array([r["q"][key] for r in iso["rows"]])
+                       * (rhos / 1000.0) ** 2)
+            x = np.log(rhos)
+            groups.append(y - np.polyval(np.polyfit(x, y, 2), x))
+            sizes.append(int(rhos.size)); temps.append(float(t_s))
+        rec = {"n_isotherms": len(groups), "n_points_per_isotherm": sizes,
+               "temperatures_k": temps,
+               "dof_per_isotherm": [n - 3 for n in sizes],
+               "variance_per_isotherm": [float(g.var(ddof=0)) for g in groups]}
+        if len(groups) >= 2:
+            lev = stats.levene(*groups, center="median")
+            bar = stats.bartlett(*groups)
+            rec["levene"] = {"statistic": float(lev.statistic),
+                             "p_value": float(lev.pvalue)}
+            rec["bartlett"] = {"statistic": float(bar.statistic),
+                               "p_value": float(bar.pvalue)}
+            rec["pooling_rejected_at_0.05"] = bool(lev.pvalue < 0.05)
+        else:
+            rec["blocked"] = "fewer than two isotherms with >= 4 densities"
+        out["per_diagnostic"][key] = rec
     return out
 
 

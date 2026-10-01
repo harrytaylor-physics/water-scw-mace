@@ -1,0 +1,27 @@
+{
+ "_meta": "Final MACE training/validation error table for the production potential (A90).",
+ "_why_this_file_exists": "A89 reported that the held-out force and energy errors quoted in a draft caption appeared nowhere in the ARC pull. That was correct about the pull and incomplete about the work: the numbers come from the training job's own stdout log, which was never part of the delivery. They are transcribed here so the figure and the ledger can cite something, and so the distinction from benchmarks/reference/reference.json survives.",
+ "source_log": "train_v4_7924966.out",
+ "source_in_repository": false,
+ "source_note": "ARC job log, not included in the pull; values supplied by H. Taylor in the A90 brief and recorded verbatim. If the log is later added, it should be checked against these four numbers.",
+ "dataset_tags_verbatim": ["valid_Default", "train_Default"],
+ "errors": {
+  "valid_Default": {
+   "energy_meV_per_atom": 7.0,
+   "force_meV_per_A": 44.4,
+   "role": "held-out validation split — the honest generalisation error"
+  },
+  "train_Default": {
+   "energy_meV_per_atom": 6.7,
+   "force_meV_per_A": 32.7,
+   "role": "training split"
+  }
+ },
+ "not_to_be_confused_with": {
+  "file": "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json",
+  "parity_meV_A": {"bulk": 41, "rcb": 58},
+  "distinction": "those are TRAINING-SET parity BY REGIME (bulk vs RCB conditions), which reference.json itself calls 'optimistic vs true held-out error', with frames above 3000 K excluded. They are a different quantity from the held-out split error here, not a competing estimate of it. The 58 meV/A at RCB conditions remains the relevant number for the regime the structural claim lives in."
+ },
+ "lda_model_holdout_meV_A": [12.3, 20.2],
+ "lda_note": "the only held-out parity inside the pull; belongs to the LDA model, not the production potential"
+}

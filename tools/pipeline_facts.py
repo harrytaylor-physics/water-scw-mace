@@ -8,21 +8,29 @@ a schematic quoting a number the ledger does not carry is a number no reader can
 check. So both call this.
 
 Each fact names the artefact that actually carries it rather than prose about it.
-That matters here: ``METHODS.md`` disagrees with the delivered data on two counts
--- it says 60 ps per state point and a 27-point grid, where the dipole series give
-30 ps and the spectra directory holds 52 cells -- and where they disagree the data
-win. Where only prose exists (the training-set composition, the level of theory)
-the fact is marked with that provenance.
+That matters here: ``METHODS.md`` disagreed with the delivered data on four
+counts -- 60 ps per state point, a 27-point grid, NVT production and 64 molecules,
+where the data give 30 ps, 52 cells, Langevin-then-NVE and 64 or 216. A90
+corrected the file against the artefacts and preserved what it said as delivered.
+Where only prose exists (the training-set composition, the level of theory) the
+fact is marked with that provenance.
 
-The two validation numbers are quoted as the pull states them, which is not how a
-draft caption stated them:
+There are **three** different error numbers here and they are not interchangeable
+(A89 found two of them; A90 added the third):
 
-  * the force parity is **training-set** parity by regime, 41 meV/A bulk and
-    58 meV/A at RCB conditions, and ``reference.json`` itself calls this
-    "optimistic vs true held-out error". The only held-out parity anywhere in the
-    pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not this one.
-  * the NVE check is a **drift rate** bound, 0.017 meV/atom/ps worst over 21 runs
-    against a 2 meV/atom/ps gate -- not an energy error per atom.
+  * the **held-out** split error, 44.4 meV/A and 7.0 meV/atom on ``valid_Default``
+    (32.7 / 6.7 on ``train_Default``). This is the honest generalisation error and
+    it comes from the training job's own log, ``train_v4_7924966.out``, which was
+    never part of the pull -- hence ``ed_data/mlip_heldout_errors.json``, which
+    records it and says so. A89 reported these numbers as absent; they were absent
+    from the delivery, not from the work.
+  * the **training-set parity by regime**, 41 meV/A bulk and 58 meV/A at RCB
+    conditions, which ``reference.json`` itself calls "optimistic vs true held-out
+    error". A different quantity, not a competing estimate; the 58 at RCB remains
+    the number for the regime the structural claim lives in. The only held-out
+    parity inside the pull is 12.3 / 20.2 meV/A and belongs to the LDA model.
+  * the NVE check, which is a **drift rate** bound -- 0.017 meV/atom/ps worst over
+    21 runs against a 2 meV/atom/ps gate -- not an energy error per atom.
 """
 
 from __future__ import annotations
@@ -101,7 +109,7 @@ def pipeline_facts(cfg) -> dict[str, dict]:
             value=round(max(frames) * dt / 1000.0), unit="ps",
             source_script=REGEN, source_file="ed_data/arc_dipoles/*/dipoles.npy",
             note=(f"from the dipole series length ({max(frames)} frames); "
-                  f"METHODS.md says 60 ps, which the data do not support"))
+                  f"METHODS.md said 60 ps until A90 corrected it against this"))
 
     ref = json.loads((ARC / "water-scw-mace" / "benchmarks" / "reference"
                       / "reference.json").read_text())
@@ -112,6 +120,19 @@ def pipeline_facts(cfg) -> dict[str, dict]:
               "'optimistic vs true held-out error'; frames above 3000 K excluded. "
               "The only held-out parity in the pull is 12.3 / 20.2 meV/A and "
               "belongs to the LDA model, not this one"))
+    held = json.loads((ROOT / "ed_data" / "mlip_heldout_errors.json").read_text())
+    _hnote = (f"from {held['source_log']}, which is NOT in the pull; transcribed "
+              f"in ed_data/mlip_heldout_errors.json. Held-out split error -- a "
+              f"different quantity from the training-set parity by regime")
+    for tag, field, key, unit in (
+            ("valid_Default", "force_meV_per_A", "mlip_heldout_force_mev_per_a", "meV/A"),
+            ("valid_Default", "energy_meV_per_atom", "mlip_heldout_energy_mev_per_atom", "meV/atom"),
+            ("train_Default", "force_meV_per_A", "mlip_train_force_mev_per_a", "meV/A"),
+            ("train_Default", "energy_meV_per_atom", "mlip_train_energy_mev_per_atom", "meV/atom")):
+        facts[key] = dict(
+            value=held["errors"][tag][field], unit=unit,
+            source_script="ed_data/mlip_heldout_errors.json", source_file=None,
+            note=f"{tag}; {_hnote}")
     facts["nve_drift_mev_per_atom_per_ps"] = dict(
         value=NVE_DRIFT_MEV_ATOM_PS, unit="meV/atom/ps", source_script=CAMPAIGN,
         source_file=None,
@@ -133,8 +154,9 @@ def stage_captions(facts: dict[str, dict]) -> list[str]:
         f"{v['n_state_points']} states, {t_lo:g}-{t_hi:g} K",
         f"{v['n_training_configurations']} configurations\n"
         f"{str(v['label_level_of_theory']).split(' (')[0]}",
-        f"force parity {par['bulk']:g}/{par['rcb']:g} meV $\\mathrm{{\\AA}}^{{-1}}$\n"
-        f"(bulk/RCB, training set)",
+        f"held out {v['mlip_heldout_force_mev_per_a']:g} meV "
+        f"$\\mathrm{{\\AA}}^{{-1}}$, {v['mlip_heldout_energy_mev_per_atom']:g} meV/atom\n"
+        f"parity {par['bulk']:g}/{par['rcb']:g} (bulk/RCB, train)",
         (f"{min(mol):g}-{max(mol):g} molecules, {v['md_timestep_fs']:g} fs\n"
          f"{prod:g} ps after {v['equilibration_ps']:g} ps; drift "
          f"{v['nve_drift_mev_per_atom_per_ps']:g}"

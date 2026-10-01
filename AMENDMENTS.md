@@ -4,6 +4,81 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-01 (the pooling assumption tested; the held-out errors found)
+
+- **A90 — the pooled sigma survives a test on the diagnostic that matters, so
+  A70's convention stands; the held-out MLIP errors A89 called absent exist in a
+  log that was never delivered; METHODS.md corrected against the artefacts.**
+
+  **(1) The pooling assumption, tested rather than asserted.** `_scatter_pooled`
+  pools residuals over every isotherm, which is what buys the ~23 dof A70 quoted
+  its errors on; the single-pair alternative carries one. `tools/rho_scaling.py`
+  now fits each isotherm with the same quadratic in ln rho, takes the residuals,
+  and runs Levene (robust, median-centred) and Bartlett (normal-theory) on their
+  variances, writing `scatter_homogeneity`.
+
+  | diagnostic | Levene p | Bartlett p | variance ratio | pooling |
+  |---|---|---|---|---|
+  | **window_2550** | **0.597** | **0.378** | 10.2x | **not rejected** |
+  | window_2550_pm50_mean | 0.023 | 0.0014 | 70.7x | **rejected** |
+  | window_1000_1200 | 0.340 | 0.015 | 60.3x | not rejected (tests disagree) |
+  | rosseland | 0.054 | 0.027 | 21.6x | marginal |
+
+  **On A70's own diagnostic the assumption holds**, so the pooled error bar — and
+  with it the rho^2 claim — is defensible where the manuscript makes it. It fails
+  on the +-50 cm^-1 variant and is marginal for kappa_R, so the pooled sigma
+  should not be carried to those without saying so. Seven isotherms, 1-5 dof each
+  (n - 3 per isotherm); Bartlett is the more sensitive and the less robust, and
+  where the two disagree the groups are small enough that Levene is the one to
+  read. The A89 fork is **narrowed, not closed**: the test licenses the pooled
+  convention for `window_2550`, it does not make the single-pair estimate wrong.
+
+  **The significance at 2550 cm^-1 under v5, both ways:**
+
+  | | slope | pooled sigma | single-pair sigma |
+  |---|---|---|---|
+  | 2500 K | 2.638 | **+3.73** | +1.88 |
+  | 3000 K | 2.434 | **+3.86** | +1.95 |
+
+  **(2) The held-out errors exist; A89's finding was right about the pull and
+  wrong about the work.** They come from the training job's own stdout,
+  `train_v4_7924966.out`, which was never part of the delivery: `valid_Default`
+  **7.0 meV/atom and 44.4 meV/A**, `train_Default` 6.7 and 32.7. Recorded in
+  `ed_data/mlip_heldout_errors.json` — beside the pull, not inside it, following
+  `arc_dipoles_sha256.json`, and carrying `source_in_repository: false` so the
+  chain is visible. Four `pipeline.mlip_*` ledger entries cite it. **These do not
+  replace the 41/58 meV/A parity**; that is training-set parity BY REGIME, which
+  `reference.json` itself calls optimistic, and the 58 at RCB conditions remains
+  the number for the regime the structural claim lives in. Three different error
+  quantities, all three now in the ledger, and Fig. 1a shows the held-out pair
+  with the regime parity beneath it.
+
+  **(3) METHODS.md corrected against the artefacts, with the delivered text
+  kept.** It is inside the ARC pull, so it is corrected rather than rewritten and
+  a dated block at the top quotes what it said: 60 ps -> **30 ps** (every dipole
+  series is 60,000 frames at 0.5 fs); NVT -> **Langevin equilibration then NVE**
+  (`run_prod_md_05fs.py` lines 48 and 50); 27-point grid -> **52 state points**;
+  and a fourth the brief did not list, 64 molecules -> **64 or 216** (the `N`
+  field takes both). **The "27" is almost certainly POKAZATEL coverage**:
+  `pokazatel_opacity/` holds exactly 27 spectra and all 27 fall on FP state
+  points, T = 1000-3000 K and rho = 108.796-2228.71. That identification is an
+  inference from the counts, not something the pull states. The file's "Dipoles
+  and spectra" section is flagged as superseded rather than rewritten — it
+  describes the v3 estimator, including the white-noise floor A81 showed was
+  leakage and must never be subtracted.
+
+  **(4) `config/candidate.yaml`: M_c = 5 M_earth, f_env = 0.05, T_eq = 700 K.**
+  There is no `wmf` key anywhere in `config/`; `f_env` is defined in
+  `config/schema.py` as `M_env / M_p`, and because the envelope is pure H2O on a
+  `zeng2016_rock` core the water mass fraction **is** `f_env`. **A86 and A89 do
+  not conflict**: A86's "f_env 0.02-0.10" is `F_ENV_GRID = (0.02, 0.05, 0.10)` in
+  `figures/plot_s6_candidate_evolution.py`, the scan S6 runs **around** the
+  config value; A89's `w0 = 0.05` is the config value itself, the scan's centre.
+  One consequence worth stating: w0 = 0.05 sits exactly on the bottom of the
+  tested set {0.05, 0.20, 0.50} and the candidate's shift is downward at every
+  age, so "outside the tested range" there is structural, not a pathology. To
+  bracket it, the grid needs points below 0.05.
+
 ## 2026-10-01 (A88 finished; the remaining manuscript numbers, from v5)
 
 - **A89 — A88's parts 4-7 are done and every number below is rebuilt from its
