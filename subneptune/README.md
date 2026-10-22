@@ -27,7 +27,7 @@ starts only after every Phase-1 gate passes.
 ## Layout
 
     config/       yaml run configs + typed loader (config/schema.py)
-    data/         NOT committed; path-config or symlink to ~/subneptune_data
+    layout.py     where things live in water-scw-mace (spectra, figures, release, models)
     eos/          AQUA loader + thermodynamic interface
     opacity/      table builder + interpolators (FP, HITEMP, POKAZATEL)
     structure/    hydrostatic integrator, boundary conditions
@@ -46,20 +46,26 @@ only — see `AMENDMENTS.md`). Install for development:
 
 ## Data
 
-Not committed. Configs default to `~/subneptune_data`:
+This package lives inside `water-scw-mace` (see `../MIGRATION.md`). Locations
+outside it are set in `layout.py`:
 
-    ~/subneptune_data/AQUA/Tables/aqua_eos_rhot_v1_0.dat
-    ~/subneptune_data/fp_opacity/T*_opacity.npz  (48 FP spectra: the original
-                                                 27 + the 21-point extension;
-                                                 units fixed at source, A50)
-    ~/subneptune_data/fp_opacity/grid.json
-    ~/subneptune_data/fp_opacity/crossover_hitemp.json
-    ~/subneptune_data/mtckd/mtckd_v4.3_self_ref.npz   (MT_CKD 4.3 self-continuum
-                                                 reference coefficients; generate
-                                                 once with tools/extract_mtckd_ref.py
-                                                 from AER's netCDF — A58)
+    ../data/fp_opacity_v5/T*_opacity.npz   the 52 FP spectra, v5 estimator (A83), git-LFS,
+                                           with grid.json and crossover_hitemp.json
+    ../data/release/                       release tables (A73), written by tools/release_tables.py
+    ../docs/figures/subneptune/            Figs 1-4 and Extended Data, written by figures/
 
-Override the root with `paths.data_root` in a config file.
+Raw inputs are not committed (SPEC §1). Configs read them from `paths.data_root`
+(default `~/subneptune_data`):
+
+    AQUA/Tables/aqua_eos_rhot_v1_0.dat
+    hitemp_opacity/, pokazatel_opacity/     line-list spectra
+    mtckd/mtckd_v4.3_self_ref.npz           MT_CKD 4.3 self-continuum reference
+                                            coefficients (tools/extract_mtckd_ref.py, A58)
+
+The raw dipole series (`ed_data/arc_dipoles/`, `ed_data/arc_a78/T*/`) are
+gitignored and fingerprinted in `ed_data/*_sha256.json`; the gates that need
+them skip without them. Overrides: `SUBNEPTUNE_FP_OPACITY_DIR`,
+`SUBNEPTUNE_FIGS_DIR`, `SUBNEPTUNE_RELEASE_DIR`.
 
 ## Gates
 
