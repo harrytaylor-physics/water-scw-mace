@@ -1,0 +1,191 @@
+{
+ "meta": "water_dipole_v3 dipoles on the 13 monomer geometries (A64). Model returns e*A; converted here with 1 e*A = 4.80320 D.",
+ "model": "water_dipole_v3.model",
+ "device": "cpu",
+ "ea_to_debye": 4.8032,
+ "cutoff_a": 6.0,
+ "results": [
+  {
+   "name": "g00",
+   "mode": "reference",
+   "sign": 0,
+   "reference": "equilibrium",
+   "displacement": 0.0,
+   "displacement_unit": "-",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.8221666700363162
+   ],
+   "mu_norm_debye": 1.8221666700363162
+  },
+  {
+   "name": "g01",
+   "mode": "sym_stretch",
+   "sign": 1,
+   "reference": "equilibrium",
+   "displacement": 0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.83602683134079
+   ],
+   "mu_norm_debye": 1.83602683134079
+  },
+  {
+   "name": "g02",
+   "mode": "sym_stretch",
+   "sign": -1,
+   "reference": "equilibrium",
+   "displacement": -0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.8087380954742434
+   ],
+   "mu_norm_debye": 1.8087380954742434
+  },
+  {
+   "name": "g03",
+   "mode": "asym_stretch",
+   "sign": 1,
+   "reference": "equilibrium",
+   "displacement": 0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    0.019030863928794862,
+    0.0,
+    1.8224801609039307
+   ],
+   "mu_norm_debye": 1.8225795210827684
+  },
+  {
+   "name": "g04",
+   "mode": "asym_stretch",
+   "sign": -1,
+   "reference": "equilibrium",
+   "displacement": -0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    -0.019030863928794862,
+    0.0,
+    1.8224801609039307
+   ],
+   "mu_norm_debye": 1.8225795210827684
+  },
+  {
+   "name": "g05",
+   "mode": "bend",
+   "sign": 1,
+   "reference": "equilibrium",
+   "displacement": 1.0,
+   "displacement_unit": "deg",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.8052662199020386
+   ],
+   "mu_norm_debye": 1.8052662199020386
+  },
+  {
+   "name": "g06",
+   "mode": "bend",
+   "sign": -1,
+   "reference": "equilibrium",
+   "displacement": -1.0,
+   "displacement_unit": "deg",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.8387511958122256
+   ],
+   "mu_norm_debye": 1.8387511958122256
+  },
+  {
+   "name": "g07",
+   "mode": "sym_stretch",
+   "sign": 1,
+   "reference": "stretched",
+   "displacement": 0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.9032285373687745
+   ],
+   "mu_norm_debye": 1.9032285373687745
+  },
+  {
+   "name": "g08",
+   "mode": "sym_stretch",
+   "sign": -1,
+   "reference": "stretched",
+   "displacement": -0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.8699103271484376
+   ],
+   "mu_norm_debye": 1.8699103271484376
+  },
+  {
+   "name": "g09",
+   "mode": "asym_stretch",
+   "sign": 1,
+   "reference": "stretched",
+   "displacement": 0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    0.025161721801757814,
+    0.0,
+    1.8866956874847414
+   ],
+   "mu_norm_debye": 1.8868634633744832
+  },
+  {
+   "name": "g10",
+   "mode": "asym_stretch",
+   "sign": -1,
+   "reference": "stretched",
+   "displacement": -0.01,
+   "displacement_unit": "A",
+   "mu_debye": [
+    -0.025161721801757814,
+    0.0,
+    1.8866958306312562
+   ],
+   "mu_norm_debye": 1.8868636065082698
+  },
+  {
+   "name": "g11",
+   "mode": "bend",
+   "sign": 1,
+   "reference": "stretched",
+   "displacement": 1.0,
+   "displacement_unit": "deg",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.8683626270294191
+   ],
+   "mu_norm_debye": 1.8683626270294191
+  },
+  {
+   "name": "g12",
+   "mode": "bend",
+   "sign": -1,
+   "reference": "stretched",
+   "displacement": -1.0,
+   "displacement_unit": "deg",
+   "mu_debye": [
+    0.0,
+    0.0,
+    1.9034736042022706
+   ],
+   "mu_norm_debye": 1.9034736042022706
+  }
+ ]
+}

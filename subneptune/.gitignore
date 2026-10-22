@@ -1,0 +1,46 @@
+# Data is never committed (SPEC §1). Point config paths at ~/subneptune_data,
+# or create a convenience symlink `data -> ~/subneptune_data`.
+# Ignore the contents, not the directory: git will not descend into an excluded
+# directory, so `/data/` would make the negation below unreachable.
+/data/*
+# ...except the released data products, which are outputs of this code rather
+# than the raw inputs SPEC §1 keeps out (A70).
+!/data/release/
+
+# Run outputs (structure profiles, figures rendered to disk, cached tables)
+/outputs/
+*.npz
+*.png
+*.pdf
+!docs/**/*.png
+# The ARC pull is provenance for the Extended Data: its figures are part of
+# the record, so the PNG rule above is lifted inside it.
+!ed_data/**/*.png
+# A78's bundle carries the production dipole series and the spectra they
+# produce. These are inputs to a gate, not run outputs, so the *.npz rule is
+# lifted inside the pull too (A78).
+!ed_data/**/*.npz
+# ...but A80's dipole bundle is 41 MB of raw trajectory product across 67 cells,
+# which is exactly the raw input SPEC §1 keeps out of the repo. It stays on
+# disk beside the other data; the A80 gates read it the same way every opacity
+# gate reads ~/subneptune_data, and skip cleanly when it is absent (A80).
+ed_data/arc_dipoles/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# OS
+.DS_Store
+figs_v3/
+data_release_v3/
+outputs_v3/

@@ -1,0 +1,83 @@
+{
+ "_meta": "Extended Data items: label -> one-line content, status, and the file that holds it. 'partly built' means a panel is a labelled placeholder because its data are not in the pulled set; a citation to that panel has to say so.",
+ "ed_fig1": {
+  "description": "Validation of the interatomic potential: force-parity RMSE by regime, and the NVE energy-drift bound against its gate.",
+  "status": "partly built",
+  "files": [
+   "figs/ed/ed_fig1.pdf"
+  ],
+  "placeholder_panels": [
+   "b",
+   "c"
+  ],
+  "placeholder_needs": {
+   "b": "per-configuration force differences for the two comparisons; no file in the pull holds them, and the quoted ~49 and ~376 meV/A appear nowhere in it",
+   "c": "the finite-size sweep output; convergence/03_md_sampling/finite_size.py is present but its results are not. The README records only the verdict ('flat over a 32x volume range, 64 -> 2048; 6400 OOM'd')"
+  }
+ },
+ "ed_fig2": {
+  "description": "Planck-mean opacity over the 52 computed points, and the first-principles / HITEMP Planck ratio on the same axes.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig2.pdf"
+  ]
+ },
+ "ed_fig3": {
+  "description": "Line-list conventions: kappa_R under three broadening pressures, the MT_CKD self-continuum share of kappa_R, and the band-truncation ratio over the line-list grid.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig3.pdf"
+  ]
+ },
+ "ed_fig4": {
+  "description": "Density dependence of the absorption: the dilute-limit band-integrated absorption ratio at nine states and kappa(nu) at two of them (a, b); then alpha/rho^2 against density at three places in the spectrum, the local and fitted power-law index by source, and the mean-free-path breakdown map with the published tables' documented limits (c-i).",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig4.pdf"
+  ]
+ },
+ "ed_fig5": {
+  "description": "Dipole-model validation: dipole derivatives against revPBE0 at two bond lengths, the model/DFT ratio per mode, and the dipole-model residual autocorrelation.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig5.pdf"
+  ]
+ },
+ "ed_fig6": {
+  "description": "The 108 scanned planets: boundary positions against the computed grid by category, and the dispute ratio against the factor that would flip each analysed boundary.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig6.pdf"
+  ]
+ },
+ "ed_fig7": {
+  "description": "External anchor: model radius against the published relation at the matched points, and the residual against water mass fraction.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig7.pdf"
+  ]
+ },
+ "ed_fig8": {
+  "description": "Evolution: radius, interior entropy and deepest-boundary density against age for three water worlds under both opacities.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_fig8.pdf"
+  ]
+ },
+ "ed_table1": {
+  "description": "The 52 state points: first-principles Planck and Rosseland means and the ratios to each line-list reference.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_table1.csv",
+   "figs/ed/ed_table1.tex"
+  ]
+ },
+ "ed_table2": {
+  "description": "The ten strongest boundaries: state, both opacities, dispute ratio, flip threshold, shift and the provenance of the first-principles value.",
+  "status": "built",
+  "files": [
+   "figs/ed/ed_table2.csv",
+   "figs/ed/ed_table2.tex"
+  ]
+ }
+}

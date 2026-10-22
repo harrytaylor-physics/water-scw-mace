@@ -1,0 +1,270 @@
+{
+ "T1000_rho100_05fs": {
+  "sha256": "5436eb1f468e82a7bd32f9f569bcbfe56e4de257c8960991bc1054e173e90732",
+  "bytes": 720152
+ },
+ "T1000_rho10_05fs": {
+  "sha256": "03abd5079f6ff0f0dd411be101e29c091e792b9c1be9dab22ddee56fb7466c64",
+  "bytes": 720152
+ },
+ "T1000_rho129.744": {
+  "sha256": "f2df138a97ceb9470aa6a505c8055c9e838a0ff79babf6bee3ae36b4efcf2587",
+  "bytes": 360152
+ },
+ "T1000_rho129.744_05fs": {
+  "sha256": "ef3c1907064e201a6799a5dce35658c00a82127dfb05dac21ff0d9bbf2b1dff6",
+  "bytes": 720152
+ },
+ "T1000_rho150_05fs": {
+  "sha256": "e772d041f0ef761c67cd9fc2bbb1e4467221d4b43fa3517265e55e98a7c49667",
+  "bytes": 720152
+ },
+ "T1000_rho300_05fs": {
+  "sha256": "d92301159b509f5d4bbf2b65c8d5f2e369e0763f130a6cad25aae23569d14ff0",
+  "bytes": 720152
+ },
+ "T1000_rho30_05fs": {
+  "sha256": "dd866f30edae3ca955cc74f14de19fc3faa0623cc4778382c8d538d5241d5f5b",
+  "bytes": 720152
+ },
+ "T1000_rho500_05fs": {
+  "sha256": "37be3cf7e1715911afea2c3c3974ee23083c752ce0142c29633d3ed6ef4392b4",
+  "bytes": 720152
+ },
+ "T1000_rho60_05fs": {
+  "sha256": "a0ac4cc371cc6641f3217fc47158ab84d3a1620b01954459a9e185bfbcb2e95a",
+  "bytes": 720152
+ },
+ "T1500_rho10_05fs": {
+  "sha256": "c98dded40dec97010c3580d641cb8f6935429656cd81c4dd4a71dfeb2210f48e",
+  "bytes": 720152
+ },
+ "T1500_rho1200_05fs": {
+  "sha256": "46ce4f3cbfdd77b897eb9bb0ba5a1de22dabc16fc2a4c1c99d24b65775c0c76b",
+  "bytes": 720152
+ },
+ "T1500_rho150_05fs": {
+  "sha256": "b62a84df5b0fe36b7669395866537aae8d03e4584f94be033a8e4cc3988793b5",
+  "bytes": 720152
+ },
+ "T1500_rho300_05fs": {
+  "sha256": "aeb93a89833e995d12ec8923d00937403fab16a910859a4a4fc777389256aced",
+  "bytes": 720152
+ },
+ "T1500_rho30_05fs": {
+  "sha256": "39b61356c8380bf5c157748d458d3d80228e8a408167d3b8ce8672006d30f587",
+  "bytes": 720152
+ },
+ "T1500_rho471.343": {
+  "sha256": "5b906390d7e278cf388f9fa0814ac47d0c5d12652dec32cc652a6e115b2d36e2",
+  "bytes": 360152
+ },
+ "T1500_rho471.343_05fs": {
+  "sha256": "909fdf6d88ed4d3ece40d88a744143a4eeadff7253ca1e79086c0174ed686947",
+  "bytes": 720152
+ },
+ "T1500_rho60_05fs": {
+  "sha256": "b24b5e95e2d4a4edce5c33f9c705cd80e16aebd512d2a30301324ba2bea0de21",
+  "bytes": 720152
+ },
+ "T1500_rho800_05fs": {
+  "sha256": "76952e94f3a51b9b4fbcefd09c11998799fc28dc96b71d5947ee05260a6b0465",
+  "bytes": 720152
+ },
+ "T2000_rho10_05fs": {
+  "sha256": "b2513ca07215443f9ce8827c08ef9ac6ecac95f7fcccbe3886a856a1eb2acca2",
+  "bytes": 720152
+ },
+ "T2000_rho1200_05fs": {
+  "sha256": "0aac557596f3e578e133541e180f4207293c73b4b11d5e7ed490c41f797c388e",
+  "bytes": 720152
+ },
+ "T2000_rho150_05fs": {
+  "sha256": "2fb70e6a99ea29a5c4fa6ebfb1afdbff85e5c24dbd67ac0555a05b15b66a575e",
+  "bytes": 720152
+ },
+ "T2000_rho300_05fs": {
+  "sha256": "31276074334715a0b280c7a6540325a3cf1af3e2856c61b6c6908675a614b6f4",
+  "bytes": 720152
+ },
+ "T2000_rho30_05fs": {
+  "sha256": "28b06c9f21e58c30c146306a800149b0198684c917bb3092c622bae630b29792",
+  "bytes": 720152
+ },
+ "T2000_rho500_05fs": {
+  "sha256": "7554bc3ea5636a5db899757f1579f6375d2b457a907eb0e64ff7990cc9b2c6a1",
+  "bytes": 720152
+ },
+ "T2000_rho60_05fs": {
+  "sha256": "4d3469961fbd5ab1e2ff776734b2c98f2a99a90b4854b161e6e358b71bfaaece",
+  "bytes": 720152
+ },
+ "T2000_rho800_05fs": {
+  "sha256": "5cb25c71d9a4c4fcacd5f084e3a437dca5eb6cf13f1f741da7f1e63fb6e2c30a",
+  "bytes": 720152
+ },
+ "T2250_rho1256.23": {
+  "sha256": "8e7b76352337fcc6b2fc220197e61c8971bf28260d4560c3866f8f8696cbb555",
+  "bytes": 360152
+ },
+ "T2250_rho1256.23_05fs": {
+  "sha256": "520b397938e4a1cd4808db8de3d7c31ac505979cfe6b66230348e9b1c7837349",
+  "bytes": 720152
+ },
+ "T2250_rho175.545": {
+  "sha256": "9cc89cde831e2df10c63b96ab811e2daf85ee2ea3925f8d9216054d587ba96bc",
+  "bytes": 360152
+ },
+ "T2250_rho175.545_05fs": {
+  "sha256": "d043226391629db8a5ea196d6d2348d32d9277b967a419bada60d4a1966ce78d",
+  "bytes": 720152
+ },
+ "T2500_rho1520.77": {
+  "sha256": "558736711e1b3596c0d776c20b67e89eda14a65fbd5e68df76342c649a3c91b8",
+  "bytes": 354752
+ },
+ "T2500_rho1520.77_05fs": {
+  "sha256": "ea62587b71dff94796f2e1ec22fa01794fbe92a20a15c7f0bc5ef927da56e6ec",
+  "bytes": 720152
+ },
+ "T2500_rho197.586": {
+  "sha256": "e6d2fc120ec1198c6ad8e5fc9e1fdea2047857d500fa963538e50020e076ca7b",
+  "bytes": 360152
+ },
+ "T2500_rho197.586_05fs": {
+  "sha256": "fa3fd381ec7b9c67336987b95a6f6e0d615eb951c192f26f09493736ce9cf0e1",
+  "bytes": 720152
+ },
+ "T2500_rho300_05fs": {
+  "sha256": "2392665d20a2cdec94a2885070e45c42b5badcc463316fdb323772feb3d49971",
+  "bytes": 720152
+ },
+ "T2500_rho500_05fs": {
+  "sha256": "5aa2baf3f7f5a1e48d6c4ae570c10736fbf768ebcfe86d1d9da1ab729f1bca57",
+  "bytes": 720152
+ },
+ "T2500_rho800_05fs": {
+  "sha256": "5ee77a81e61607b9978856edfee6330cc3285cfe296d9bd089ee6af14b85dac0",
+  "bytes": 720152
+ },
+ "T2750_rho1841.02": {
+  "sha256": "fc50a62c22cb84d96fea98645f73b1ad820282f0488c2bb8db33e139d5ff8250",
+  "bytes": 360152
+ },
+ "T2750_rho1841.02_05fs": {
+  "sha256": "f553a8a66d674dd56382418d4d3d9395b86c75248129201c0acbaa03fe473308",
+  "bytes": 599396
+ },
+ "T2750_rho222.666": {
+  "sha256": "431f03db581e789a779ed13428a69df7f64181b603994c1e4083f3d097f56ae4",
+  "bytes": 360152
+ },
+ "T2750_rho222.666_05fs": {
+  "sha256": "fac197052fa99bcd991f42de39d4b30db51c7ddb3c5e644eabf030627085e6e2",
+  "bytes": 720152
+ },
+ "T3000_rho1043.59": {
+  "sha256": "830bffc5ad2672dc1bbebb7914aa0f4a4f236439b64c6e12dbcdeb988b424ca2",
+  "bytes": 360152
+ },
+ "T3000_rho1043.59_05fs": {
+  "sha256": "9daba774bcb5f9ec8fa7b9fd7d3453d8633e53a77ce581b0ea1e74bd94126b7f",
+  "bytes": 720152
+ },
+ "T3000_rho108.796": {
+  "sha256": "fc367efc0ab5a92a771b825e7c187c95f73fd7e4741521b92482498ff0bbc199",
+  "bytes": 360152
+ },
+ "T3000_rho108.796_05fs": {
+  "sha256": "65406e595d74594336fde3118e2118dc1c7f559793164bc0a8ce29c5a34874e7",
+  "bytes": 720152
+ },
+ "T3000_rho1343.91": {
+  "sha256": "b2068fcaf07b93513adf241ed4ff2a98d3b48aba774a63e18f5e9a9312d504b0",
+  "bytes": 360152
+ },
+ "T3000_rho1343.91_05fs": {
+  "sha256": "e8c7fe00ae72c36658adc6de734737a6e75a04140fc4540ff03b79f407fa13a6",
+  "bytes": 720152
+ },
+ "T3000_rho1730.66": {
+  "sha256": "35ccab457c8b1cb3f9dd47fe23be11cc7493c1aba8eb31d914c99f88d4ff0e80",
+  "bytes": 323912
+ },
+ "T3000_rho1730.66_05fs": {
+  "sha256": "c13177c5dafc2c4abf2211f59ecd93271269096e60f7759f1b70b4e195a77f7e",
+  "bytes": 720152
+ },
+ "T3000_rho2228.71": {
+  "sha256": "2b6e4f9f16239bd639f48cd42b75623fc7cf81b4abb566ae5c62d12d46f817f1",
+  "bytes": 246884
+ },
+ "T3000_rho2228.71_05fs": {
+  "sha256": "621a5877adfab7161445e7badb587c7545cb548059dad83de44c98b774f9ed53",
+  "bytes": 720152
+ },
+ "T3000_rho729.344": {
+  "sha256": "99520fdb1e361c5bb45ac5126d0de789c07f475aaa86d15714ea8558d72634b6",
+  "bytes": 360152
+ },
+ "T3000_rho729.344_05fs": {
+  "sha256": "b34947fcd7b471851e7483a3ed37422e88c117efa869a7fb109a992462890f42",
+  "bytes": 720152
+ },
+ "T3000_rho810.382": {
+  "sha256": "bd24f5ed43d26ab5a611170969cc238e97a68323eff3a6f8c6fc4fcd24e64fca",
+  "bytes": 360152
+ },
+ "T3000_rho810.382_05fs": {
+  "sha256": "ed02717b53d3c620239383aa1e9395b3c4f07edf16f91ddb1275693de39b76ea",
+  "bytes": 720152
+ },
+ "T650_rho100_05fs": {
+  "sha256": "757706f933775d7e38c2392cecec0dd8cdc0681f0673d40ac7c0243be71b155c",
+  "bytes": 720152
+ },
+ "T650_rho150_05fs": {
+  "sha256": "f9d6c0b67e167c601b075cecb1c053d9466a7a962b74a053796576b41953a68f",
+  "bytes": 720152
+ },
+ "T650_rho300_05fs": {
+  "sha256": "b101ee3955acba502f3de3f32b82f83fc7cdc8c8a3144624be1a35f808d102c0",
+  "bytes": 720152
+ },
+ "T650_rho500_05fs": {
+  "sha256": "4e68524bbf49428012cfe2bcaddac27a221ba3a6606b27c909f0f0ca7ecbfd5e",
+  "bytes": 720152
+ },
+ "T700_rho10_05fs": {
+  "sha256": "b47add50fdcaa178c8b9662bb97c7e4f8211602f11acb630dfced331105bb82e",
+  "bytes": 720152
+ },
+ "T700_rho30_05fs": {
+  "sha256": "c81f5aacaded6f8d0b921ce189fc85254925eb897e43676ab044619e244f39e9",
+  "bytes": 720152
+ },
+ "T700_rho60_05fs": {
+  "sha256": "fe108b2ff1e5ebdec9d3a4d730f6c2ffaecd2e0ae3aa7b28797f71d1ae1c5444",
+  "bytes": 720152
+ },
+ "T800_rho100_05fs": {
+  "sha256": "ec92ec7c6eb90a2ecc3525f06d6d6706f40fabfbe09d1e81e8c6002e9c03ebb4",
+  "bytes": 720152
+ },
+ "T800_rho150_05fs": {
+  "sha256": "2e0191c90a5f3595db0064a938d12ff6cf223b18835e5035f49a12c6c8dcc018",
+  "bytes": 720152
+ },
+ "T800_rho300_05fs": {
+  "sha256": "1042a805b4b405b0389aca93eb1e4f895c6c0f9cbb9c3533217a8d5225669dfb",
+  "bytes": 720152
+ },
+ "T800_rho30_05fs": {
+  "sha256": "866db080bce1bb3411a966276d937f632b7c482afe816d9e24a27b28b8749b39",
+  "bytes": 720152
+ },
+ "T800_rho500_05fs": {
+  "sha256": "97cb36fae76b22639745e4918d61f92fb8063ccd025fa96fea7449a63a4eb9d1",
+  "bytes": 720152
+ }
+}

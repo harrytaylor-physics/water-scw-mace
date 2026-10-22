@@ -1,0 +1,17 @@
+# Reference mass-radius points for steam worlds, read from Aguichine, Mousis,
+# Deleuil & Marcq (2021), ApJ 914, 84, Figure 8 (Ma19+ model, no metallic core).
+# The published parametric fit is their Eq. 29:
+#   log10 R_p = a*log10(M_p) + b + exp(-d*(log10(M_p) + c))
+# with a,b,c,d tabulated per (composition, T_irr) in an ONLINE machine-readable
+# table not contained in the PDF, so these points are digitized directly from
+# Figure 8 (read uncertainty ~5%, ~+/-0.1 R_earth). WMF = water mass fraction of
+# the whole planet; T_irr their irradiation temperature. See AMENDMENTS (A32).
+wmf,t_irr_k,m_earth,r_earth
+0.20,400,2,1.70
+0.20,400,5,2.00
+0.20,1000,2,2.05
+0.20,1000,5,2.40
+0.50,400,2,2.05
+0.50,400,5,2.50
+0.50,1000,2,2.45
+0.50,1000,5,3.00
