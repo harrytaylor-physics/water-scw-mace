@@ -15,10 +15,15 @@ def parity(calc, labels_path):
     frames = read(labels_path, index=":")
     errs = {}
     for a in frames:
-        a = a.copy()
-        Fref = a.arrays.get("REF_forces")
+        # train_v4.xyz.gz stores the labels as `forces`, which ASE loads into a
+        # SinglePointCalculator; read them before copy(), which drops the calc.
+        if a.calc is not None and "forces" in a.calc.results:
+            Fref = a.calc.results["forces"]
+        else:
+            Fref = a.arrays.get("REF_forces")
         if Fref is None:
             continue
+        a = a.copy()
         a.calc = calc
         dF = a.get_forces() - Fref
         regime = regime_of(a.info.get("config_type", ""))
