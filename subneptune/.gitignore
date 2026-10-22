@@ -25,6 +25,10 @@
 # disk beside the other data; the A80 gates read it the same way every opacity
 # gate reads ~/subneptune_data, and skip cleanly when it is absent (A80).
 ed_data/arc_dipoles/
+# A78's five cells (dipole series + the delivered v3 spectrum it reproduces)
+# are the same kind of raw production output; not committed since the move
+# into water-scw-mace, fingerprinted in ed_data/arc_a78_dipoles_sha256.json.
+ed_data/arc_a78/T*/
 
 # Python
 __pycache__/

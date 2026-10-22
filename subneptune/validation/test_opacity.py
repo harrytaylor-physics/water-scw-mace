@@ -76,7 +76,7 @@ def test_raw_unscaled_means_trip_the_assertion(cfg):
 def test_known_grid_point_means(cfg):
     band = _REF_BAND  # pinned band for the reference values below
     spec = get_spec("fp")
-    path = next(p for p in find_spectra(cfg.data_root_path / spec.subdir, spec)
+    path = next(p for p in find_spectra(cfg.spectra_dir(spec.subdir), spec)
                 if p.name.startswith("T1500_rho300"))
     rec = load_spectrum(path, spec, band)
     kp = planck_mean(rec.wn_cm, rec.kappa_cm2_g, rec.temperature_k, band)
@@ -161,7 +161,7 @@ def test_line_list_sources_build(cfg):
 # --------------------------------------------------------------------------
 def test_band_must_be_covered(cfg):
     spec = get_spec("fp")
-    path = find_spectra(cfg.data_root_path / spec.subdir, spec)[0]
+    path = find_spectra(cfg.spectra_dir(spec.subdir), spec)[0]
     with pytest.raises(ValueError, match="does not cover"):
         load_spectrum(path, spec, (50.0, 7000.0))  # 7000 > FP max wn (~6000)
 

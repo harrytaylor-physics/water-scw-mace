@@ -21,8 +21,8 @@ There are **three** different error numbers here and they are not interchangeabl
   * the **held-out** split error of the production potential, 57.8 meV/A and
     20.8 meV/atom on ``valid_Default`` (56.9 / 23.5 on ``train_Default``). This is
     the honest generalisation error and it comes from the training job's own log,
-    ``ed_data/arc_scripts/logs/train_v4_7924966.out``, via
-    ``ed_data/mlip_heldout_errors.json``. A94: that log holds TWO error tables.
+    ``production_campaign/arc_scripts/logs/train_v4_7924966.out``, via
+    ``models/mlip_heldout_errors.json``. A94: that log holds TWO error tables.
     A90 transcribed the stage-two (SWA, epoch 186) table, 44.4 / 7.0, but
     production MD ran the stage-one model (epoch 109, sha256 dc4a8977...), so
     the stage-one table is the one quoted. The stage-two numbers stay in the JSON,
@@ -41,11 +41,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import layout
+
 ROOT = Path(__file__).resolve().parents[1]
-ARC = ROOT / "ed_data" / "arc"
-PARITY_REF = "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json"
-METHODS = "ed_data/arc/water-scw-mace/docs/METHODS.md"
-CAMPAIGN = "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md"
+# Paths naming benchmarks/, docs/, models/ and production_campaign/ are relative to
+# the water-scw-mace root (layout.py); the rest are relative to subneptune/.
+PARITY_REF = "benchmarks/reference/reference.json"
+METHODS = "docs/METHODS.md"
+CAMPAIGN = "docs/LDA_CAMPAIGN.md"
 REGEN = "tools/v5_regenerate.py"
 
 # From LDA_CAMPAIGN.md, which records the worst value over the 21 runs rather than
@@ -92,7 +95,7 @@ def pipeline_facts(cfg) -> dict[str, dict]:
             source_script=REGEN, source_file=here, note=None),
         "equilibration_ps": dict(
             value=10.0, unit="ps",
-            source_script="ed_data/arc_a78/scw/run_prod_md_05fs.py",
+            source_script="production_campaign/scw/run_prod_md_05fs.py",
             source_file=None,
             note=("Langevin at 0.5 fs for 20000 steps (line 48), then "
                   "VelocityVerlet at constant energy (line 50)")),
@@ -114,8 +117,7 @@ def pipeline_facts(cfg) -> dict[str, dict]:
             note=(f"from the dipole series length ({max(frames)} frames); "
                   f"METHODS.md said 60 ps until A90 corrected it against this"))
 
-    ref = json.loads((ARC / "water-scw-mace" / "benchmarks" / "reference"
-                      / "reference.json").read_text())
+    ref = json.loads(layout.PARITY_REF.read_text())
     facts["force_parity_mev_per_a"] = dict(
         value=ref["parity_meV_A"], unit="meV/A", source_script=PARITY_REF,
         source_file=None,
@@ -124,12 +126,12 @@ def pipeline_facts(cfg) -> dict[str, dict]:
               "Computed with the production (stage-one) model: A94 reproduced "
               "41.0 / 58.3 from it. The only held-out parity in the pull is "
               "12.3 / 20.2 meV/A and belongs to the LDA model, not this one"))
-    held = json.loads((ROOT / "ed_data" / "mlip_heldout_errors.json").read_text())
+    held = json.loads(layout.MLIP_ERRORS.read_text())
     prod = held["production_model"]
     _hnote = (f"production potential ({prod['training_stage']}, "
               f"{prod['checkpoint'].rsplit('/', 1)[-1]}, sha256 "
               f"{prod['sha256'][:8]}...); from {held['source_log']} lines "
-              f"{prod['log_lines']}, recorded in ed_data/mlip_heldout_errors.json. "
+              f"{prod['log_lines']}, recorded in models/mlip_heldout_errors.json. "
               f"Split error -- a different quantity from the training-set parity "
               f"by regime. The log's stage-two (SWA) table is not this model's (A94)")
     for tag, field, key, unit in (
@@ -139,7 +141,7 @@ def pipeline_facts(cfg) -> dict[str, dict]:
             ("train_Default", "energy_meV_per_atom", "mlip_train_energy_mev_per_atom", "meV/atom")):
         facts[key] = dict(
             value=held["errors"][tag][field], unit=unit,
-            source_script="ed_data/mlip_heldout_errors.json", source_file=None,
+            source_script="models/mlip_heldout_errors.json", source_file=None,
             note=f"{tag}; {_hnote}")
     facts["nve_drift_mev_per_atom_per_ps"] = dict(
         value=NVE_DRIFT_MEV_ATOM_PS, unit="meV/atom/ps", source_script=CAMPAIGN,

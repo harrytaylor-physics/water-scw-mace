@@ -70,7 +70,8 @@ def manifest(cfg: Config, root: Path) -> dict:
     pushed through the *unfixed* production backend and the one that reproduces
     the delivered sigma_raw wins.
     """
-    sys.path.insert(0, str(root / "ed_data/arc_a78/scw"))
+    from layout import PRODUCTION_SCW
+    sys.path.insert(0, str(PRODUCTION_SCW))
     import opacity_pipeline as prod
 
     groups: dict[tuple[float, float], list[str]] = {}

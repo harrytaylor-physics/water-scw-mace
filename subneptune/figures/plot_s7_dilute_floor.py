@@ -189,7 +189,7 @@ def load_dilute(cfg, rho_max: float = DILUTE_RHO_MAX) -> list:
     if rho_max is None:
         rho_max = float("inf")
     spec = get_spec("fp")
-    paths = find_spectra(cfg.data_root_path / spec.subdir, spec)
+    paths = find_spectra(cfg.spectra_dir(spec.subdir), spec)
     out = []
     for path in paths:
         with np.load(path) as d:

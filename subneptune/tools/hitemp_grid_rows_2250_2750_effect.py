@@ -47,7 +47,7 @@ def added_files(cfg: Config) -> list[Path]:
 
     spec = get_spec("hitemp")
     out = []
-    for path in sorted((cfg.data_root_path / spec.subdir).glob(spec.glob)):
+    for path in sorted(cfg.spectra_dir(spec.subdir).glob(spec.glob)):
         with np.load(path) as d:
             if any(abs(float(d["T"]) - t) < 0.5 for t in ADDED_TEMPERATURES):
                 out.append(path)

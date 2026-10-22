@@ -52,7 +52,7 @@ EXTRA_SUBDIR = "hitemp_extra"
 
 def _load(cfg: Config, source: str, t_k: float, rho: float):
     spec = get_spec(source)
-    dirs = [cfg.data_root_path / spec.subdir]
+    dirs = [cfg.spectra_dir(spec.subdir)]
     if source == "hitemp":
         dirs.append(cfg.data_root_path / EXTRA_SUBDIR)
     for directory in dirs:

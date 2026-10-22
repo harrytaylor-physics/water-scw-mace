@@ -87,7 +87,7 @@ def detect_common_band(cfg: Config, sources: list[str] | None = None) -> tuple[f
         if name not in REGISTRY:  # e.g. "constant" — band-agnostic, skip
             continue
         spec = REGISTRY[name]
-        for path in sorted((cfg.data_root_path / spec.subdir).glob(spec.glob)):
+        for path in sorted(cfg.spectra_dir(spec.subdir).glob(spec.glob)):
             with np.load(path) as d:
                 wn = np.asarray(d["wn"], dtype=float)
             mins.append(float(wn.min()))
@@ -125,7 +125,7 @@ def compute_point_means(
     if rel_floor is None:
         rel_floor = cfg.opacity.rel_floor
     spec = get_spec(name)
-    spectra_dir = cfg.data_root_path / spec.subdir
+    spectra_dir = cfg.spectra_dir(spec.subdir)
     paths = find_spectra(spectra_dir, spec)
 
     temps, rhos, kappa_r, kappa_p = [], [], [], []
@@ -203,7 +203,7 @@ def _default_band(name: str, cfg: Config) -> tuple[float, float]:
     except FileNotFoundError:
         # Surface the clearer "not yet delivered" message per missing source.
         for n in names:
-            find_spectra(cfg.data_root_path / get_spec(n).subdir, get_spec(n))
+            find_spectra(cfg.spectra_dir(get_spec(n).subdir), get_spec(n))
         raise  # pragma: no cover - find_spectra already raised
 
 

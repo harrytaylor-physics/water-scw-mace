@@ -1,6 +1,6 @@
 """The A78 source-level sum rule reproduces the delivered band integrals.
 
-A78 read the production formula (`ed_data/arc_a78/scw/opacity_pipeline.py`,
+A78 read the production formula (`production_campaign/scw/opacity_pipeline.py`,
 `spectrum_from_dipoles`) and found it applies the harmonic quantum correction
 twice: line 82 multiplies `beta omega^2 Smm` -- which is already the
 harmonic-corrected result -- by `Q_harmonic` again. The temperature trend A76
@@ -31,16 +31,31 @@ from __future__ import annotations
 
 import pytest
 
-from tools.dipole_sum_rule import BANDS_CM, run
+import json
+from pathlib import Path
+
+from tools.dipole_sum_rule import (A78_MANIFEST, BANDS_CM, a78_cells_missing,
+                                   a78_sha256_manifest, run)
 
 REPRODUCTION_BOUND = 1.0e-5
 DIPOLE_INDEX_BOUND = 0.3
 RATIO_SPREAD_BOUND = 0.10
 DELIVERED_BEND_BOUND = -0.5
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="module")
 def doc(cfg):
+    # The five cells are raw production output, not committed (SPEC §1); like
+    # A80's bundle they sit on disk beside the code. Skip rather than fail
+    # without them -- but if they are there, they must be the fingerprinted ones.
+    missing = a78_cells_missing(ROOT)
+    if missing:
+        pytest.skip(f"A78's cells are not present ({len(missing)} files missing, "
+                    f"e.g. {missing[0]}); see {A78_MANIFEST}")
+    expected = json.loads((ROOT / A78_MANIFEST).read_text())
+    assert a78_sha256_manifest(ROOT) == expected, (
+        f"the A78 cells on disk do not match {A78_MANIFEST}")
     return run(cfg)
 
 

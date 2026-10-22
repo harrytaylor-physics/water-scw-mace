@@ -218,7 +218,16 @@ class Config:
         continuous omega^2) at the A82 smoothing width of 10 cm^-1. v3 is kept
         beside it untouched.
         """
-        return self.data_root_path / FP_OPACITY_SUBDIR
+        return self.spectra_dir(FP_OPACITY_SUBDIR)
+
+    def spectra_dir(self, subdir: str) -> Path:
+        """A registry source's spectra directory (migration; see layout.py).
+
+        The committed v5 FP spectra resolve to the repository's data/; every
+        other source stays under data_root (SPEC §1).
+        """
+        from layout import spectra_dir
+        return spectra_dir(self.data_root_path, subdir)
 
     @property
     def mtckd_ref_path(self) -> Path:

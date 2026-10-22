@@ -40,7 +40,7 @@ POINTS = [(t, rho) for t in (1000.0, 1500.0, 2000.0) for rho in (10.0, 30.0)]
 def _load(cfg: Config, source: str, t_k: float, rho: float) -> tuple[np.ndarray, np.ndarray]:
     """(wn, kappa) for one delivered spectrum, matched by its stored (T, ρ)."""
     spec = get_spec(source)
-    for path in sorted((cfg.data_root_path / spec.subdir).glob(spec.glob)):
+    for path in sorted(cfg.spectra_dir(spec.subdir).glob(spec.glob)):
         with np.load(path) as d:
             if abs(float(d["T"]) - t_k) > 0.5:
                 continue
@@ -49,7 +49,7 @@ def _load(cfg: Config, source: str, t_k: float, rho: float) -> tuple[np.ndarray,
             return np.asarray(d["wn"], float), np.asarray(d["kappa"], float)
     raise FileNotFoundError(
         f"no {source} spectrum at T={t_k:g} K, rho={rho:g} kg/m^3 in "
-        f"{cfg.data_root_path / spec.subdir}"
+        f"{cfg.spectra_dir(spec.subdir)}"
     )
 
 

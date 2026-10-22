@@ -1,7 +1,7 @@
 """First-principles opacity from a cell-dipole time series (A78-A80).
 
 The production backend (``opacity_pipeline.spectrum_from_dipoles``, preserved
-byte-identical in ``ed_data/arc_a78/scw/``) had one defect and one liability:
+byte-identical in ``production_campaign/scw/``) had one defect and one liability:
 
   * **line 82 applied the harmonic quantum correction twice** (A78). With
     ``Q_h = x/(1-e^-x)``, the standard relation

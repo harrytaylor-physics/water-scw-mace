@@ -19,7 +19,7 @@ import pytest
 from config import load_config
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE = ROOT / "data" / "release"
+from layout import RELEASE_DIR as RELEASE  # noqa: E402
 
 
 @pytest.fixture(scope="module")

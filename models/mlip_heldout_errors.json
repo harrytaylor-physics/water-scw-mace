@@ -1,12 +1,13 @@
 {
+ "_paths": "relative to the water-scw-mace root",
  "_meta": "MACE training/validation error tables for the v4 potential, from the training job's own log (A90; corrected A94).",
  "_why_this_file_exists": "A89 reported that the held-out force and energy errors quoted in a draft caption appeared nowhere in the ARC pull. A90 transcribed them from the training log, which was not then in the repository. A94: the log is now in the repository, and it holds TWO error tables for two different models. A90 transcribed the stage-two (SWA) table; production MD ran the stage-one model. `errors` below is therefore the stage-one table, and the stage-two table is kept separately, labelled as not used for production.",
- "source_log": "ed_data/arc_scripts/logs/train_v4_7924966.out",
+ "source_log": "production_campaign/arc_scripts/logs/train_v4_7924966.out",
  "source_in_repository": true,
- "source_note": "MACE 0.3.16 mace_run_train, job 7924966 (ed_data/arc_scripts/htc_train_v4_resume.sh / htc_train_v4.sh: --swa --start_swa=120, --max_num_epochs=200, --seed=1). Values are the log's 'Error-table on TRAIN and VALID', copied verbatim; validation/test_a94_mlip_errors.py re-reads both tables from the log and checks every number here.",
+ "source_note": "MACE 0.3.16 mace_run_train, job 7924966 (production_campaign/arc_scripts/htc_train_v4_resume.sh / htc_train_v4.sh: --swa --start_swa=120, --max_num_epochs=200, --seed=1). Values are the log's 'Error-table on TRAIN and VALID', copied verbatim; subneptune/validation/test_a94_mlip_errors.py re-reads both tables from the log and checks every number here.",
  "dataset_tags_verbatim": ["valid_Default", "train_Default"],
  "production_model": {
-  "file": "models/water_scw_v4.model (water-scw-mace); loaded as water_scw_v4.model by ed_data/arc_a78/scw/run_prod_md_05fs.py and the other production MD drivers",
+  "file": "models/water_scw_v4.model; loaded as water_scw_v4.model by production_campaign/scw/run_prod_md_05fs.py and the other production MD drivers",
   "sha256": "dc4a8977d44e58cf959901b39a594abd3daf69fb09e5622bbe7e8d3e74b7f06c",
   "sha256_source": "ARC sha256 prefix dc4a8977 supplied by H. Taylor (A94); full digest = the git-LFS oid of models/water_scw_v4.model in water-scw-mace, recomputed locally and identical",
   "training_stage": "stage one",
@@ -42,13 +43,13 @@
   }
  },
  "not_to_be_confused_with": {
-  "file": "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json",
+  "file": "benchmarks/reference/reference.json",
   "parity_meV_A": {"bulk": 41, "rcb": 58},
   "distinction": "those are TRAINING-SET parity BY REGIME (bulk vs RCB conditions), which reference.json itself calls 'optimistic vs true held-out error', with frames above 3000 K excluded. They are a different quantity from the held-out split error here, not a competing estimate of it.",
   "computed_with": "the production (stage-one) model, sha256 dc4a8977... -- reproduced in A94, see reproduction_a94"
  },
  "reproduction_a94": {
-  "what": "models/water_scw_v4.model (sha256 dc4a8977d44e...) evaluated on every frame of water-scw-mace benchmarks/reference/train_v4.xyz.gz (1193 frames, train + valid together; labels from the extxyz energy=/forces fields), CPU, float64, MACE 0.3.16. Regimes as benchmarks/run_benchmarks.py:regime_of (bulk T <= 2250 K, rcb 2250 < T <= 3000 K, T > 3000 K excluded).",
+  "what": "models/water_scw_v4.model (sha256 dc4a8977d44e...) evaluated on every frame of benchmarks/reference/train_v4.xyz.gz (1193 frames, train + valid together; labels from the extxyz energy=/forces fields), CPU, float64, MACE 0.3.16. Regimes as benchmarks/run_benchmarks.py:regime_of (bulk T <= 2250 K, rcb 2250 < T <= 3000 K, T > 3000 K excluded).",
   "date": "2026-10-22",
   "energy_rmse_meV_per_atom": {"all_1193": 23.28, "T_le_3000_1144": 20.75, "bulk_800": 13.54, "rcb_344": 31.71},
   "energy_mean_error_meV_per_atom_all": -18.93,

@@ -8,7 +8,7 @@ Existing data only; no new runs. Output: ``outputs/sum_rule_trace.json``.
 A76 measured that the first-principles vibrational band strengths fall steeply
 with temperature where the classical sum rule requires them to be flat, and
 attributed the index to the delivered form read from
-``ed_data/arc/water-scw-mace/convergence/04_spectra/spectrum_convergence.py``.
+``convergence/04_spectra/spectrum_convergence.py``.
 That is a *convergence* script, not the production one. The production chain is
 
     spectra.py  ->  dipoles.npy  ->  ~/scw/opacity_pipeline.py
@@ -109,7 +109,7 @@ def _rows(cfg: Config, source: str) -> dict:
     from tools.text_checks import EXTRA_SUBDIR
 
     spec = get_spec(source)
-    dirs = [cfg.data_root_path / spec.subdir]
+    dirs = [cfg.spectra_dir(spec.subdir)]
     if source == "hitemp":
         dirs.append(cfg.data_root_path / EXTRA_SUBDIR)
     out = collections.defaultdict(list)

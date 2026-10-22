@@ -7,7 +7,7 @@ Existing data only; no new physics is run. Output: ``outputs/qcf_calibration.jso
 
 The delivered first-principles spectra carry alpha = w (1 - exp(-hc w / kT)) I_cl
 — the detailed-balance factor with **no quantum correction on the lineshape**
-(``ed_data/arc/water-scw-mace/convergence/04_spectra/
+(``convergence/04_spectra/
 spectrum_convergence.py`` line 28; A75). Which of the
 three standard corrections belongs there is not decidable from the spectra alone,
 but it is decidable against the line list, because the line list is quantum by

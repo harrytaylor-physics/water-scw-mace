@@ -94,7 +94,7 @@ def test_b_old_and_new_spectra_are_consistent(means):
 
 def test_c_every_spectrum_loads_finite_positive_and_marked(cfg):
     """Gate (c): every file loads, κ finite and > 0, marker present."""
-    rows = audit(cfg.data_root_path / get_spec("fp").subdir)
+    rows = audit(cfg.spectra_dir(get_spec("fp").subdir))
     assert len(rows) == N_FP_POINTS
     for r in rows:
         assert r["marked"], f"{r['name']} has no {UNITS_MARKER!r} marker"
@@ -109,7 +109,7 @@ def test_c_every_spectrum_loads_finite_positive_and_marked(cfg):
 def test_the_loader_refuses_an_unmarked_spectrum(cfg, tmp_path):
     """A legacy ×1000 file can never be silently re-ingested."""
     spec = get_spec("fp")
-    src = sorted((cfg.data_root_path / spec.subdir).glob(spec.glob))[0]
+    src = sorted((cfg.spectra_dir(spec.subdir)).glob(spec.glob))[0]
     with np.load(src) as d:
         payload = {k: d[k] for k in d.files if k != UNITS_MARKER}
     unmarked = tmp_path / src.name
@@ -135,7 +135,7 @@ def test_sigma_was_not_scaled(cfg):
     cross-sections the dilute noise-floor check (A52) reads.
     """
     spec = get_spec("fp")
-    paths = sorted((cfg.data_root_path / spec.subdir).glob(spec.glob))
+    paths = sorted((cfg.spectra_dir(spec.subdir)).glob(spec.glob))
     assert len(paths) == N_FP_POINTS
     for path in paths:
         with np.load(path) as d:

@@ -1,6 +1,6 @@
 """The MLIP error numbers are the production model's, read from the log (A94).
 
-The training log ``ed_data/arc_scripts/logs/train_v4_7924966.out`` prints two
+The training log ``production_campaign/arc_scripts/logs/train_v4_7924966.out`` prints two
 "Error-table on TRAIN and VALID" blocks: one for the stage-one model (epoch 109)
 and one for the stage-two SWA model (epoch 186). A90 transcribed the stage-two
 table (44.4 meV/A, 7.0 meV/atom held out) as the production potential's error.
@@ -8,7 +8,7 @@ Production MD ran the stage-one model (sha256 dc4a8977...), whose held-out error
 is 57.8 meV/A and 20.8 meV/atom.
 
 These gates re-read both tables from the log, so a hand edit of
-``ed_data/mlip_heldout_errors.json`` that swaps them back -- or a transcription
+``models/mlip_heldout_errors.json`` that swaps them back -- or a transcription
 slip -- fails here rather than reaching Fig. 1a and the ledger.
 """
 
@@ -20,9 +20,11 @@ from pathlib import Path
 
 import pytest
 
+from layout import HOST, MLIP_ERRORS  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
-HELD = json.loads((ROOT / "ed_data" / "mlip_heldout_errors.json").read_text())
-LOG = ROOT / HELD["source_log"]
+HELD = json.loads(MLIP_ERRORS.read_text())
+LOG = HOST / HELD["source_log"]
 PRODUCTION_SHA256 = "dc4a8977d44e58cf959901b39a594abd3daf69fb09e5622bbe7e8d3e74b7f06c"
 
 _STAGE = re.compile(r"Loaded Stage (one|two) model from epoch (\d+)")

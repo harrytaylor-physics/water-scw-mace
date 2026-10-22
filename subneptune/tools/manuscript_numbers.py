@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # hard-coded repo path made a v3 run pick up v5 figure numbers -- which is what
 # made A86's "every headline group unchanged" untrue for every figures.* entry.
 # Same override the producers honour.
-FIGS_ROOT = Path(os.environ.get("SUBNEPTUNE_FIGS_DIR", ROOT / "figs"))
+from layout import FIGS_DIR as FIGS_ROOT, RELEASE_DIR, rel as _rel
 
 
 def _commit_for(script: str) -> str:
@@ -769,11 +769,11 @@ def scaling_and_conventions(cfg: Config, led: Ledger) -> None:
                 "relative", s4, src)
 
     s5 = "tools/release_tables.py"
-    doc = _json_path(Path("data/release/subneptune_kappa_fit.json"))
+    doc = _json_path(RELEASE_DIR / "subneptune_kappa_fit.json")
     if doc is None:
         led.absent("release", "-", s5, "run tools/release_tables.py")
     else:
-        src = "data/release/subneptune_kappa_fit.json"
+        src = _rel(RELEASE_DIR / "subneptune_kappa_fit.json")
         led.add("release.grid", doc["grid"], "-", s5, src)
         for name, f in doc["fit"].items():
             if "blocked" in f:

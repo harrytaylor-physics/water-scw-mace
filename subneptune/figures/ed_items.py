@@ -101,7 +101,7 @@ def ed1(cfg: Config) -> Path:
     fig, axes = figure(96.0, nrows=2, ncols=2)
     (ax_a, ax_b), (ax_c, ax_d) = axes
 
-    ref_path = ARC / "water-scw-mace" / "benchmarks" / "reference" / "reference.json"
+    from layout import PARITY_REF as ref_path
     ref = json.loads(ref_path.read_text())
     parity = ref["parity_meV_A"]
     tol = 0.15
@@ -135,7 +135,7 @@ def ed1(cfg: Config) -> Path:
                        "T > 3000 K frames excluded. The only held-out parity in the "
                        "pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not "
                        "this one."))
-    _src(nums, "a", "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json")
+    _src(nums, "a", "benchmarks/reference/reference.json")
 
     _blocked(ax_b, nums, "b",
              "potential vs its reference functional,\nand revPBE vs revPBE0",
@@ -165,7 +165,7 @@ def ed1(cfg: Config) -> Path:
                n_runs=21, n_passed=21,
                note=("a bound, not a distribution: the pull records the worst value "
                      "over 21 LDA NVE runs, not a value per state point"))
-    _src(nums, "d", "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md")
+    _src(nums, "d", "docs/LDA_CAMPAIGN.md")
 
     for ax, letter, dx in ((ax_a, "a", -0.16), (ax_b, "b", -0.16),
                           (ax_c, "c", -0.16),

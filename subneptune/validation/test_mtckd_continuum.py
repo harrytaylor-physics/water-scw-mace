@@ -337,7 +337,7 @@ def test_line_strength_is_conserved_across_broadening_pressure(cfg):
         from numpy import trapz
 
     spec = get_spec("hitemp")
-    spectra = cfg.data_root_path / spec.subdir
+    spectra = cfg.spectra_dir(spec.subdir)
     integrals, pressures = [], []
     for rho in (0.1, 1.0, 10.0, 100.0, 1000.0):
         path = spectra / f"T1000_rho{rho:g}.npz"
@@ -413,7 +413,7 @@ def test_a_spectrum_refuses_to_load_without_a_reference_table(cfg):
     from opacity.loaders import find_spectra, load_spectrum
 
     spec = get_spec("hitemp_mtckd")
-    path = find_spectra(cfg.data_root_path / spec.subdir, spec)[0]
+    path = find_spectra(cfg.spectra_dir(spec.subdir), spec)[0]
     with pytest.raises(ValueError, match="continuum"):
         load_spectrum(path, spec, BAND, mtckd_ref_path=None)
     with pytest.raises(FileNotFoundError, match="extract_mtckd_ref"):

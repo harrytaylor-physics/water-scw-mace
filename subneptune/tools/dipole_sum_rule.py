@@ -6,7 +6,7 @@
 Existing data only. Output: ``outputs/dipole_sum_rule.json``.
 
 A77 could not read the ACF -> cross-section step and had to carry two candidate
-formulas. ``ed_data/arc_a78/scw/opacity_pipeline.py`` settles it, and the answer
+formulas. ``production_campaign/scw/opacity_pipeline.py`` settles it, and the answer
 is neither candidate:
 
     line 66  Smm   = dt * Re rfft( Cmm * hanning(L) )        one-sided ACF
@@ -67,7 +67,8 @@ BANDS_CM = {"rotation": (50.0, 1100.0), "bend": (1000.0, 2400.0),
 
 
 def _pipeline():
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / A78_DIR / "scw"))
+    from layout import PRODUCTION_SCW
+    sys.path.insert(0, str(PRODUCTION_SCW))
     import opacity_pipeline as op
     return op
 
@@ -288,11 +289,47 @@ def reproduction_check(root: Path) -> dict:
     return out
 
 
+# The five cells are raw production output and are not committed (SPEC §1;
+# migration into water-scw-mace). This tracked manifest fingerprints them, as
+# ed_data/arc_dipoles_sha256.json does for A80's bundle.
+A78_MANIFEST = Path("ed_data/arc_a78_dipoles_sha256.json")
+A78_FILES = ("dipoles.npy", "opacity_v3.npz")
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def a78_sha256_manifest(root: Path) -> dict:
+    """``{cell: {"sha256", "bytes", "opacity_v3_npz": {...}}}`` for the five
+    cells -- the dipole series in the same form as A80's manifest, plus the
+    delivered v3 spectrum the reproduction check compares against."""
+    out = {}
+    for cell in [c for c, _ in CELLS] + list(REPRODUCE_ONLY):
+        d = root / A78_DIR / cell
+        m, z = d / A78_FILES[0], d / A78_FILES[1]
+        out[cell] = {"sha256": _sha256(m), "bytes": m.stat().st_size,
+                     "opacity_v3_npz": {"sha256": _sha256(z), "bytes": z.stat().st_size}}
+    return out
+
+
+def a78_cells_missing(root: Path) -> list[str]:
+    """The files the A78 gates need that are not on disk."""
+    cells = [c for c, _ in CELLS] + list(REPRODUCE_ONLY)
+    return [f"{A78_DIR}/{c}/{f}" for c in cells for f in A78_FILES
+            if not (root / A78_DIR / c / f).is_file()]
+
+
 def run(cfg: Config) -> dict:
     root = Path(__file__).resolve().parents[1]
     doc = {"meta": __doc__.split("\n\n")[0],
            "production_formula": {
-               "file": "ed_data/arc_a78/scw/opacity_pipeline.py",
+               "file": "production_campaign/scw/opacity_pipeline.py",
                "function": "spectrum_from_dipoles",
                "line_66": "Smm = dt * Re rfft(Cmm * hanning(L))",
                "line_80": "x = beta hbar omega",
@@ -357,7 +394,7 @@ def run(cfg: Config) -> dict:
 
 
 def _print(doc: dict) -> None:
-    print("\n  Production formula (ed_data/arc_a78/scw/opacity_pipeline.py)")
+    print("\n  Production formula (production_campaign/scw/opacity_pipeline.py)")
     for k in ("line_66", "line_80", "line_81", "line_82"):
         print(f"    {k[-2:]}: {doc['production_formula'][k]}")
     print(f"    => {doc['production_formula']['verdict']}")

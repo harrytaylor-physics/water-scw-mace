@@ -33,7 +33,6 @@ from config import Config, load_config
 from figures._manuscript import ED_DIR
 
 ROOT = Path(__file__).resolve().parents[1]
-ARC = ROOT / "ed_data" / "arc"
 BAND = (100.0, 4000.0)
 
 
@@ -215,7 +214,8 @@ def table2(cfg: Config) -> dict:
 # ---------------------------------------------------------------------------
 def functional_sensitivity() -> dict:
     """Stretch-band positions under LDA and hybrid labels, from the pulled docs."""
-    doc = (ARC / "water-scw-mace" / "docs" / "LDA_CAMPAIGN.md").read_text()
+    from layout import HOST_DOCS
+    doc = (HOST_DOCS / "LDA_CAMPAIGN.md").read_text()
     points = [
         {"T_K": 1000.0, "rho_kg_m3": 129.7,
          "stretch_peak_lda_cm": 3654.0, "stretch_peak_hybrid_cm": 3800.0,
@@ -258,7 +258,7 @@ def functional_sensitivity() -> dict:
             "or the comparison output of lda_campaign/stepG_dipoles/"
             "compare_point_full.py, which computes both sides",
         ],
-        "source_files": ["ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md"],
+        "source_files": ["docs/LDA_CAMPAIGN.md"],
         "other_lda_numbers": {
             "held_out_parity_meV_per_A": {"bulk": 12.3, "rcb": 20.2,
                                           "note": "LDA model; the hybrid v4 "

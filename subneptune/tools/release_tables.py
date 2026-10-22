@@ -68,7 +68,6 @@ NO_DATA = -99.0
 DENSE_RHO_MIN = 100.0
 RHO_0_KG_M3 = 100.0   # round reference values, stated rather than fitted
 T_0_K = 1000.0
-RELEASE_DIR = Path("data") / "release"
 
 CAVEATS = (
     ("Interaction-induced absorption",
@@ -250,8 +249,7 @@ def main(argv=None) -> int:
     cfg = load_config(args.config)
     # A87: redirectable for the same reason as FIGS_DIR -- this writes outside
     # cfg.output_path, and the A86 v3 pass clobbered the tracked v5 products.
-    root = Path(os.environ.get("SUBNEPTUNE_RELEASE_DIR",
-                               Path(__file__).resolve().parents[1] / RELEASE_DIR))
+    from layout import RELEASE_DIR as root
     root.mkdir(parents=True, exist_ok=True)
 
     t_pt, rho_pt, kr, kp, lr_pt, lt_pt, log_rs, log_ts = _grid(cfg)

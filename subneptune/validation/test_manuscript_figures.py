@@ -28,7 +28,7 @@ from figures._manuscript import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-FIGS = ROOT / "figs"
+from layout import FIGS_DIR as FIGS  # noqa: E402
 FIGURES = ("fig1", "fig2", "fig3", "fig4")
 # The Extended Data items are the same deliverable and carry the same rules; only
 # the ledger they record into differs, so the file-level gates cover them too.

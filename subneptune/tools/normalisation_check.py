@@ -83,7 +83,8 @@ DILUTE_POINTS = sorted({(t, r) for t in (700.0, 1000.0, 1500.0, 2000.0)
 
 
 def _op():
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / A78_DIR / "scw"))
+    from layout import PRODUCTION_SCW
+    sys.path.insert(0, str(PRODUCTION_SCW))
     import opacity_pipeline as op
     return op
 

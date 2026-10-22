@@ -45,7 +45,7 @@ def test_full_band_is_exactly_what_the_files_contain(cfg, bands):
     _, full = bands
     spec = get_spec(SOURCE)
     mins, maxs = [], []
-    for path in sorted((cfg.data_root_path / spec.subdir).glob(spec.glob)):
+    for path in sorted((cfg.spectra_dir(spec.subdir)).glob(spec.glob)):
         with np.load(path) as d:
             wn = np.asarray(d["wn"], float)
         mins.append(float(wn.min()))
