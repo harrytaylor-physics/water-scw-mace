@@ -118,14 +118,15 @@ def panel_a(ax, cfg, nums: FigureNumbers) -> None:
                stage_captions=[c.replace("\n", " ") for c in captions],
                pipeline_facts={k: v["value"] for k, v in facts.items()},
                caption_correction=(
-                   "A89 reported a draft caption's 44 meV/A and 7 meV/atom as "
-                   "absent from the repository; A90 resolved it. They are the "
-                   "HELD-OUT split error (44.4 and 7.0 on valid_Default) and come "
-                   "from the training log train_v4_7924966.out, which is not in "
-                   "the pull -- recorded in ed_data/mlip_heldout_errors.json. The "
-                   "41/58 meV/A parity is a DIFFERENT quantity, training-set "
-                   "parity by regime, and both are now shown. The NVE number "
-                   "remains a drift rate, 0.017 meV/atom/ps against a 2.0 gate"))
+                   "A90 quoted 44.4 meV/A and 7.0 meV/atom as the held-out error; "
+                   "A94 withdrew that. Those are the stage-two (SWA, epoch 186) "
+                   "table of train_v4_7924966.out, and production MD ran the "
+                   "stage-one model (epoch 109, sha256 dc4a8977...), whose "
+                   "held-out split error on valid_Default is 57.8 meV/A and "
+                   "20.8 meV/atom. The 41/58 meV/A parity is a DIFFERENT quantity, "
+                   "training-set parity by regime, and both are shown. The NVE "
+                   "number remains a drift rate, 0.017 meV/atom/ps against a 2.0 "
+                   "gate"))
     nums.panel("a", source_files=sorted({v["source_script"] for v in facts.values()}),
                source_per_fact={k: v["source_script"] for k, v in facts.items()},
                fact_notes={k: v["note"] for k, v in facts.items() if v["note"]})

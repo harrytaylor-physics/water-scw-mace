@@ -4,6 +4,65 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-22 (the MLIP error table belongs to the production model)
+
+- **A94 — A90 quoted the wrong model's error. The production potential's
+  held-out split error is 57.8 meV/A and 20.8 meV/atom, not 44.4 and 7.0.**
+
+  The training log `train_v4_7924966.out` is now in the repository
+  (`ed_data/arc_scripts/logs/`, with the ARC submission scripts). It prints TWO
+  "Error-table on TRAIN and VALID" blocks:
+
+  | model | lines | valid_Default E / F | train_Default E / F |
+  |---|---|---|---|
+  | stage one, epoch 109 (`water_scw_v4_run-1_epoch-109.pt`) | 120-133 | **20.8 meV/atom / 57.8 meV/A** | 23.5 / 56.9 |
+  | stage two, SWA, epoch 186 (`..._epoch-186_swa.pt`) | 135-152 | 7.0 / 44.4 | 6.7 / 32.7 |
+
+  A90 transcribed the stage-two table. Production MD loaded `water_scw_v4.model`,
+  ARC sha256 dc4a8977..., which differs from `water_scw_v4_stagetwo.model`
+  (380e20a8...) -- H. Taylor, from the ARC checksums. The water-scw-mace copy of
+  `models/water_scw_v4.model` has sha256
+  `dc4a8977d44e58cf959901b39a594abd3daf69fb09e5622bbe7e8d3e74b7f06c` (its LFS oid,
+  recomputed locally: identical), so the file that ships is the one that ran.
+  The log's own naming agrees: stage one was compiled to
+  `water_scw_v4_compiled.model`, the name water-scw-mace ships.
+
+  **Checked by evaluation, not only by checksum.** The dc4a8977 model on all
+  1193 frames of `train_v4.xyz.gz` (CPU, fp64): energy RMSE **23.28 meV/atom**
+  -- the stage-one tables mixed 90/10 predict 23.2; stage two would give ~7 --
+  and force RMSE by regime **41.0 (bulk) / 58.3 (RCB) meV/A**, which reproduces
+  `reference.json`'s 41 / 58. **So the 41/58 parity was computed with the
+  production stage-one model too**; nothing in the pull was computed with the
+  SWA model except the log's second table. Most of the energy error is a
+  uniform offset (mean -18.9 meV/atom), invisible to forces and to the MD.
+  Recorded in `mlip_heldout_errors.json` under `reproduction_a94`.
+
+  Incidentally, `benchmarks/run_benchmarks.py` in water-scw-mace reads
+  `a.arrays["REF_forces"]`, but `train_v4.xyz.gz` stores `forces`, which ASE
+  moves into a SinglePointCalculator: as written its parity benchmark skips
+  every frame. Not fixed here (it is not this repository's code).
+
+  **Changed.** `ed_data/mlip_heldout_errors.json`: `errors` is now the stage-one
+  table, with a `production_model` block (stage, checkpoint, sha256, log lines);
+  the stage-two table is kept under `stage_two_not_used_for_production`.
+  `source_log` is the repository path and `source_in_repository` is true.
+  `tools/pipeline_facts.py` and Fig. 1a's caption follow. **Ledger: 764 entries
+  before and after; exactly four numeric changes** --
+  `pipeline.mlip_heldout_force_mev_per_a` 44.4 -> 57.8,
+  `pipeline.mlip_heldout_energy_mev_per_atom` 7.0 -> 20.8,
+  `pipeline.mlip_train_force_mev_per_a` 32.7 -> 56.9,
+  `pipeline.mlip_train_energy_mev_per_atom` 6.7 -> 23.5 -- plus the Fig. 1a
+  caption, facts and notes under `figures.fig1.a.*`. Every other difference is
+  the `commit` stamp. Gate: `validation/test_a94_mlip_errors.py` re-reads both
+  tables from the log and fails if the JSON quotes stage two as production.
+
+  **What this does to the A88-A90 reading.** The held-out force error (57.8) now
+  sits at the training-set RCB parity (58), not below it; the held-out split is
+  no longer "better than parity" in any sense. The three-quantity distinction of
+  A90 (split error, parity by regime, NVE drift rate) is unchanged. **Any text
+  outside this repository quoting 44.4 meV/A or 7 meV/atom for the production
+  potential is now out of step with the ledger.**
+
 ## 2026-10-01 (three figure labels; the colour-bar extension checked)
 
 - **A93 — label changes only. No measurement moves: the figure ledger has zero

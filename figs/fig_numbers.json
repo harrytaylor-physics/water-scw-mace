@@ -17,7 +17,7 @@
     "stage_captions": [
      "52 states, 650-3000 K",
      "1193 configurations revPBE0-D3",
-     "held out 44.4 meV $\\mathrm{\\AA}^{-1}$, 7 meV/atom parity 41/58 (bulk/RCB, train)",
+     "held out 57.8 meV $\\mathrm{\\AA}^{-1}$, 20.8 meV/atom parity 41/58 (bulk/RCB, train)",
      "64-216 molecules, 0.5 fs 30 ps after 10 ps equilibration"
     ],
     "pipeline_facts": {
@@ -39,13 +39,13 @@
       "bulk": 41,
       "rcb": 58
      },
-     "mlip_heldout_force_mev_per_a": 44.4,
-     "mlip_heldout_energy_mev_per_atom": 7.0,
-     "mlip_train_force_mev_per_a": 32.7,
-     "mlip_train_energy_mev_per_atom": 6.7,
+     "mlip_heldout_force_mev_per_a": 57.8,
+     "mlip_heldout_energy_mev_per_atom": 20.8,
+     "mlip_train_force_mev_per_a": 56.9,
+     "mlip_train_energy_mev_per_atom": 23.5,
      "nve_drift_mev_per_atom_per_ps": 0.017
     },
-    "caption_correction": "A89 reported a draft caption's 44 meV/A and 7 meV/atom as absent from the repository; A90 resolved it. They are the HELD-OUT split error (44.4 and 7.0 on valid_Default) and come from the training log train_v4_7924966.out, which is not in the pull -- recorded in ed_data/mlip_heldout_errors.json. The 41/58 meV/A parity is a DIFFERENT quantity, training-set parity by regime, and both are now shown. The NVE number remains a drift rate, 0.017 meV/atom/ps against a 2.0 gate",
+    "caption_correction": "A90 quoted 44.4 meV/A and 7.0 meV/atom as the held-out error; A94 withdrew that. Those are the stage-two (SWA, epoch 186) table of train_v4_7924966.out, and production MD ran the stage-one model (epoch 109, sha256 dc4a8977...), whose held-out split error on valid_Default is 57.8 meV/A and 20.8 meV/atom. The 41/58 meV/A parity is a DIFFERENT quantity, training-set parity by regime, and both are shown. The NVE number remains a drift rate, 0.017 meV/atom/ps against a 2.0 gate",
     "source_files": [
      "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json",
      "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md",
@@ -75,11 +75,11 @@
      "equilibration_ps": "Langevin at 0.5 fs for 20000 steps (line 48), then VelocityVerlet at constant energy (line 50)",
      "n_training_configurations": "train_v4.xyz: 800 bulk pools 650-2250 K, 344 RCB fill 2500-3000 K, 49 above 3000 K",
      "production_ps": "from the dipole series length (60002 frames); METHODS.md said 60 ps until A90 corrected it against this",
-     "force_parity_mev_per_a": "TRAINING-SET parity by regime, which reference.json itself calls 'optimistic vs true held-out error'; frames above 3000 K excluded. The only held-out parity in the pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not this one",
-     "mlip_heldout_force_mev_per_a": "valid_Default; from train_v4_7924966.out, which is NOT in the pull; transcribed in ed_data/mlip_heldout_errors.json. Held-out split error -- a different quantity from the training-set parity by regime",
-     "mlip_heldout_energy_mev_per_atom": "valid_Default; from train_v4_7924966.out, which is NOT in the pull; transcribed in ed_data/mlip_heldout_errors.json. Held-out split error -- a different quantity from the training-set parity by regime",
-     "mlip_train_force_mev_per_a": "train_Default; from train_v4_7924966.out, which is NOT in the pull; transcribed in ed_data/mlip_heldout_errors.json. Held-out split error -- a different quantity from the training-set parity by regime",
-     "mlip_train_energy_mev_per_atom": "train_Default; from train_v4_7924966.out, which is NOT in the pull; transcribed in ed_data/mlip_heldout_errors.json. Held-out split error -- a different quantity from the training-set parity by regime",
+     "force_parity_mev_per_a": "TRAINING-SET parity by regime, which reference.json itself calls 'optimistic vs true held-out error'; frames above 3000 K excluded. Computed with the production (stage-one) model: A94 reproduced 41.0 / 58.3 from it. The only held-out parity in the pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not this one",
+     "mlip_heldout_force_mev_per_a": "valid_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from ed_data/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in ed_data/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "mlip_heldout_energy_mev_per_atom": "valid_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from ed_data/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in ed_data/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "mlip_train_force_mev_per_a": "train_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from ed_data/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in ed_data/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "mlip_train_energy_mev_per_atom": "train_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from ed_data/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in ed_data/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
      "nve_drift_mev_per_atom_per_ps": "worst over 21 NVE runs against a 2 gate; a bound, not a distribution"
     }
    },

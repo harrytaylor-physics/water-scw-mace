@@ -1,26 +1,59 @@
 {
- "_meta": "Final MACE training/validation error table for the production potential (A90).",
- "_why_this_file_exists": "A89 reported that the held-out force and energy errors quoted in a draft caption appeared nowhere in the ARC pull. That was correct about the pull and incomplete about the work: the numbers come from the training job's own stdout log, which was never part of the delivery. They are transcribed here so the figure and the ledger can cite something, and so the distinction from benchmarks/reference/reference.json survives.",
- "source_log": "train_v4_7924966.out",
- "source_in_repository": false,
- "source_note": "ARC job log, not included in the pull; values supplied by H. Taylor in the A90 brief and recorded verbatim. If the log is later added, it should be checked against these four numbers.",
+ "_meta": "MACE training/validation error tables for the v4 potential, from the training job's own log (A90; corrected A94).",
+ "_why_this_file_exists": "A89 reported that the held-out force and energy errors quoted in a draft caption appeared nowhere in the ARC pull. A90 transcribed them from the training log, which was not then in the repository. A94: the log is now in the repository, and it holds TWO error tables for two different models. A90 transcribed the stage-two (SWA) table; production MD ran the stage-one model. `errors` below is therefore the stage-one table, and the stage-two table is kept separately, labelled as not used for production.",
+ "source_log": "ed_data/arc_scripts/logs/train_v4_7924966.out",
+ "source_in_repository": true,
+ "source_note": "MACE 0.3.16 mace_run_train, job 7924966 (ed_data/arc_scripts/htc_train_v4_resume.sh / htc_train_v4.sh: --swa --start_swa=120, --max_num_epochs=200, --seed=1). Values are the log's 'Error-table on TRAIN and VALID', copied verbatim; validation/test_a94_mlip_errors.py re-reads both tables from the log and checks every number here.",
  "dataset_tags_verbatim": ["valid_Default", "train_Default"],
+ "production_model": {
+  "file": "models/water_scw_v4.model (water-scw-mace); loaded as water_scw_v4.model by ed_data/arc_a78/scw/run_prod_md_05fs.py and the other production MD drivers",
+  "sha256": "dc4a8977d44e58cf959901b39a594abd3daf69fb09e5622bbe7e8d3e74b7f06c",
+  "sha256_source": "ARC sha256 prefix dc4a8977 supplied by H. Taylor (A94); full digest = the git-LFS oid of models/water_scw_v4.model in water-scw-mace, recomputed locally and identical",
+  "training_stage": "stage one",
+  "checkpoint": "checkpoints/water_scw_v4_run-1_epoch-109.pt",
+  "exported_as": ["checkpoints/water_scw_v4_run-1.model", "water_scw_v4_compiled.model"],
+  "log_lines": "120-133"
+ },
  "errors": {
   "valid_Default": {
-   "energy_meV_per_atom": 7.0,
-   "force_meV_per_A": 44.4,
-   "role": "held-out validation split — the honest generalisation error"
+   "energy_meV_per_atom": 20.8,
+   "force_meV_per_A": 57.8,
+   "relative_force_rmse_percent": 2.68,
+   "role": "held-out validation split of the production (stage-one) model -- the honest generalisation error of the potential that ran the MD"
   },
   "train_Default": {
-   "energy_meV_per_atom": 6.7,
-   "force_meV_per_A": 32.7,
-   "role": "training split"
+   "energy_meV_per_atom": 23.5,
+   "force_meV_per_A": 56.9,
+   "relative_force_rmse_percent": 2.61,
+   "role": "training split of the production (stage-one) model"
+  }
+ },
+ "stage_two_not_used_for_production": {
+  "note": "NOT the production potential. Production MD loaded water_scw_v4.model (sha256 dc4a8977...), which differs from water_scw_v4_stagetwo.model (sha256 380e20a8...). A90 transcribed THIS table as the production model's error; A94 withdrew that.",
+  "model_sha256_prefix": "380e20a8",
+  "sha256_source": "ARC sha256 prefix supplied by H. Taylor (A94); the full digest is not in either repository",
+  "training_stage": "stage two (SWA)",
+  "checkpoint": "checkpoints/water_scw_v4_run-1_epoch-186_swa.pt",
+  "exported_as": ["checkpoints/water_scw_v4_run-1_stagetwo.model", "water_scw_v4_stagetwo_compiled.model"],
+  "log_lines": "135-152",
+  "errors": {
+   "valid_Default": {"energy_meV_per_atom": 7.0, "force_meV_per_A": 44.4, "relative_force_rmse_percent": 2.06},
+   "train_Default": {"energy_meV_per_atom": 6.7, "force_meV_per_A": 32.7, "relative_force_rmse_percent": 1.50}
   }
  },
  "not_to_be_confused_with": {
   "file": "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json",
   "parity_meV_A": {"bulk": 41, "rcb": 58},
-  "distinction": "those are TRAINING-SET parity BY REGIME (bulk vs RCB conditions), which reference.json itself calls 'optimistic vs true held-out error', with frames above 3000 K excluded. They are a different quantity from the held-out split error here, not a competing estimate of it. The 58 meV/A at RCB conditions remains the relevant number for the regime the structural claim lives in."
+  "distinction": "those are TRAINING-SET parity BY REGIME (bulk vs RCB conditions), which reference.json itself calls 'optimistic vs true held-out error', with frames above 3000 K excluded. They are a different quantity from the held-out split error here, not a competing estimate of it.",
+  "computed_with": "the production (stage-one) model, sha256 dc4a8977... -- reproduced in A94, see reproduction_a94"
+ },
+ "reproduction_a94": {
+  "what": "models/water_scw_v4.model (sha256 dc4a8977d44e...) evaluated on every frame of water-scw-mace benchmarks/reference/train_v4.xyz.gz (1193 frames, train + valid together; labels from the extxyz energy=/forces fields), CPU, float64, MACE 0.3.16. Regimes as benchmarks/run_benchmarks.py:regime_of (bulk T <= 2250 K, rcb 2250 < T <= 3000 K, T > 3000 K excluded).",
+  "date": "2026-10-22",
+  "energy_rmse_meV_per_atom": {"all_1193": 23.28, "T_le_3000_1144": 20.75, "bulk_800": 13.54, "rcb_344": 31.71},
+  "energy_mean_error_meV_per_atom_all": -18.93,
+  "force_rmse_meV_per_A": {"all_1193": 57.0, "bulk_800": 41.0, "rcb_344": 58.3},
+  "reading": "Energy RMSE over all frames 23.28 matches the stage-one log tables mixed 90/10 (sqrt(0.9*23.5^2 + 0.1*20.8^2) = 23.2), and is 3.5x the stage-two value: the shipped model is stage one. Force parity 41.0 / 58.3 by regime reproduces reference.json's 41 / 58, so reference.json was computed with this same production model. Most of the energy error is a uniform offset (mean -18.9 meV/atom), which does not enter forces or the MD."
  },
  "lda_model_holdout_meV_A": [12.3, 20.2],
  "lda_note": "the only held-out parity inside the pull; belongs to the LDA model, not the production potential"

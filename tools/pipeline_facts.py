@@ -18,12 +18,15 @@ fact is marked with that provenance.
 There are **three** different error numbers here and they are not interchangeable
 (A89 found two of them; A90 added the third):
 
-  * the **held-out** split error, 44.4 meV/A and 7.0 meV/atom on ``valid_Default``
-    (32.7 / 6.7 on ``train_Default``). This is the honest generalisation error and
-    it comes from the training job's own log, ``train_v4_7924966.out``, which was
-    never part of the pull -- hence ``ed_data/mlip_heldout_errors.json``, which
-    records it and says so. A89 reported these numbers as absent; they were absent
-    from the delivery, not from the work.
+  * the **held-out** split error of the production potential, 57.8 meV/A and
+    20.8 meV/atom on ``valid_Default`` (56.9 / 23.5 on ``train_Default``). This is
+    the honest generalisation error and it comes from the training job's own log,
+    ``ed_data/arc_scripts/logs/train_v4_7924966.out``, via
+    ``ed_data/mlip_heldout_errors.json``. A94: that log holds TWO error tables.
+    A90 transcribed the stage-two (SWA, epoch 186) table, 44.4 / 7.0, but
+    production MD ran the stage-one model (epoch 109, sha256 dc4a8977...), so
+    the stage-one table is the one quoted. The stage-two numbers stay in the JSON,
+    labelled as not used for production, and are not read here.
   * the **training-set parity by regime**, 41 meV/A bulk and 58 meV/A at RCB
     conditions, which ``reference.json`` itself calls "optimistic vs true held-out
     error". A different quantity, not a competing estimate; the 58 at RCB remains
@@ -118,12 +121,17 @@ def pipeline_facts(cfg) -> dict[str, dict]:
         source_file=None,
         note=("TRAINING-SET parity by regime, which reference.json itself calls "
               "'optimistic vs true held-out error'; frames above 3000 K excluded. "
-              "The only held-out parity in the pull is 12.3 / 20.2 meV/A and "
-              "belongs to the LDA model, not this one"))
+              "Computed with the production (stage-one) model: A94 reproduced "
+              "41.0 / 58.3 from it. The only held-out parity in the pull is "
+              "12.3 / 20.2 meV/A and belongs to the LDA model, not this one"))
     held = json.loads((ROOT / "ed_data" / "mlip_heldout_errors.json").read_text())
-    _hnote = (f"from {held['source_log']}, which is NOT in the pull; transcribed "
-              f"in ed_data/mlip_heldout_errors.json. Held-out split error -- a "
-              f"different quantity from the training-set parity by regime")
+    prod = held["production_model"]
+    _hnote = (f"production potential ({prod['training_stage']}, "
+              f"{prod['checkpoint'].rsplit('/', 1)[-1]}, sha256 "
+              f"{prod['sha256'][:8]}...); from {held['source_log']} lines "
+              f"{prod['log_lines']}, recorded in ed_data/mlip_heldout_errors.json. "
+              f"Split error -- a different quantity from the training-set parity "
+              f"by regime. The log's stage-two (SWA) table is not this model's (A94)")
     for tag, field, key, unit in (
             ("valid_Default", "force_meV_per_A", "mlip_heldout_force_mev_per_a", "meV/A"),
             ("valid_Default", "energy_meV_per_atom", "mlip_heldout_energy_mev_per_atom", "meV/atom"),
