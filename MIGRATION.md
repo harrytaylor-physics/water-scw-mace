@@ -73,9 +73,10 @@ The planetary model was imported **with its history**, after filtering:
    - But the history did contain the excluded items above.
 2. On a throwaway clone, `git filter-repo --invert-paths` removed from every
    commit: the seven `ed_data/arc_a78/T*/` cells, `ed_data/arc/water-scw-mace/`,
-   `outputs_v3/`, `figs_v3/`, `data_release_v3/` and `DECK_OUTLINE.md`. All 116
-   commits survive, and a check of every object in the result found none of the
-   excluded files.
+   `outputs_v3/` and `DECK_OUTLINE.md`. The rules for `figs_v3/` and
+   `data_release_v3/` matched nothing, because neither was ever committed. All
+   116 commits survive, and a check of every object in the result found none of
+   the excluded files.
 3. `git subtree add --prefix=subneptune` of the filtered history (commit
    `d8475a7`). Later moves out of `subneptune/` used `git mv`, so `git log
    --follow` traces them.
