@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -36,9 +37,10 @@ import matplotlib.pyplot as plt  # noqa: E402
 # A87: figure and Extended Data ledgers live outside cfg.output_path, so a run
 # against a different spectra version could not be isolated -- the v3 column of
 # A86's table silently carried v5 figure numbers because of it. The root is now
-# redirectable, defaulting to the repo's figs/ so ordinary runs are unchanged.
-FIGS_DIR = Path(os.environ.get("SUBNEPTUNE_FIGS_DIR",
-                               Path(__file__).resolve().parents[1] / "figs"))
+# redirectable. Since the migration into water-scw-mace it defaults to
+# docs/figures/subneptune/, beside the repository's other figures (layout.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from layout import FIGS_DIR  # noqa: E402
 ED_DIR = FIGS_DIR / "ed"  # Extended Data items
 
 MM = 1.0 / 25.4  # millimetres -> inches
@@ -229,6 +231,9 @@ def save_pdf(fig, stem: str, numbers: FigureNumbers | None = None,
     # canvas size is the deliverable, so the layout engine has to fit the content
     # into it — every figure here is built with layout="constrained".
     fig.savefig(path, format="pdf")
+    # A 200-dpi PNG of the same canvas beside it, for display in the repository
+    # (water-scw-mace keeps PNGs in docs/figures/). The PDF is the deliverable.
+    fig.savefig(path.with_suffix(".png"), format="png", dpi=200)
     plt.close(fig)
     if numbers is not None:
         merge_numbers(numbers, out_dir=out_dir, name=ledger_name)

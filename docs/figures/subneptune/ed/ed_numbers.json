@@ -26,10 +26,10 @@
     "methodology": "training-set parity by regime, the same evaluation eval_split.sh performs; optimistic vs true held-out. Frames with T > 3000 K excluded (outside the applied envelope). Paraphrased from reference.json's parity_methodology.",
     "caveat": "the pulled reference states these are TRAINING-SET parity by regime, explicitly 'optimistic vs true held-out error', with T > 3000 K frames excluded. The only held-out parity in the pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not this one.",
     "source_files": [
-     "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json"
+     "benchmarks/reference/reference.json"
     ],
     "source_commits": {
-     "ed_data/arc/water-scw-mace/benchmarks/reference/reference.json": "162624b"
+     "benchmarks/reference/reference.json": "d8475a7"
     }
    },
    "b": {
@@ -61,10 +61,10 @@
     "n_passed": 21,
     "note": "a bound, not a distribution: the pull records the worst value over 21 LDA NVE runs, not a value per state point",
     "source_files": [
-     "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md"
+     "docs/LDA_CAMPAIGN.md"
     ],
     "source_commits": {
-     "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md": "162624b"
+     "docs/LDA_CAMPAIGN.md": "d8475a7"
     }
    }
   }
@@ -100,7 +100,7 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "opacity/crossover.py": "90032e5"
+     "opacity/crossover.py": "d8475a7"
     }
    },
    "a": {
@@ -136,8 +136,8 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "ffc1b64",
-     "opacity/crossover.py": "90032e5"
+     "outputs/crossover_v3.json": "d8475a7",
+     "opacity/crossover.py": "d8475a7"
     }
    },
    "b": {
@@ -167,8 +167,8 @@
      "opacity/crossover.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "ffc1b64",
-     "opacity/crossover.py": "90032e5"
+     "outputs/crossover_v3.json": "d8475a7",
+     "opacity/crossover.py": "d8475a7"
     }
    }
   }
@@ -247,8 +247,8 @@
      "tools/broadening_sensitivity.py"
     ],
     "source_commits": {
-     "outputs/broadening_sensitivity.json": "5470506",
-     "tools/broadening_sensitivity.py": "16b1a08"
+     "outputs/broadening_sensitivity.json": "d8475a7",
+     "tools/broadening_sensitivity.py": "d8475a7"
     }
    },
    "b": {
@@ -275,8 +275,8 @@
      "opacity/mtckd.py"
     ],
     "source_commits": {
-     "outputs/crossover_v3.json": "5470506",
-     "opacity/mtckd.py": "a7c1482"
+     "outputs/crossover_v3.json": "d8475a7",
+     "opacity/mtckd.py": "d8475a7"
     }
    },
    "c": {
@@ -310,7 +310,7 @@
      "opacity/build_tables.py"
     ],
     "source_commits": {
-     "opacity/build_tables.py": "95d6b0e"
+     "opacity/build_tables.py": "d8475a7"
     }
    },
    "d": {
@@ -498,8 +498,8 @@
      "tools/wing_cutoff.py"
     ],
     "source_commits": {
-     "outputs/wing_cutoff.json": "5470506",
-     "tools/wing_cutoff.py": "16b1a08"
+     "outputs/wing_cutoff.json": "d8475a7",
+     "tools/wing_cutoff.py": "d8475a7"
     }
    }
   }
@@ -653,9 +653,9 @@
      "opacity/bands.py"
     ],
     "source_commits": {
-     "outputs/text_checks.json": "5470506",
-     "tools/text_checks.py": "16b1a08",
-     "opacity/bands.py": "00398fd"
+     "outputs/text_checks.json": "d8475a7",
+     "tools/text_checks.py": "d8475a7",
+     "opacity/bands.py": "d8475a7"
     }
    },
    "b": {
@@ -719,7 +719,7 @@
      "opacity/loaders.py"
     ],
     "source_commits": {
-     "opacity/loaders.py": "797ca95"
+     "opacity/loaders.py": "d8475a7"
     }
    },
    "c": {
@@ -1233,8 +1233,8 @@
      "tools/rho_scaling.py"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506",
-     "tools/rho_scaling.py": "16b1a08"
+     "outputs/rho_scaling.json": "d8475a7",
+     "tools/rho_scaling.py": "d8475a7"
     }
    },
    "d": {
@@ -1748,8 +1748,8 @@
      "tools/rho_scaling.py"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506",
-     "tools/rho_scaling.py": "16b1a08"
+     "outputs/rho_scaling.json": "d8475a7",
+     "tools/rho_scaling.py": "d8475a7"
     }
    },
    "e": {
@@ -2263,8 +2263,8 @@
      "tools/rho_scaling.py"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506",
-     "tools/rho_scaling.py": "16b1a08"
+     "outputs/rho_scaling.json": "d8475a7",
+     "tools/rho_scaling.py": "d8475a7"
     }
    },
    "f": {
@@ -2417,7 +2417,7 @@
      "outputs/rho_scaling.json"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506"
+     "outputs/rho_scaling.json": "d8475a7"
     }
    },
    "g": {
@@ -2567,7 +2567,7 @@
      "outputs/rho_scaling.json"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506"
+     "outputs/rho_scaling.json": "d8475a7"
     }
    },
    "h": {
@@ -2717,7 +2717,7 @@
      "outputs/rho_scaling.json"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506"
+     "outputs/rho_scaling.json": "d8475a7"
     }
    },
    "i": {
@@ -2782,8 +2782,8 @@
      "eos/aqua.py"
     ],
     "source_commits": {
-     "outputs/rho_scaling.json": "5470506",
-     "eos/aqua.py": "efd2fb9"
+     "outputs/rho_scaling.json": "d8475a7",
+     "eos/aqua.py": "d8475a7"
     }
    }
   }
@@ -2896,7 +2896,7 @@
      "monomer_test/pyscf_monomer.json"
     ],
     "source_commits": {
-     "monomer_test/pyscf_monomer.json": "0b79b3c"
+     "monomer_test/pyscf_monomer.json": "d8475a7"
     }
    },
    "b": {
@@ -2992,7 +2992,7 @@
      "monomer_test/pyscf_monomer.json"
     ],
     "source_commits": {
-     "monomer_test/pyscf_monomer.json": "0b79b3c"
+     "monomer_test/pyscf_monomer.json": "d8475a7"
     }
    },
    "c": {
@@ -3076,8 +3076,8 @@
      "monomer_test/pyscf_monomer.py"
     ],
     "source_commits": {
-     "monomer_test/pyscf_monomer.json": "0b79b3c",
-     "monomer_test/pyscf_monomer.py": "0b79b3c"
+     "monomer_test/pyscf_monomer.json": "d8475a7",
+     "monomer_test/pyscf_monomer.py": "d8475a7"
     }
    },
    "d": {
@@ -3241,7 +3241,7 @@
      "ed_data/arc/scw/lagtest_v2.json"
     ],
     "source_commits": {
-     "ed_data/arc/scw/lagtest_v2.json": "162624b"
+     "ed_data/arc/scw/lagtest_v2.json": "d8475a7"
     }
    },
    "e": {
@@ -3289,7 +3289,7 @@
      ]
     },
     "reduction": "plain channel sum over each band (A88)",
-    "source_file": "/Users/harrytaylor/subneptune/outputs/window_residual.npz",
+    "source_file": "/Users/harrytaylor/repos/water-scw-mace/subneptune/outputs/window_residual.npz",
     "x_label": "Band centre (cm^-1)",
     "y_label": "A_pred / A_label",
     "x_scale": "linear",
@@ -3351,8 +3351,8 @@
      "figures/ed_items.py"
     ],
     "source_commits": {
-     "outputs/S4_domain_scan_extended.csv": "5470506",
-     "figures/ed_items.py": "5470506"
+     "outputs/S4_domain_scan_extended.csv": "d8475a7",
+     "figures/ed_items.py": "d8475a7"
     }
    },
    "b": {
@@ -3390,8 +3390,8 @@
      "figures/plot_s8_rcb_flip.py"
     ],
     "source_commits": {
-     "outputs/S8_rcb_flip.csv": "5470506",
-     "figures/plot_s8_rcb_flip.py": "16b1a08"
+     "outputs/S8_rcb_flip.csv": "d8475a7",
+     "figures/plot_s8_rcb_flip.py": "d8475a7"
     }
    }
   }
@@ -3497,9 +3497,9 @@
      "validation/test_g5_literature.py"
     ],
     "source_commits": {
-     "outputs/g5_residuals.json": "5470506",
-     "outputs/g5_residuals_conventions.json": "5470506",
-     "validation/test_g5_literature.py": "024e7f9"
+     "outputs/g5_residuals.json": "d8475a7",
+     "outputs/g5_residuals_conventions.json": "d8475a7",
+     "validation/test_g5_literature.py": "d8475a7"
     }
    },
    "b": {
@@ -3542,9 +3542,9 @@
      "validation/test_g5_literature.py"
     ],
     "source_commits": {
-     "outputs/g5_residuals.json": "5470506",
-     "outputs/g5_residuals_conventions.json": "5470506",
-     "validation/test_g5_literature.py": "024e7f9"
+     "outputs/g5_residuals.json": "d8475a7",
+     "outputs/g5_residuals_conventions.json": "d8475a7",
+     "validation/test_g5_literature.py": "d8475a7"
     }
    }
   }
@@ -3677,8 +3677,8 @@
      "figures/plot_s9_case_evolution.py"
     ],
     "source_commits": {
-     "evolution/history.py": "efa7052",
-     "figures/plot_s9_case_evolution.py": "16b1a08"
+     "evolution/history.py": "d8475a7",
+     "figures/plot_s9_case_evolution.py": "d8475a7"
     }
    },
    "b": {
@@ -3806,8 +3806,8 @@
      "figures/plot_s9_case_evolution.py"
     ],
     "source_commits": {
-     "evolution/history.py": "efa7052",
-     "figures/plot_s9_case_evolution.py": "16b1a08"
+     "evolution/history.py": "d8475a7",
+     "figures/plot_s9_case_evolution.py": "d8475a7"
     }
    },
    "c": {
@@ -3935,8 +3935,8 @@
      "figures/plot_s9_case_evolution.py"
     ],
     "source_commits": {
-     "evolution/history.py": "efa7052",
-     "figures/plot_s9_case_evolution.py": "16b1a08"
+     "evolution/history.py": "d8475a7",
+     "figures/plot_s9_case_evolution.py": "d8475a7"
     }
    }
   }
@@ -4056,7 +4056,7 @@
    "or the comparison output of lda_campaign/stepG_dipoles/compare_point_full.py, which computes both sides"
   ],
   "source_files": [
-   "ed_data/arc/water-scw-mace/docs/LDA_CAMPAIGN.md"
+   "docs/LDA_CAMPAIGN.md"
   ],
   "other_lda_numbers": {
    "held_out_parity_meV_per_A": {
