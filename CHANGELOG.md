@@ -99,10 +99,11 @@ which holds the full reasoning, numbers and evidence for each.
 
 ## 2026-10-22 — production-model error table; migration into this repository
 
-- **A94:** the MLIP error quoted as the production potential's (44.4 meV/A,
-  7.0 meV/atom) was the stage-two SWA model's. Production MD ran the stage-one
-  model (`models/water_scw_v4.model`, sha256 `dc4a8977...`): held-out
-  **57.8 meV/A, 20.8 meV/atom**. Verified by evaluation (23.28 meV/atom over
+- **A94:** the production potential is the stage-one model (epoch 109,
+  `models/water_scw_v4.model`, sha256 `dc4a8977...`): held-out
+  **20.8 meV/atom, 57.8 meV/A**. The error A90 quoted for it came from the
+  stage-two (SWA) table of the same training log; that model was not used for
+  production. Verified by evaluation (23.28 meV/atom over
   `train_v4.xyz.gz`). The 41/58 parity in `benchmarks/reference/reference.json`
   is reproduced (41.0/58.3) by the same model. Error table:
   `models/mlip_heldout_errors.json`.

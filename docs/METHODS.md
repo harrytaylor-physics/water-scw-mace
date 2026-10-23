@@ -37,7 +37,11 @@ E0s: isolated spin-polarised atoms, matching settings.
 ## Training
 train_v4.xyz: 1193 configurations — 800 bulk pools (650-2250 K),
 344 RCB fill (2500-3000 K), 49 above 3000 K. Fine-tune from
-mace-mpa-0-medium; SWA; energy/forces keys REF_energy/REF_forces.
+mace-mpa-0-medium; energy/forces keys REF_energy/REF_forces. The production
+model is the stage-one model (epoch 109, `models/water_scw_v4.model`, sha256
+dc4a8977...): held-out 20.8 meV/atom, 57.8 meV/A
+(`models/mlip_heldout_errors.json`). The recipe's stage-two (SWA) model was
+not used for production.
 Reactive extension >3000 K descoped (hybrid SCF non-convergence); the
 potential is applied only at <= 3000 K.
 
