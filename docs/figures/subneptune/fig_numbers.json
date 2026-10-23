@@ -1,0 +1,496 @@
+{
+ "_meta": "Every number a reader could take off each panel: axis ranges as drawn, values marked or annotated, and point counts. Captions are checked against this file. Widths are 183 mm (double column); type is >= 7 pt at final size; the palette is Okabe-Ito.",
+ "width_mm": 183.0,
+ "min_font_pt": 7.0,
+ "fig1": {
+  "caption_hint": "a, pipeline from configuration sampling to kappa(nu). b, kappa(nu) at 2000 K, 1200 kg/m^3, first principles vs HITEMP at identical conditions (same ideal-gas broadening pressure), with the line profiles truncated at 50 cm^-1 from line centre -- the delivered convention. The marked ratio depends on that cap (A71): it is 35 at 50 cm^-1, 27 at 200 and 12 at 500.",
+  "panels": {
+   "a": {
+    "stages": [
+     "Configuration sampling",
+     "Hybrid DFT labels",
+     "MACE potential + dipole model",
+     "NVE dynamics \u2192 \u03ba(\u03bd)"
+    ],
+    "n_stages": 4,
+    "kind": "schematic; the captions are measured values",
+    "stage_captions": [
+     "52 states, 650-3000 K",
+     "1193 configurations revPBE0-D3",
+     "held out 57.8 meV $\\mathrm{\\AA}^{-1}$, 20.8 meV/atom parity 41/58 (bulk/RCB, train)",
+     "64-216 molecules, 0.5 fs 30 ps after 10 ps equilibration"
+    ],
+    "pipeline_facts": {
+     "n_state_points": 52,
+     "molecules_per_cell": [
+      64,
+      216
+     ],
+     "md_timestep_fs": 0.5,
+     "equilibration_ps": 10.0,
+     "n_training_configurations": 1193,
+     "training_temperature_range_k": [
+      650,
+      3000
+     ],
+     "label_level_of_theory": "revPBE0-D3 (CP2K), ADMM, DZVP-MOLOPT-SR-GTH, 600 Ry",
+     "production_ps": 30,
+     "force_parity_mev_per_a": {
+      "bulk": 41,
+      "rcb": 58
+     },
+     "mlip_heldout_force_mev_per_a": 57.8,
+     "mlip_heldout_energy_mev_per_atom": 20.8,
+     "mlip_train_force_mev_per_a": 56.9,
+     "mlip_train_energy_mev_per_atom": 23.5,
+     "nve_drift_mev_per_atom_per_ps": 0.017
+    },
+    "caption_correction": "A90 quoted 44.4 meV/A and 7.0 meV/atom as the held-out error; A94 withdrew that. Those are the stage-two (SWA, epoch 186) table of train_v4_7924966.out, and production MD ran the stage-one model (epoch 109, sha256 dc4a8977...), whose held-out split error on valid_Default is 57.8 meV/A and 20.8 meV/atom. The 41/58 meV/A parity is a DIFFERENT quantity, training-set parity by regime, and both are shown. The NVE number remains a drift rate, 0.017 meV/atom/ps against a 2.0 gate",
+    "source_files": [
+     "benchmarks/reference/reference.json",
+     "docs/LDA_CAMPAIGN.md",
+     "docs/METHODS.md",
+     "models/mlip_heldout_errors.json",
+     "production_campaign/scw/run_prod_md_05fs.py",
+     "tools/v5_regenerate.py"
+    ],
+    "source_per_fact": {
+     "n_state_points": "tools/v5_regenerate.py",
+     "molecules_per_cell": "tools/v5_regenerate.py",
+     "md_timestep_fs": "tools/v5_regenerate.py",
+     "equilibration_ps": "production_campaign/scw/run_prod_md_05fs.py",
+     "n_training_configurations": "docs/METHODS.md",
+     "training_temperature_range_k": "docs/METHODS.md",
+     "label_level_of_theory": "docs/METHODS.md",
+     "production_ps": "tools/v5_regenerate.py",
+     "force_parity_mev_per_a": "benchmarks/reference/reference.json",
+     "mlip_heldout_force_mev_per_a": "models/mlip_heldout_errors.json",
+     "mlip_heldout_energy_mev_per_atom": "models/mlip_heldout_errors.json",
+     "mlip_train_force_mev_per_a": "models/mlip_heldout_errors.json",
+     "mlip_train_energy_mev_per_atom": "models/mlip_heldout_errors.json",
+     "nve_drift_mev_per_atom_per_ps": "docs/LDA_CAMPAIGN.md"
+    },
+    "fact_notes": {
+     "molecules_per_cell": "39 cells at 64 and 13 at 216",
+     "equilibration_ps": "Langevin at 0.5 fs for 20000 steps (line 48), then VelocityVerlet at constant energy (line 50)",
+     "n_training_configurations": "train_v4.xyz: 800 bulk pools 650-2250 K, 344 RCB fill 2500-3000 K, 49 above 3000 K",
+     "production_ps": "from the dipole series length (60002 frames); METHODS.md said 60 ps until A90 corrected it against this",
+     "force_parity_mev_per_a": "TRAINING-SET parity by regime, which reference.json itself calls 'optimistic vs true held-out error'; frames above 3000 K excluded. Computed with the production (stage-one) model: A94 reproduced 41.0 / 58.3 from it. The only held-out parity in the pull is 12.3 / 20.2 meV/A and belongs to the LDA model, not this one",
+     "mlip_heldout_force_mev_per_a": "valid_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from production_campaign/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in models/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "mlip_heldout_energy_mev_per_atom": "valid_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from production_campaign/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in models/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "mlip_train_force_mev_per_a": "train_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from production_campaign/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in models/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "mlip_train_energy_mev_per_atom": "train_Default; production potential (stage one, water_scw_v4_run-1_epoch-109.pt, sha256 dc4a8977...); from production_campaign/arc_scripts/logs/train_v4_7924966.out lines 120-133, recorded in models/mlip_heldout_errors.json. Split error -- a different quantity from the training-set parity by regime. The log's stage-two (SWA) table is not this model's (A94)",
+     "nve_drift_mev_per_atom_per_ps": "worst over 21 NVE runs against a 2 gate; a bound, not a distribution"
+    }
+   },
+   "b": {
+    "x_label": "Wavenumber (cm^-1)",
+    "y_label": "Opacity (cm^2/g)",
+    "x_scale": "linear",
+    "y_scale": "log",
+    "x_range": [
+     100.0,
+     4000.0
+    ],
+    "y_range": [
+     3.732666384699996,
+     76517.33191048465
+    ],
+    "state": {
+     "T_K": 2000.0,
+     "rho_kg_m3": 1200.0,
+     "line_list_broadening_pressure_bar": 11076.553547740335
+    },
+    "median_window_cm": [
+     2400.0,
+     2600.0
+    ],
+    "median_first_principles_cm2_g": 370.548,
+    "median_line_list_cm2_g": {
+     "50": 13.1662,
+     "500": 30.2576
+    },
+    "median_ratio_fp_over_line_list": {
+     "50": 28.144,
+     "500": 12.246
+    },
+    "line_list_truncation_cm": [
+     50.0,
+     500.0
+    ],
+    "band_envelopes_cm": {
+     "libration": [
+      300.0,
+      1000.0
+     ],
+     "bend": [
+      1400.0,
+      1800.0
+     ],
+     "window": [
+      1900.0,
+      3100.0
+     ],
+     "stretch": [
+      3200.0,
+      4000.0
+     ]
+    },
+    "band_display_names": {
+     "libration": "rotation/libration",
+     "bend": "bend",
+     "window": "window",
+     "stretch": "stretch"
+    },
+    "line_list_note": "direct line-by-line computation at the true density; 1200 kg/m^3 is above the tabulated ceiling of 1000, so the table would clamp",
+    "why_two_cut_offs": "A91: the line profiles are truncated at the cut-off and renormalised to unit area, so where the true HWHM exceeds it a line becomes a ~2*cut-off-wide rectangle. The comparison does not converge in the cut-off -- these two medians differ by more than 2x -- so the panel shows both rather than quoting one. 50 cm^-1 is the delivered convention every line-list table in the manuscript is built at; 500 cm^-1 is the widest A71 studied",
+    "single_channel_marker_removed": "the 2550 cm^-1 point marker is gone: A91 showed it sat on the pedestal of the line at 2543.07, so it measured the cut-off",
+    "producer_for_the_500_spectrum": "tools/broadening_sensitivity.py config/fiducial.yaml --only 2000,1200 --conventions ideal --truncation 500 --out-dir outputs/broadening_trunc500"
+   }
+  }
+ },
+ "fig2": {
+  "caption_hint": "a, Rosseland-mean opacity over the 52 first-principles points, interpolated as the structure model reads it. b, first-principles / line-list ratio against density, coloured by temperature; filled Planck, open Rosseland.",
+  "panels": {
+   "a": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "Temperature (K)",
+    "x_scale": "log",
+    "y_scale": "linear",
+    "x_range": [
+     10.0,
+     2228.709999999999
+    ],
+    "y_range": [
+     650.0,
+     3000.0
+    ],
+    "n_computed_points": 52,
+    "T_range_K": [
+     650.0,
+     3000.0
+    ],
+    "rho_range_kg_m3": [
+     10.0,
+     2228.71
+    ],
+    "kappa_R_range_cm2_g": [
+     2.7404880981209265,
+     7583.703530966697
+    ],
+    "colour_scale": "viridis, log",
+    "display_interpolant": "Clough-Tocher C1 on the same 52 points, for display only; the model itself interpolates linearly on a Delaunay triangulation",
+    "display_vs_model_max_dex": 0.7147141969280866,
+    "hull_mask_from": "the model's own linear interpolant",
+    "colourbar_extend": "min",
+    "colourbar_extend_reason": "nothing plotted exceeds vmax (largest computed point and vmax agree to 6e-16 dex), but the displayed surface reaches 1.863 cm^2/g, 0.174 dex below vmin, over 0.65% of in-hull cells; the coldest thinnest computed point is 0.0066 dex below vmin",
+    "colourbar_range_cm2_g": [
+     2.782509606994551,
+     7583.703530966707
+    ],
+    "band_cm": [
+     100.0,
+     4000.0
+    ],
+    "blank_region": "outside the convex hull, where the model clamps"
+   },
+   "b": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "First-principles / line-list ratio",
+    "x_scale": "log",
+    "y_scale": "log",
+    "x_range": [
+     7.631278828475323,
+     2920.4934717937435
+    ],
+    "y_range": [
+     0.795553720601841,
+     121.88219461575267
+    ],
+    "references": {
+     "HITEMP": {
+      "n_points": 52,
+      "planck_range": [
+       1.2458546929834218,
+       34.113080891963754
+      ],
+      "rosseland_range": [
+       1.5733954370533902,
+       96.96383340167944
+      ]
+     },
+     "POKAZATEL": {
+      "n_points": 27,
+      "planck_range": [
+       1.4806744836166388,
+       35.87358204186142
+      ],
+      "rosseland_range": [
+       2.747678386801864,
+       83.87823798041006
+      ]
+     },
+     "HITEMP + MT_CKD continuum": {
+      "n_points": 52,
+      "planck_range": [
+       0.21344513768386833,
+       30.238411252941102
+      ],
+      "rosseland_range": [
+       1.5699747942600337,
+       71.23012600943827
+      ]
+     }
+    },
+    "unity_line": true,
+    "shown_in_panel": {
+     "mean": "Rosseland only",
+     "references": [
+      "HITEMP",
+      "HITEMP + MT_CKD continuum"
+     ],
+     "moved_to_extended_data": [
+      "POKAZATEL (ED Fig. 2c)",
+      "Planck ratios (ED Fig. 2b, 2c)"
+     ]
+    },
+    "temperature_colour_range_K": [
+     650.0,
+     3000.0
+    ],
+    "colour_scale": "viridis, linear in T",
+    "line_list_asymmetry": "the two line lists are not matched in isotopologue coverage: the HITEMP spectra carry isotopologues 1, 2 and 3, the POKAZATEL spectra the main one only. Both use the same ideal-gas broadening pressure and the same band. The minor isotopologues sit mostly in the windows, so they bear on the Rosseland ratio more than the Planck one; the size of that is not measured here and a caption should not imply the two references differ only in their line data",
+    "pokazatel_matching": "matched state by state, not interpolated: POKAZATEL sits on 27 of the 52 first-principles states exactly"
+   }
+  }
+ },
+ "fig3": {
+  "caption_hint": "a, Schwarzschild ratio through a 20 M_earth water world for the line list and the composite, both boundaries marked. b, per boundary, the first-principles/line-list kappa_R ratio against the factor that would flip it.",
+  "panels": {
+   "a": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "grad_rad / grad_ad",
+    "x_scale": "log",
+    "y_scale": "log",
+    "x_range": [
+     1.0,
+     10000.0
+    ],
+    "y_range": [
+     2.60804179841303e-08,
+     232784.68489583602
+    ],
+    "case": {
+     "mass_core_mearth": 10.0,
+     "wmf": 0.5,
+     "t_eq_k": 500.0,
+     "t_int_k": 30.0,
+     "mass_planet_mearth": 20.0,
+     "n_profile_samples": 1500
+    },
+    "sampling_note": "the located boundary density shifts by ~1.5% between 1500 and 2000 profile samples; 1500 matches the domain scan and panel b",
+    "composite": {
+     "radius_rearth": 2.9545927260019846,
+     "rcb_densities_kg_m3": [
+      24.13896820263202
+     ],
+     "deepest_rcb_kg_m3": 24.13896820263202,
+     "max_radiative_rho_kg_m3": 21.781589836604788
+    },
+    "hitemp": {
+     "radius_rearth": 2.933956004255919,
+     "rcb_densities_kg_m3": [
+      90.11480998943314
+     ],
+     "deepest_rcb_kg_m3": 90.11480998943314,
+     "max_radiative_rho_kg_m3": 84.98712566417775
+    },
+    "boundary_shift_dex": -0.5720774686623487
+   },
+   "b": {
+    "x_label": "Radiative-convective boundary (ordered by ratio)",
+    "y_label": "Ratio or threshold",
+    "x_scale": "linear",
+    "y_scale": "log",
+    "x_range": [
+     -0.7525000000000001,
+     9.752500000000001
+    ],
+    "y_range": [
+     0.7128084267407157,
+     41.43027166289453
+    ],
+    "n_boundaries": 10,
+    "kappa_ratio_range": [
+     2.548499775135335,
+     12.94695989465454
+    ],
+    "flip_threshold_range": [
+     1.0098262916603553,
+     1.2077382711324751
+    ],
+    "margin_range": [
+     2.1416467382545856,
+     12.565940285899242
+    ],
+    "bounded_ratio_range": [
+     0.8385981491067243,
+     9.247828496181816
+    ],
+    "n_bounded_still_above_threshold": 9,
+    "bound_factors": {
+     "rho_ge_60": 1.4,
+     "rho_lt_60": 3.039
+    },
+    "bound_provenance": "1.400 is window_validation.ratio.window, measured against Wannier-centre dipole labels; 3.039 is the largest v5 dilute stretch-band excess over the line list, at (2000 K, 30 kg m^-3)",
+    "boundaries": [
+     {
+      "T_K": 1007.9756383955977,
+      "rho_kg_m3": 43.78658275996809,
+      "kappa_ratio": 2.548499775135335,
+      "flip_threshold": 1.1899720573021904,
+      "bounded_ratio": 0.8385981491067243
+     },
+     {
+      "T_K": 739.0942879071526,
+      "rho_kg_m3": 54.61979054030518,
+      "kappa_ratio": 6.176729107216975,
+      "flip_threshold": 1.0336003351342935,
+      "bounded_ratio": 2.0324873666393466
+     },
+     {
+      "T_K": 732.2217615801255,
+      "rho_kg_m3": 54.06728970725998,
+      "kappa_ratio": 6.291971003637388,
+      "flip_threshold": 1.1215012211558975,
+      "bounded_ratio": 2.070408359209407
+     },
+     {
+      "T_K": 735.0212437311484,
+      "rho_kg_m3": 61.2518913286826,
+      "kappa_ratio": 6.769479647018206,
+      "flip_threshold": 1.046826216200425,
+      "bounded_ratio": 4.835342605013004
+     },
+     {
+      "T_K": 735.4155674097497,
+      "rho_kg_m3": 81.8627952618931,
+      "kappa_ratio": 8.969780325337895,
+      "flip_threshold": 1.0843867239626268,
+      "bounded_ratio": 6.406985946669925
+     },
+     {
+      "T_K": 744.8006051023358,
+      "rho_kg_m3": 90.11480998943314,
+      "kappa_ratio": 9.550228258703804,
+      "flip_threshold": 1.0480775773283486,
+      "bounded_ratio": 6.82159161335986
+     },
+     {
+      "T_K": 741.0288860781274,
+      "rho_kg_m3": 96.2554457095142,
+      "kappa_ratio": 10.584920925561406,
+      "flip_threshold": 1.0098262916603553,
+      "bounded_ratio": 7.5606578039724335
+     },
+     {
+      "T_K": 734.0984369014924,
+      "rho_kg_m3": 106.80648795694843,
+      "kappa_ratio": 12.006927143405111,
+      "flip_threshold": 1.0930219505540526,
+      "bounded_ratio": 8.576376531003651
+     },
+     {
+      "T_K": 726.0694614899138,
+      "rho_kg_m3": 110.387587260619,
+      "kappa_ratio": 12.831376140072848,
+      "flip_threshold": 1.2077382711324751,
+      "bounded_ratio": 9.165268671480606
+     },
+     {
+      "T_K": 736.4661063791913,
+      "rho_kg_m3": 124.14688287897707,
+      "kappa_ratio": 12.94695989465454,
+      "flip_threshold": 1.0303216154212396,
+      "bounded_ratio": 9.247828496181816
+     }
+    ],
+    "selection": "boundaries with first-principles data interpolated, not clamped",
+    "input_vintage": "boundary locations and kappa ratios come from the stored boundary analysis, which predates the 2250/2750 K line-list rows",
+    "max_ratio_drift_since_stored": 2.220446049250313e-16
+   }
+  }
+ },
+ "fig4": {
+  "caption_hint": "(T, rho) plane shaded by the first-principles/HITEMP Rosseland ratio over the 52 first-principles points, with the line-list radiative-convective boundary of 108 scanned planets overlaid, coloured by T_eq. The outline is the first-principles grid extent.",
+  "panels": {
+   "": {
+    "x_label": "Density (kg/m^3)",
+    "y_label": "Temperature (K)",
+    "x_scale": "log",
+    "y_scale": "linear",
+    "x_range": [
+     0.967967216181502,
+     2246.3414874725686
+    ],
+    "y_range": [
+     232.23669616519172,
+     3003.466076696165
+    ],
+    "n_first_principles_points": 52,
+    "n_planets_plotted": 108,
+    "n_planets_in_scan": 108,
+    "ratio_range_over_grid": [
+     1.5733954370533902,
+     96.96383340167944
+    ],
+    "colourbar_range": [
+     1.5744985547269328,
+     96.52357191951442
+    ],
+    "boundary_T_range_K": [
+     364.2,
+     1848.9
+    ],
+    "boundary_rho_range_kg_m3": [
+     1.4,
+     357.4
+    ],
+    "t_eq_levels_K": [
+     300.0,
+     500.0,
+     700.0,
+     900.0,
+     1100.0,
+     1300.0
+    ],
+    "counts_by_category": {
+     "on computed data": 49,
+     "T below the grid": 18,
+     "\u03c1 below the grid": 41,
+     "between computed points": 0
+    },
+    "categories_in_legend": [
+     "on computed data",
+     "T below the grid",
+     "\u03c1 below the grid"
+    ],
+    "colourbar_ticks": [
+     2,
+     5,
+     10,
+     20,
+     50
+    ],
+    "category_rule": "filled where the opacity table's own triangulation contains the point, open where the model clamps, with the clamp cause distinguished \u2014 the same four categories as ED Fig. 6a",
+    "n_boundaries_inside_grid_extent": 49,
+    "grid_extent": "convex hull of the 52 points in (T, log10 rho)",
+    "band_cm": [
+     100.0,
+     4000.0
+    ],
+    "input_vintage": "boundary locations come from the stored domain scan, which predates the 2250/2750 K line-list rows; the shading is computed from the current tables. The boundaries lie at 364-1850 K, away from the added rows, and the measured sensitivity of the ratio at the analysed boundaries is recorded in fig3 panel b"
+   }
+  }
+ }
+}

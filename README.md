@@ -38,7 +38,11 @@ T <= 3000 K within the trained density envelope - full guidance in
 | [tests/](tests/) | pytest suite: invariances, dipole equivariance, golden values, unit guards |
 | [convergence/](convergence/) | convergence protocols per stage + project reference results |
 | [studies/](studies/) | satellite studies (functional/ dispersion sensitivity) |
-| [docs/](docs/) | methods reference; results deck |
+| [docs/](docs/) | methods reference; results deck; [figures/subneptune/](docs/figures/subneptune/) — planetary-model figures |
+| [subneptune/](subneptune/) | steam-envelope sub-Neptune interior and evolution model (see below) |
+| [production_campaign/](production_campaign/) | the ARC production pipeline that made the 52-point grid, kept as run |
+| [data/](data/) | the 52 v5 opacity spectra (LFS) and the MESA-format release tables |
+| [MIGRATION.md](MIGRATION.md) · [CHANGELOG.md](CHANGELOG.md) | how subneptune came in; what changed since Jul 2026 |
 | [TODO.md](TODO.md) | technical task list |
 | [ROADMAP.md](ROADMAP.md) | understanding-oriented questions |
 | [TESTING.md](TESTING.md) | outstanding tests + conditions of use |
@@ -48,9 +52,10 @@ T <= 3000 K within the trained density envelope - full guidance in
 | Component | Status |
 |---|---|
 | water_scw_v4 (revPBE0-D3 potential) | validated; production; apply <= 3000 K |
-| water_dipole_v2 (dipole model) | production; behind the published opacity surface |
-| Opacity surface, 27 points | complete (absolute-scale note below) |
-| Emissivity, 27 points | complete (interim n_inf baseline) |
+| water_dipole_v3 (dipole model) | production; behind the 52-point v5 spectra (`models/water_dipole_v3.model`) |
+| water_dipole_v2 (dipole model) | the earlier dipole model, superseded by v3 |
+| Opacity spectra, 52 points (v5) | complete; regenerated with the corrected estimator (Oct 2026, below) |
+| Emissivity, 27 points | complete (interim n_inf baseline); computed before the v5 estimator, not regenerated |
 | LDA sensitivity campaign | labels complete (1080/1080); water_lda_v1 training |
 | Results deck | being rebuilt around the LDA results |
 
@@ -114,3 +119,85 @@ T2000/rho500, T~2807/rho109).
 Headline results: EOS dP mean -47% (to -90% cold-dilute); LDA stretch
 red-shift 150-200 cm-1; dispersion 1.7% of bulk forces, ~4:1
 intermolecular. 28 Jul 2026.
+
+## Planetary model and v5 opacity (Oct 2026)
+
+Added in this update ([MIGRATION.md](MIGRATION.md) has the full mapping;
+[CHANGELOG.md](CHANGELOG.md) the chronology):
+
+    subneptune/              steam-envelope sub-Neptune interior + evolution model, with its history
+    production_campaign/     ARC production pipeline (MD, labels, training, opacity), unmodified
+    data/fp_opacity_v5/      52 first-principles absorption spectra, v5 estimator (git-LFS)
+    data/release/            Rosseland/Planck mean tables (MESA kap format, CSV, fit JSON)
+    docs/figures/subneptune/ Figs 1-4 and ten Extended Data items, PDF + 200-dpi PNG
+    models/mlip_heldout_errors.json  error tables of the production potential
+
+**The planetary model.** `subneptune` computes the interior structure and
+thermal evolution of a sub-Neptune with a pure-H2O (steam) envelope.
+- **Core:** inert rocky core (Zeng, Sasselov & Jacobsen 2016, Eq. 2).
+- **Envelope:** AQUA equation of state.
+- **Outer boundary:** Guillot (2010) irradiated boundary.
+- **Opacity:** a composite of the first-principles spectra here, the HITEMP and
+  POKAZATEL line lists, and the MT_CKD continuum.
+- **Evolution:** static-sequence cooling.
+
+Its physics choices are fixed in `subneptune/SPEC.md`. Every choice made without
+a direct citation is logged in `subneptune/AMENDMENTS.md` (A1-A94).
+`subneptune/validation/` is its test suite.
+
+**The 52-point grid.** One grid of 52 state points, 650-3000 K and
+10-2229 kg m^-3. It has 64 molecules per cell at 39 points and 216 at 13, with
+0.5 fs steps and 30 ps NVE after 10 ps Langevin equilibration. The production
+potential is `models/water_scw_v4.model`, the stage-one model.
+Its held-out error is 57.8 meV/A and 20.8 meV/atom.
+
+**The v5 spectral estimator.** The delivered spectra
+(`production_campaign/scw/opacity_pipeline.py`) applied the harmonic quantum
+correction twice, at line 82, and used a leaking, untapered periodogram. Both were
+replaced, and all 52 spectra regenerated from the same dipole series
+(subneptune A78-A83). The new estimator,
+`subneptune/opacity/dipole_spectrum.py`, computes
+`sigma = beta w^2 I2 / (6 eps0 c N)`:
+- I2 is the two-sided power spectrum of the Hann-tapered dipole time series,
+  normalised by `sum(w^2)`;
+- one harmonic correction;
+- a continuous omega^2 prefactor;
+- 10 cm^-1 smoothing.
+
+Four checks:
+
+| check | result |
+|---|---|
+| harmonic-oscillator test: synthetic classical oscillator vs the textbook band strength | 2% (bound 3%) |
+| sum rule: each band integral vs `beta <\|Mdot_band\|^2>` | 0.09% (bound 1%) |
+| leakage floor below the transparency-window minimum | >= 476x at all 52 cells (bound 100x) |
+| dilute-limit rotational band vs the HITEMP line list | median ratio 1.043 (+4%) |
+
+Units, keys and the version marker are in [data/fp_opacity_v5/README.md](data/fp_opacity_v5/README.md).
+
+**Reproducing.**
+
+    git lfs install                        # spectra and models are LFS objects
+    cd subneptune
+    python -m pytest                       # the planetary model's gates
+    bash tools/rebuild_producers.sh        # every product, in dependency order
+
+- `rebuild_producers.sh` writes the figures to `docs/figures/subneptune/` (each
+  as PDF + PNG), the release tables to `data/release/`, and the numbers ledger to
+  `subneptune/outputs/manuscript_numbers.json`. The ledger is not committed.
+- One figure: `python figures/fig1.py config/fiducial.yaml`. The ten Extended
+  Data items: `python figures/ed_items.py config/fiducial.yaml` and
+  `figures/ed_tables.py`.
+- Release tables only: `python tools/release_tables.py config/fiducial.yaml`.
+- The line lists, AQUA tables and MT_CKD are external inputs, read from
+  `paths.data_root` in `subneptune/config/*.yaml` (default `~/subneptune_data`).
+  Gates that need an absent input skip.
+- The raw dipole series are not in the repository; SHA-256 manifests are in
+  `subneptune/ed_data/`.
+- **Expected `python -m pytest` results in `subneptune/`.** These assume the
+  external inputs are at `paths.data_root`.
+  - Fresh clone: 231 passed, 35 skipped, 4 xfailed. The raw dipole series are
+    absent, and so is `subneptune/outputs/`, which the ledger gates read.
+  - With the raw dipole series in place (`ed_data/arc_dipoles/`,
+    `ed_data/arc_a78/T*/`) and after `bash tools/rebuild_producers.sh`:
+    257 passed, 8 skipped, 5 xfailed.

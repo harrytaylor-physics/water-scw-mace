@@ -15,10 +15,15 @@ def parity(calc, labels_path):
     frames = read(labels_path, index=":")
     errs = {}
     for a in frames:
-        a = a.copy()
-        Fref = a.arrays.get("REF_forces")
+        # train_v4.xyz.gz stores the labels as `forces`, which ASE loads into a
+        # SinglePointCalculator; read them before copy(), which drops the calc.
+        if a.calc is not None and "forces" in a.calc.results:
+            Fref = a.calc.results["forces"]
+        else:
+            Fref = a.arrays.get("REF_forces")
         if Fref is None:
             continue
+        a = a.copy()
         a.calc = calc
         dF = a.get_forces() - Fref
         regime = regime_of(a.info.get("config_type", ""))
@@ -71,13 +76,24 @@ def eos_point(calc, T=673.0, rho=1000.0, n_mol=64, steps=4000):
     burn = len(ps) // 3
     return float(np.mean(ps[burn:]))  # GPa
 
+def force_cpu_load():
+    # The models were pickled on CUDA, and e3nn reloads their TorchScript parts
+    # with torch.jit.load and no map_location, so they fail to load on a machine
+    # without CUDA. --device cpu maps those loads to the CPU; nothing else changes.
+    import torch
+    jit_load = torch.jit.load
+    torch.jit.load = lambda f, map_location=None, **kw: jit_load(f, map_location="cpu", **kw)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
     ap.add_argument("--labels", default="reference/train_v4.xyz.gz")
-    ap.add_argument("--device", default="cuda")
+    ap.add_argument("--device", default="cuda",
+                    help="cuda (default) or cpu; cpu also loads CUDA-saved models")
     ap.add_argument("--skip-eos", action="store_true")
     args = ap.parse_args()
+    if args.device == "cpu":
+        force_cpu_load()
     from mace.calculators import MACECalculator
     calc = MACECalculator(model_paths=args.model, device=args.device,
                           default_dtype="float32")

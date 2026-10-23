@@ -1,0 +1,58 @@
+# Candidate manuscript fiducial (A42/A44): the only cell in the S4 domain scan
+# where a line-list radiative layer lies inside the FP data box (T >= 1000 K,
+# rho >= 108.796 kg/m^3) AND the composite closes it with every FP evaluation
+# interpolated (clamp_fraction_all = 0). Same core as config/fiducial.yaml;
+# only the irradiation and the envelope fraction change.
+#
+#   M_c = 5 M_earth, f_env = 5%, T_eq = 700 K, structural case at T_int = 20 K.
+#
+# Everything not listed here inherits config/schema.py defaults, which are the
+# fiducial's (band [100, 4000] cm^-1, blend window 100-300 kg/m^3, gamma = 1).
+
+name: candidate
+
+paths:
+  data_root: "~/subneptune_data"
+  aqua_table: "AQUA/Tables/aqua_eos_rhot_v1_0.dat"
+  output_dir: "outputs"
+
+core:
+  mass_mearth: 5.0
+  mr_relation: "zeng2016_rock"
+
+envelope:
+  f_env: 0.05
+
+irradiation:
+  t_eq_k: [700.0]       # the candidate's irradiation (S4 scan)
+  gamma: 1.0
+
+interior:
+  # The structural demonstration is at T_int = 20 K; the rest of the grid is the
+  # S4 scan's, so F2/F3-style sweeps at this planet stay comparable.
+  t_int_k: [20.0, 30.0, 40.0, 50.0, 75.0]
+
+opacity:
+  source: "composite"
+  band_cm: [100.0, 4000.0]
+  rel_floor: 1.0e-6
+  clamp_fraction_threshold: 0.20
+  blend_window_kg_m3: [10.0, 30.0]  # A54: seam continuity; FP has
+                                    # data down to rho = 10 now
+  fp_grid_t_floor_k: 650.0          # the FP grid's own corner (A54)
+  fp_grid_rho_floor_kg_m3: 10.0
+  blend_mode: "linear"
+  fp_scale: 1.0
+
+boundary:
+  match_pressure_bar: 10.0
+  match_pressure_scan_bar: [1.0, 10.0, 100.0]
+  p_top_bar: 1.0e-5
+
+numerics:
+  solver: "LSODA"
+  rtol: 1.0e-8
+  atol: 1.0e-10
+  shoot_rtol: 1.0e-6
+  max_shoot_iter: 100
+  rp_bracket_rearth: [1.0, 15.0]

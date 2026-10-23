@@ -1,0 +1,42 @@
+{
+ "T700_rho30_05fs": {
+  "sha256": "c81f5aacaded6f8d0b921ce189fc85254925eb897e43676ab044619e244f39e9",
+  "bytes": 720152,
+  "opacity_v3_npz": {
+   "sha256": "bcf928b09ccf68cac5e9e3f9f871d8421a6adad27eb34cb81f296343c05ab5a6",
+   "bytes": 242994
+  }
+ },
+ "T1000_rho30_05fs": {
+  "sha256": "dd866f30edae3ca955cc74f14de19fc3faa0623cc4778382c8d538d5241d5f5b",
+  "bytes": 720152,
+  "opacity_v3_npz": {
+   "sha256": "fab4962c91ef28bdf42e7f95d02e83453d5254e54beabb9f070c891c0b1d71c7",
+   "bytes": 242994
+  }
+ },
+ "T2000_rho30_05fs": {
+  "sha256": "28b06c9f21e58c30c146306a800149b0198684c917bb3092c622bae630b29792",
+  "bytes": 720152,
+  "opacity_v3_npz": {
+   "sha256": "e629cc0140910b0df0e6e51987a3d272076b5186f9a0300f517c97355111e649",
+   "bytes": 242994
+  }
+ },
+ "T1000_rho300_05fs": {
+  "sha256": "d92301159b509f5d4bbf2b65c8d5f2e369e0763f130a6cad25aae23569d14ff0",
+  "bytes": 720152,
+  "opacity_v3_npz": {
+   "sha256": "700dcf54d7af86e213e8dcec058842726dc80b66720055b6f9d0e38dbfc4c37c",
+   "bytes": 242994
+  }
+ },
+ "T2000_rho300_05fs": {
+  "sha256": "31276074334715a0b280c7a6540325a3cf1af3e2856c61b6c6908675a614b6f4",
+  "bytes": 720152,
+  "opacity_v3_npz": {
+   "sha256": "c6e0d8b7d3b1cf3eb9c4bc3f4d17b8a7bb5d7d68f5ac7c2b321ce4f82f04b372",
+   "bytes": 242994
+  }
+ }
+}

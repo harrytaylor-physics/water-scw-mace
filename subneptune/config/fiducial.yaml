@@ -1,0 +1,53 @@
+# Fiducial steam sub-Neptune (SPEC §8).
+#   M_c = 5 M_earth, f_env = 5% steam, T_eq grid 500-800 K, T_int grid 30-300 K.
+# Every field here has a default in config/schema.py; this file records the
+# Phase-1 deck fiducial explicitly. Physics knobs (gamma, matching pressure,
+# tolerances) are surfaced here so sensitivity scans stay config-driven.
+
+name: fiducial
+
+paths:
+  data_root: "~/subneptune_data"
+  aqua_table: "AQUA/Tables/aqua_eos_rhot_v1_0.dat"
+  output_dir: "outputs"
+
+core:
+  mass_mearth: 5.0
+  mr_relation: "zeng2016_rock"
+
+envelope:
+  f_env: 0.05
+
+irradiation:
+  t_eq_k: [500.0, 600.0, 700.0, 800.0]
+  gamma: 1.0            # kappa_vis / kappa_th; fiducial, sensitivity is a knob
+
+interior:
+  t_int_k: [30.0, 60.0, 100.0, 150.0, 200.0, 300.0]
+
+opacity:
+  source: "fp"         # fp | hitemp | pokazatel | composite
+  band_cm: [100.0, 4000.0]  # crossover-consistent science band (A25); null=auto
+  rel_floor: 1.0e-6    # transparency-window floor before Rosseland mean (A25)
+  clamp_fraction_threshold: 0.20
+  # Composite blend prescription (A35). The surviving RCB sits inside this
+  # window, so both knobs are scanned by figures/plot_s1_blend_sensitivity.py.
+  blend_window_kg_m3: [10.0, 30.0]  # A54: seam continuity; FP has
+                                    # data down to rho = 10 now
+  fp_grid_t_floor_k: 650.0          # the FP grid's own corner (A54)
+  fp_grid_rho_floor_kg_m3: 10.0
+  blend_mode: "linear"  # linear (smoothstep log-blend) | sharp (switch at lo)
+  fp_scale: 1.0        # constant perturbation of the FP table's kappa (A37)
+
+boundary:
+  match_pressure_bar: 10.0
+  match_pressure_scan_bar: [1.0, 10.0, 100.0]
+  p_top_bar: 1.0e-5
+
+numerics:
+  solver: "LSODA"
+  rtol: 1.0e-8
+  atol: 1.0e-10
+  shoot_rtol: 1.0e-6
+  max_shoot_iter: 100
+  rp_bracket_rearth: [1.0, 15.0]

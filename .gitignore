@@ -3,4 +3,5 @@ __pycache__/
 .pytest_cache/
 *.npz
 !benchmarks/reference/*.npz
+!data/fp_opacity_v5/*.npz
 slurm-*.out
