@@ -4,6 +4,130 @@ Every design decision made without a direct citation, or that resolves a
 gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
 (SPEC §10). Dated; newest first.
 
+## 2026-10-23 (four stored outputs were still the v3, 48-point values)
+
+- **A95 — `aqua_entropy_check.json`, `aguichine2025_compare.json` and
+  `crossover_v3_{before,after}_a60.json` were built from the 48 v3 spectra and
+  had never been rebuilt on v5. All four are now v5 values, and the staleness
+  guard checks them.**
+
+  This amendment exists only in the water-scw-mace copy of subneptune
+  (`subneptune/`, branch `integrate-subneptune-v5`); `~/subneptune` stops at A94.
+
+  **Why they survived.** A85's audit exempted all four from the staleness guard
+  because each had "zero first-principles references". That was a text search of
+  the producers, and the dependence is not in their text: the AQUA check and the
+  Aguichine tracks run cooling tracks on the composite opacity, and the A60 tool
+  takes its ratios from `crossover_v3_rows`. Of A85's five exemptions only
+  `broadening_sensitivity.json` (line lists only; no input newer than it) was
+  right.
+
+  **(1) The AQUA check and the Aguichine 2025 tracks.**
+
+  *Attribution.* Neither file carries a commit stamp. They were written on
+  26 Sep, 13:22-13:29 (AQUA) and 13:32-13:39 (Aguichine): after `162624b`
+  (12:26) and before `024e7f9` (16:11), the commit that added both producers.
+  - **Producers, `024e7f9` to now:** the only change is the atomic write (A86).
+  - **Modules they import:** the migration's paths (`layout.py`), the atomic
+    write, A86's one-time retry in `structure/model.py` (it runs only after a
+    solve has already failed), the v5 spectra directory (A83) and A87's version
+    markers. None changes the calculation.
+  - **Inputs on 26 Sep:** the v3 spectra (48 files, dated 20 Sep) with the
+    48-point `grid.json` (kept in `~/subneptune/outputs/pre52/`). `fiducial.yaml`
+    is unchanged, and every other input predates the files.
+  - **Reproduced:** `024e7f9`, run in a worktree on a data root rebuilt to the
+    26 Sep state, gives the Aguichine file byte for byte and the AQUA file
+    identical except for two path strings. The current code on v5 gives
+    byte-identical output on two runs.
+
+  *AQUA check* (M_c = 10 M_E, water fraction 0.5, T_eq = 500 K, composite
+  opacity). Old = v3, 48 points; new = v5.
+
+  | quantity | definition | old | new |
+  |---|---|---|---|
+  | entropy offset | corrected minus AQUA entropy along the fiducial track, 0.001-10 Gyr | 1.646-3.194% | 1.646-3.219% |
+  | density check | interpolated against the corrected table, max | 1.18e-4 | 1.18e-4 |
+  | adiabatic gradient | median / max relative difference | 3.5-3.9e-4 / 3.94e-2 | 3.5-3.9e-4 / 3.39e-2 |
+  | age change via energy | age integral redone with the corrected internal energy, same luminosities; 1 / 10 Gyr | -3.65 / -6.48% | -3.65 / **-6.02%** |
+  | age shift at fixed entropy, 10 Gyr | entropy offset / (ds/d age) at the 10 Gyr node; order of magnitude only (A72) | 8.76 Gyr | **7.45 Gyr** |
+  | radiated energy | total over the 44-node track down to T_int = 12 K | -2.75% | **-2.40%** |
+  | supercritical fraction | | 49.5% | 49.5% |
+
+  The age shift moves because the slope at 10 Gyr steepens (T_int 32.34 ->
+  33.63 K, ds/d age -35.3 -> -41.7 J/kg/K per Gyr). The radiated energy is
+  dominated by the track far past the age of the Universe: its coldest node sits
+  at 387 Gyr on v3 and 1093 Gyr on v5. The same check on `hitemp`, which uses no
+  first-principles spectra, gives -3.66% at 1 Gyr, -4.46% at 10 Gyr, -2.10%
+  radiated and a 4.56 Gyr shift. So the composite-minus-`hitemp` difference
+  narrows on v5 at 10 Gyr (2.0 -> 1.6 points) and in radiated energy (0.65 ->
+  0.30 points), and is unchanged at 1 Gyr.
+
+  *Aguichine 2025* (residual = our radius / theirs at 1 µbar, minus 1; 12 cases
+  x 3 ages):
+
+  | quantity | old | new |
+  |---|---|---|
+  | median | 4.05% | **4.00%** |
+  | worst | 5.91% | 5.91% |
+  | at 1 / 5 / 10 Gyr | 4.56 / 3.61 / 3.19% | 4.56 / 3.58 / 3.17% |
+  | ours larger | 36 of 36 (min +2.11%) | 36 of 36 (min +2.05%) |
+  | their R_20mbar / R_b | 1.012-1.017 | unchanged (their data) |
+  | opacity source, case 1, `hitemp`/composite - 1, at 1 / 5 / 10 Gyr | +0.007 / -0.303 / -0.624% | +0.005 / -0.233 / -0.477% |
+
+  The `hitemp` residuals, +2.90 / +2.05 / +1.63%, are unchanged and reproduce
+  A72's.
+
+  **(2) The A60 before/after crossover files.** Written 24 Sep 14:08, with 48
+  points: the v3 grid. Their FP opacities at the four affected points are v3's
+  (`~/subneptune/outputs_v3/crossover_v3.json`: Planck ratio 1.407, 4.155,
+  1.430, 11.448). Regenerated on v5: 52 points. At the 48 shared points every
+  line-list column is identical, and only the FP opacities and the four ratios
+  move. The FP values match `outputs/crossover_v3.json`, and two runs are
+  byte-identical.
+
+  The ledger key `opacity.hitemp_grid_rows_2250_2750.before_after`, ratio
+  [before, after]:
+
+  | T [K] | rho [kg/m^3] | FP/HITEMP Planck | FP/HITEMP Rosseland | FP/(H+MT) Planck | FP/(H+MT) Rosseland |
+  |---|---|---|---|---|---|
+  | 2250 | 175.5 | [1.407, 1.407] -> [2.129, 2.129] | [1.413, 1.370] -> [2.578, 2.500] | [1.334, 1.327] -> [2.018, 2.008] | [1.399, 1.356] -> [2.552, 2.475] |
+  | 2250 | 1256 | [4.110, 4.155] -> [6.380, 6.449] | [14.08, 11.03] -> [23.92, 18.74] | [2.887, 3.198] -> [4.481, 4.963] | [13.42, 10.40] -> [22.80, 17.67] |
+  | 2750 | 222.7 | [1.430, 1.430] -> [2.478, 2.477] | [1.359, 1.335] -> [2.659, 2.612] | [1.369, 1.374] -> [2.372, 2.381] | [1.343, 1.319] -> [2.627, 2.580] |
+  | 2750 | 1841 | [11.31, 11.45] -> [20.26, 20.52] | [34.74, 30.22] -> [61.54, 53.53] | [9.272, 9.821] -> [16.62, 17.60] | [32.37, 27.88] -> [57.36, 49.40] |
+
+  **What A60 measured does not move.** Before and after share the FP numerator,
+  so after/before depends on the line list alone. It is identical to two
+  decimals on both vintages: -21.66% in Rosseland at 2250 K / 1256 kg/m^3,
+  -13.01% at 2750 K / 1841 kg/m^3, and no point away from the added temperatures
+  moves (largest 0.00%). What moved is the absolute ratios, by the v3 -> v5
+  change at these hot points.
+
+  **Ledger.** 764 entries before and after. **Exactly nine values change**:
+  - `aqua_entropy.age_frac_change_from_energy`;
+  - `aqua_entropy.age_shift_at_fixed_entropy_gyr`;
+  - `aqua_entropy.delta_s_frac_range`;
+  - `aqua_entropy.radiated_energy_frac_change`;
+  - `g5.aguichine2025.by_age`, `.median_abs_rel`, `.median_signed_rel`,
+    `.worst_abs_rel`;
+  - `opacity.hitemp_grid_rows_2250_2750.before_after`.
+
+  Every other difference is a `commit` stamp. The ED merge was rerun after the
+  ledger, as `rebuild_producers.sh` orders it; its 355 `ed.*` entries are
+  unchanged. **No figure or Extended Data item reads these outputs or carries
+  one of these keys** (ED Fig. 7 reads `g5_residuals.json`, the Aguichine 2021
+  gate on `hitemp`; Figs. 3 and 4 measure the 2250/2750 K sensitivity from the
+  current tables). So none was regenerated.
+
+  **Changed.**
+  - `tools/rebuild_producers.sh` runs all three producers: the A60 tool as
+    step 7, after the crossover; AQUA and Aguichine as steps 13 and 14.
+  - `tools/manuscript_numbers.py`: `_STALE_EXEMPT` now holds only
+    `broadening_sensitivity.json`.
+
+  **Any manuscript text quoting** an age change of 3.7-6.5% (now 3.7-6.0%), an
+  8.76 Gyr shift, -2.75% radiated energy, a 4.05% Aguichine median, or the v3
+  absolute ratios at 2250/2750 K **is now out of step with the ledger.**
+
 ## 2026-10-22 (the MLIP error table belongs to the production model)
 
 - **A94 — A90 quoted the wrong model's error. The production potential's
