@@ -28,6 +28,10 @@ measures whether the coverage supports making it the gate's reference.
   This model's age is measured from its own hot start, so ages are compared
   directly and the 1 Myr offset is negligible at 1-10 Gyr (0.1% at 1 Gyr).
 
+**Opacity source.** The first case is rerun on ``hitemp`` alone, which uses no
+first-principles spectra, and ``opacity_source`` records hitemp radius /
+composite radius - 1 at each age (A95).
+
 Writes ``outputs/aguichine2025_compare.json``.
 """
 
@@ -178,6 +182,18 @@ def run(cfg: Config, cases) -> dict:
                              if p.get("rel") is not None and p["age_gyr"] == ag))}
                 for ag in AGES_GYR},
         }
+    first = out["cases"][0] if out["cases"] else {}
+    if "points" in first:
+        track_h, _ = our_track(cfg, cases[0], "hitemp")
+        out["opacity_source"] = {
+            "what": ("hitemp radius / composite radius - 1, the first case, same "
+                     "ages: the part of the residual the first-principles "
+                     "spectra carry"),
+            "case": {k: first[k] for k in ("star", "wmf", "t_eq_k", "m_p_earth")},
+            "by_age": {f"{p['age_gyr']:g}":
+                       float(track_h.radius_at_age(p["age_gyr"])) / p["ours_rearth"] - 1.0
+                       for p in first["points"]},
+        }
     return out
 
 
@@ -216,6 +232,10 @@ def main(argv=None) -> int:
         for ag, v in s["by_age"].items():
             print(f"    at {ag:>2s} Gyr: median |rel| {v['median_abs_rel']:.4f} "
                   f"(n = {v['n']})")
+    src = doc.get("opacity_source")
+    if src:
+        print("\n  opacity source, first case (hitemp / composite - 1): " + ", ".join(
+            f"{ag} Gyr {v:+.3%}" for ag, v in src["by_age"].items()))
     print(f"\n  wrote {path}")
     return 0
 

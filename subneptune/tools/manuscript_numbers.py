@@ -753,6 +753,12 @@ def scaling_and_conventions(cfg: Config, led: Ledger) -> None:
         led.add("aqua_entropy.age_frac_change_from_energy",
                 {f"{r['age_gyr']:g}": r["age_frac_change_from_energy"]
                  for r in doc["points"]}, "relative", s3, src)
+        if "hitemp_variant" in doc:
+            led.add("aqua_entropy.age_frac_change_from_energy_hitemp",
+                    doc["hitemp_variant"]["age_frac_change_from_energy"],
+                    "relative", s3, src,
+                    "the same check on hitemp alone, which uses no first-principles "
+                    "spectra; same fiducial and ages")
 
     s4 = "tools/aguichine2025_compare.py"
     doc = _json(cfg, "aguichine2025_compare.json")
@@ -766,6 +772,11 @@ def scaling_and_conventions(cfg: Config, led: Ledger) -> None:
         led.add("g5.aguichine2025.by_age",
                 {k: v["median_abs_rel"] for k, v in doc["summary"]["by_age"].items()},
                 "relative", s4, src)
+        if "opacity_source" in doc:
+            led.add("g5.aguichine2025.opacity_source_10gyr",
+                    doc["opacity_source"]["by_age"]["10"], "relative", s4, src,
+                    "hitemp radius / composite radius - 1, first case "
+                    "(G, wmf 0.2, T_eq 500 K, M_p 9.67), 10 Gyr")
 
     s5 = "tools/release_tables.py"
     doc = _json_path(RELEASE_DIR / "subneptune_kappa_fit.json")

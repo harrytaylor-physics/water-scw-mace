@@ -118,11 +118,37 @@ gap/ambiguity in `SPEC.md`, is logged here with a one-line rationale
   gate on `hitemp`; Figs. 3 and 4 measure the 2250/2750 K sensitivity from the
   current tables). So none was regenerated.
 
+  **(3) Two opacity-source numbers, now produced and in the ledger.** The
+  `hitemp` comparisons above were first computed by hand, outside the producers.
+  The manuscript quotes two of them, so the producers now compute them:
+  - **AQUA check:** `aqua_entropy_check.py` reruns the whole check on `hitemp`
+    (same fiducial; it refuses to write if the ages differ from the composite
+    run). The result is stored under `hitemp_variant`.
+  - **Aguichine 2025:** `aguichine2025_compare.py` reruns the first case on
+    `hitemp` and stores hitemp radius / composite radius - 1 under
+    `opacity_source`.
+
+  Two new ledger keys:
+
+  | key | value |
+  |---|---|
+  | `aqua_entropy.age_frac_change_from_energy_hitemp` | 0.001 / 0.01 / 0.1 / 1 / 10 Gyr: +0.35 / -2.12 / -2.74 / **-3.66** / **-4.46%** |
+  | `g5.aguichine2025.opacity_source_10gyr` | **-0.477%** (first case: G, wmf 0.2, T_eq 500 K, M_p 9.67 M_E). The 1 and 5 Gyr values, +0.005% and -0.233%, are in the file only. |
+
+  Both equal the hand computation to the last digit, as does the `hitemp`
+  radiated-energy change (-2.10%) and age shift (4.56 Gyr), which are stored but
+  not ledgered. The composite parts of both files are byte-identical to before;
+  the new blocks are appended. Ledger rebuild (ledger, then ED merge):
+  `_n_entries` 760 -> 762, **these two keys added, no value changed**; the other
+  differences are `commit` stamps.
+
   **Changed.**
   - `tools/rebuild_producers.sh` runs all three producers: the A60 tool as
     step 7, after the crossover; AQUA and Aguichine as steps 13 and 14.
   - `tools/manuscript_numbers.py`: `_STALE_EXEMPT` now holds only
-    `broadening_sensitivity.json`.
+    `broadening_sensitivity.json`. It also records the two keys above.
+  - `tools/aqua_entropy_check.py` and `tools/aguichine2025_compare.py` add the
+    `hitemp` runs described in (3).
 
   **Any manuscript text quoting** an age change of 3.7-6.5% (now 3.7-6.0%), an
   8.76 Gyr shift, -2.75% radiated energy, a 4.05% Aguichine median, or the v3

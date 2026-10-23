@@ -122,6 +122,10 @@ which holds the full reasoning, numbers and evidence for each.
   been exempt as "HITEMP rows only", and their 24 Sep files were the v3,
   48-point values. Regenerated on v5 (52 points); every line-list column is
   unchanged (A95).
+- The AQUA check and the Aguichine 2025 comparison now also run on `hitemp`
+  alone, and the ledger gains `aqua_entropy.age_frac_change_from_energy_hitemp`
+  and `g5.aguichine2025.opacity_source_10gyr`. Both had been computed by hand
+  (A95).
 - `subneptune` imported with its history (filtered; see
   [MIGRATION.md](MIGRATION.md)). Production pipeline in `production_campaign/`.
   v5 spectra and release tables in `data/`. Figures in `docs/figures/subneptune/`.

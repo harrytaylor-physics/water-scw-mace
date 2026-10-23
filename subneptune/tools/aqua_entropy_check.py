@@ -29,6 +29,10 @@ This does three things.
 3. Converts the entropy shift into the quantity that matters here — a shift in
    age at fixed entropy — using the track's own ds/d(age).
 
+The check runs on the composite opacity, and again on ``hitemp`` alone (the same
+fiducial and ages), which uses no first-principles spectra; the second run is
+stored under ``hitemp_variant`` (A95).
+
 **Nothing is substituted.** The model keeps reading the table it has; this
 reports what that costs.
 """
@@ -138,7 +142,7 @@ def _nearest_phase(grid, log_p: np.ndarray, log_t: np.ndarray):
     return grid["phase"][i, j]
 
 
-def run(cfg: Config) -> dict:
+def run(cfg: Config, source: str = "composite") -> dict:
     from evolution.track import cooling_track
     from structure import build_structure
 
@@ -167,7 +171,7 @@ def run(cfg: Config) -> dict:
     c = replace(cfg, core=replace(cfg.core, mass_mearth=CASE["mass_core_mearth"]),
                 envelope=replace(cfg.envelope, f_env=CASE["wmf"]))
     grid_t_int = np.geomspace(*T_INT_RANGE_K, N_NODES)
-    track = cooling_track(c, "composite", CASE["t_eq_k"],
+    track = cooling_track(c, source, CASE["t_eq_k"],
                           t_int_grid_k=grid_t_int)
     age, s_track = np.asarray(track.age_gyr), np.asarray(track.entropy_j_kg_k)
     order = np.argsort(age)
@@ -179,7 +183,7 @@ def run(cfg: Config) -> dict:
     rows = []
     for a in ages:
         t_int = float(np.interp(a, age, t_int_sorted))
-        res = build_structure(c, CASE["t_eq_k"], t_int, "composite")
+        res = build_structure(c, CASE["t_eq_k"], t_int, source)
         pr = res.profile
         p_pa = np.asarray(pr["pressure_pa"], float)
         t_k = np.asarray(pr["temperature_k"], float)
@@ -303,7 +307,7 @@ def run(cfg: Config) -> dict:
                     "age_range_gyr": [float(age.min()), float(age.max())],
                     "entropy_range_j_kg_k": [float(s_track.min()),
                                              float(s_track.max())],
-                    "source": "composite"}
+                    "source": source}
     out["what_uses_entropy"] = (
         "The cooling age integrates dt = dE/L with E the envelope internal energy "
         "and the adiabat set by grad_ad, so ages, radii and luminosities do not "
@@ -314,12 +318,35 @@ def run(cfg: Config) -> dict:
     return out
 
 
+def hitemp_variant(cfg: Config, doc: dict) -> dict:
+    """The same check on hitemp alone, at the same fiducial and ages."""
+    h = run(cfg, "hitemp")
+    ages = [r["age_gyr"] for r in doc["points"]]
+    if [r["age_gyr"] for r in h["points"]] != ages:
+        raise SystemExit("the hitemp track does not give the composite run's ages; "
+                         "the two cannot be compared age for age")
+    by_age = lambda k: {f"{r['age_gyr']:g}": r[k] for r in h["points"]}  # noqa: E731
+    return {
+        "what": ("the check rerun with every track and structure on hitemp, which "
+                 "uses no first-principles spectra; same case and ages"),
+        "source": "hitemp",
+        "age_frac_change_from_energy": by_age("age_frac_change_from_energy"),
+        "age_shift_gyr": by_age("age_shift_gyr"),
+        "delta_s_frac": by_age("delta_s_frac"),
+        "total_radiated_energy_frac_change":
+            h["energy_route"]["total_radiated_energy_frac_change"],
+        "track": h["track"],
+    }
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("config", type=Path)
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
     doc = run(cfg)
+    if "points" in doc:
+        doc["hitemp_variant"] = hitemp_variant(cfg, doc)
     path = cfg.output_path / "aqua_entropy_check.json"
     atomicio.write_text(path, json.dumps(doc, indent=1) + "\n")
 
@@ -364,6 +391,12 @@ def main(argv=None) -> int:
         print(f"    {r['age_from_reintegration_aqua_gyr']:8.4g} "
               f"{r['age_from_reintegration_corrected_gyr']:10.4g} "
               f"{r['age_frac_change_from_energy']:9.2%}")
+    hv = doc["hitemp_variant"]
+    print(f"\n  HITEMP VARIANT (no first-principles spectra)")
+    print(f"    total radiated energy changes by "
+          f"{hv['total_radiated_energy_frac_change']:+.2%}")
+    for a, v in hv["age_frac_change_from_energy"].items():
+        print(f"    age {a:>6s} Gyr: {v:+.2%}")
     print(f"\n  wrote {path}")
     return 0
 
