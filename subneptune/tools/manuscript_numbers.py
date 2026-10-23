@@ -90,12 +90,12 @@ class Ledger:
 # were exempt until the migration review: both run cooling tracks on the
 # composite opacity, so they DO depend on the FP spectra (their 26 Sep files
 # were the v3, 48-point values), and they are checked like everything else.
+# So are crossover_v3_{before,after}_a60.json (A95): they were exempt as "HITEMP
+# rows only", but they hold FP/HITEMP ratios from crossover_v3_rows, and their
+# 24 Sep files were the v3, 48-point values.
 _STALE_EXEMPT = {
     # line-list broadening only; no FP reference in tools/broadening_sensitivity.py
     "broadening_sensitivity.json": "line-list broadening; independent of the FP spectra",
-    # HITEMP grid rows at 2250/2750 K; line list only
-    "crossover_v3_before_a60.json": "HITEMP rows only; independent of the FP spectra",
-    "crossover_v3_after_a60.json": "HITEMP rows only; independent of the FP spectra",
 }
 # Some producers depend on ANOTHER producer's output, not only on the spectra.
 # S9 and the corner-boundary profiles both take their case list from the extended

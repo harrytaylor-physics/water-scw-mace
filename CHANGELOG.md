@@ -117,6 +117,11 @@ which holds the full reasoning, numbers and evidence for each.
   spectra", and their 26 Sep outputs were the v3, 48-point values. Regenerated
   on v5; the old values are reproduced exactly by the 26 Sep code on the 26 Sep
   inputs.
+- The same for `tools/hitemp_grid_rows_2250_2750_effect.py` (A60), which writes
+  `crossover_v3_{before,after}_a60.json`. They hold FP/HITEMP ratios but had
+  been exempt as "HITEMP rows only", and their 24 Sep files were the v3,
+  48-point values. Regenerated on v5 (52 points); every line-list column is
+  unchanged (A95).
 - `subneptune` imported with its history (filtered; see
   [MIGRATION.md](MIGRATION.md)). Production pipeline in `production_campaign/`.
   v5 spectra and release tables in `data/`. Figures in `docs/figures/subneptune/`.
