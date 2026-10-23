@@ -5,8 +5,7 @@
 along the trajectories came from the MLWF-trained dipole model
 `water_dipole_v3` (`production_campaign/arc_scripts/htc_opac*.sh` ->
 `scw/mace_opacity.py`). Its binary is in this repository as
-`subneptune/monomer_test/water_dipole_v3.model` (LFS); `models/` holds the
-earlier `water_dipole_v2`. Regenerated from the production dipole series by
+`models/water_dipole_v3.model` (LFS), beside the earlier `water_dipole_v2`. Regenerated from the production dipole series by
 `subneptune/opacity/dipole_spectrum.py` via `subneptune/tools/v5_regenerate.py`
 (subneptune A83). They supersede everything `production_campaign/scw/opacity_pipeline.py`
 delivered; see [`production_campaign/README.md`](../../production_campaign/README.md).

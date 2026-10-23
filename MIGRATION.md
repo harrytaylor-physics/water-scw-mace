@@ -42,7 +42,7 @@ root outside the repository, SPEC §1).
 | `ed_data/arc_dipoles_sha256.json` | `subneptune/ed_data/` (unchanged) | beside the location the gitignored bundle it fingerprints is read from |
 | — | `subneptune/ed_data/arc_a78_dipoles_sha256.json` (new) | fingerprint of the five A78 cells, which are no longer committed |
 | `ed_data/arc/scw/` (`lagtest_v2.json`, two CSVs, 33 audit PNGs) | `subneptune/ed_data/arc/scw/` (unchanged) | ARC-pull data the Extended Data reads |
-| `monomer_test/water_dipole_v3.model` (LFS) | `subneptune/monomer_test/` (LFS) | `models/` holds `water_dipole_v2` only, so there is nothing to point to instead |
+| `monomer_test/water_dipole_v3.model` (LFS) | `models/water_dipole_v3.model` (LFS, one copy) | the dipole model behind the 52-point spectra, beside the earlier `water_dipole_v2`; the monomer test reads it through `layout.DIPOLE_MODEL` |
 
 ## Left out, and why
 

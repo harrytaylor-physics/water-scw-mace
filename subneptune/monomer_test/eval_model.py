@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Evaluate water_dipole_v3 on the 13 monomer geometries (A64).
 
+    python eval_model.py                    # models/water_dipole_v3.model (layout.py)
     python eval_model.py --model ~/scw/water_dipole_v3.model
     python eval_model.py --dry-run          # data pipeline only, no model needed
 
@@ -28,11 +29,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 EA_TO_DEBYE = 4.80320
 
 HERE = Path(__file__).resolve().parent
+
+sys.path.insert(0, str(HERE.parent))
+from layout import DIPOLE_MODEL  # noqa: E402
 
 
 def load_geometries(geoms_json: Path):
@@ -58,7 +63,7 @@ def load_geometries(geoms_json: Path):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--model", type=Path, default=Path("~/scw/water_dipole_v3.model"))
+    ap.add_argument("--model", type=Path, default=DIPOLE_MODEL)
     ap.add_argument("--geoms", type=Path, default=HERE / "geoms.json")
     ap.add_argument("--out", type=Path, default=HERE / "model_dipoles.json")
     ap.add_argument("--device", default="cpu")
@@ -82,8 +87,9 @@ def main(argv=None) -> int:
         model_path = args.model.expanduser()
         if not model_path.exists():
             raise SystemExit(
-                f"{model_path} not found. The dipole model lives on ARC; pass "
-                f"--model, or use --dry-run to check the data pipeline only.")
+                f"{model_path} not found. It is in git-LFS (git lfs pull --include "
+                f"'models/*'); or pass --model, or use --dry-run to check the "
+                f"data pipeline only.")
         model = torch.load(model_path, map_location=args.device, weights_only=False)
         model = model.to(args.device).eval()
         z_table = mace_utils.AtomicNumberTable(

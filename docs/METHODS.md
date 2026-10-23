@@ -54,7 +54,7 @@ drivers) for 10 ps, then NVE production with VelocityVerlet; 0.5 fs,
 delivered and the evidence for each change.]
 
 ## Dipoles and spectra
-MLWF/Berry-phase dipole labels; MACE dipole model (water_dipole_v2)
+MLWF/Berry-phase dipole labels; MACE dipole model (water_dipole_v3)
 evaluated per frame; ACF via FFT (unbiased normalisation), mean-removed;
 Hanning window, maxlag 8000; nfft 2^17; quantum correction
 alpha ~ w(1-exp(-hbar w / kB T)) I(w); white-noise floor from the

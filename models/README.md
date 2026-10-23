@@ -12,7 +12,8 @@ potential works and where the repo's validations attach to it.
 | water_scw_v4.model | production potential | revPBE0-D3 (CP2K) | train_v4.xyz, 1193 cfgs | validated; apply <= 3000 K. Stage-one model (epoch 109), sha256 dc4a8977...; held-out 57.8 meV/A, 20.8 meV/atom ([mlip_heldout_errors.json](mlip_heldout_errors.json)) |
 | water_scw_v4_compiled.model | TorchScript export of v4 | — | — | for LAMMPS / no-Python inference |
 | mlip_heldout_errors.json | v4 error tables | — | — | both tables from the training log (stage one = production; stage two SWA, not used), and the A94 reproduction |
-| water_dipole_v2.model | dipole model | MLWF revPBE0-D3 | dipole label set | production; behind opacity surface |
+| water_dipole_v3.model | dipole model | MLWF revPBE0-D3 | dipole label set (`production_campaign/arc_scripts/htc_dipole_train_v3.sh`) | production; behind the 52-point v5 spectra (`data/fp_opacity_v5/`) and the subneptune monomer test |
+| water_dipole_v2.model | dipole model | MLWF revPBE0-D3 | dipole label set | earlier model, superseded by v3; loaded by `tests/test_dipole.py` |
 | mace-mpa-0-medium.model | foundation model (upstream) | MPA-0 | — | fine-tune parent; never used raw for production |
 | water_lda_v1.model | LDA potential | LDA/PADE | train_lda_v1.xyz, 1080 cfgs | in training (functional-sensitivity campaign) |
 

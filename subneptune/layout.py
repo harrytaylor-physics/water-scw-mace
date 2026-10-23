@@ -56,6 +56,8 @@ def spectra_dir(data_root: Path, subdir: str) -> Path:
 PRODUCTION_SCW = HOST / "production_campaign" / "scw"
 ARC_SCRIPTS = HOST / "production_campaign" / "arc_scripts"
 MLIP_ERRORS = HOST / "models" / "mlip_heldout_errors.json"
+# the dipole model behind the 52-point v5 spectra (git-LFS)
+DIPOLE_MODEL = HOST / "models" / "water_dipole_v3.model"
 PARITY_REF = HOST / "benchmarks" / "reference" / "reference.json"
 HOST_DOCS = HOST / "docs"
 

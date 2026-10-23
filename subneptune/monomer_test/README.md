@@ -129,7 +129,9 @@ D/Å using the arc length r·dθ so the ratio is dimensionless.
   `DataLoader` → `batch.to_dict()` runs for every one of them
   (`python eval_model.py --dry-run`, which needs no checkpoint). Only the forward
   pass and the `"dipole"` output key are untested locally, because
-  `water_dipole_v3.model` is on ARC.
+  `water_dipole_v3.model` is on ARC. (Since the migration into water-scw-mace it
+  is also in the repository, as `models/water_dipole_v3.model`, git-LFS, and
+  `eval_model.py` defaults to it through `layout.DIPOLE_MODEL`.)
 - `compare.py`'s arithmetic was verified against synthetic inputs carrying a
   known 1.8× stretch bias: it recovered 1.800 on every stretch derivative, 1.000
   on bend, and an intensity-proxy ratio of exactly 3.240 = 1.8².

@@ -52,7 +52,8 @@ T <= 3000 K within the trained density envelope - full guidance in
 | Component | Status |
 |---|---|
 | water_scw_v4 (revPBE0-D3 potential) | validated; production; apply <= 3000 K |
-| water_dipole_v2 (dipole model) | production; behind the published opacity surface |
+| water_dipole_v3 (dipole model) | production; behind the 52-point v5 spectra (`models/water_dipole_v3.model`) |
+| water_dipole_v2 (dipole model) | the earlier dipole model, superseded by v3 |
 | Opacity spectra, 52 points (v5) | complete; regenerated with the corrected estimator (Oct 2026, below) |
 | Emissivity, 27 points | complete (interim n_inf baseline); computed before the v5 estimator, not regenerated |
 | LDA sensitivity campaign | labels complete (1080/1080); water_lda_v1 training |
