@@ -20,6 +20,23 @@ Provenance rule: every model added here gets a row with its label level and
 training set, and the training command lives in the campaign scripts.
 Never mix label levels within one training set.
 
+## Production model provenance
+
+`water_scw_v4.model`, sha256
+`dc4a8977d44e58cf959901b39a594abd3daf69fb09e5622bbe7e8d3e74b7f06c`.
+- **Origin:** written by MACE's stage-one pass at 2026-06-11 22:08:48, from
+  epoch 109 ([`logs/train_v4_7924966.out`](../production_campaign/arc_scripts/logs/train_v4_7924966.out),
+  lines 121-122). The internal archive name is `water_scw_v4`.
+- **Identity:** identical on 95/95 tensors to `checkpoints/water_scw_v4_run-1.model`,
+  and on 64/95 to `water_scw_v4_stagetwo.model` (sha256
+  `380e20a8595d456ead18794e9410a13843271637fc68adaba92bfe67e9cf92f8`).
+- **Loaded by:** `run_prod_md.py:44`, `run_prod_md_05fs.py:44` and
+  `run_prod_md_ext.py:49` (in [`production_campaign/scw/`](../production_campaign/scw/)).
+- **On ARC:** the only files of that name (`~/scw`, `~/water-scw-mace/models`)
+  are byte-identical.
+
+`water_scw_v4_stagetwo.model` was not used for production.
+
 ## Quickstart (ASE)
 
 All group workflows use the models through ASE. Three common patterns:
