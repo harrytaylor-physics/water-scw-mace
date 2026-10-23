@@ -258,7 +258,7 @@ def main(argv=None) -> int:
 
     note = (f"grid {DLOG_R:g} dex in log R, {DLOG_T:g} dex in log T; "
             f"{int(np.isfinite(k_r).sum())} of {k_r.size} cells inside the "
-            f"48-point hull")
+            f"{t_pt.size}-point hull")
     paths = {}
     for label, arr, stem in (("Rosseland mean", k_r, "subneptune_kappa_R_mesa"),
                              ("Planck mean", k_p, "subneptune_kappa_P_mesa")):

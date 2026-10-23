@@ -1,4 +1,4 @@
-# Rosseland mean, pure H2O, log10 kappa [cm^2/g] vs log R = log10(rho[g/cm^3]/(T/1e6 K)^3) and log10 T[K]; band 100-4000 cm^-1; grid 0.25 dex in log R, 0.05 dex in log T; 100 of 225 cells inside the 48-point hull; see README.md
+# Rosseland mean, pure H2O, log10 kappa [cm^2/g] vs log R = log10(rho[g/cm^3]/(T/1e6 K)^3) and log10 T[K]; band 100-4000 cm^-1; grid 0.25 dex in log R, 0.05 dex in log T; 100 of 225 cells inside the 52-point hull; see README.md
 #  form  version      X      Z  num_logR   logR_min   logR_max  num_logT   logT_min   logT_max
      1       37    0.0    1.0        15     6.0000     9.5000        15     2.8000     3.5000
 
