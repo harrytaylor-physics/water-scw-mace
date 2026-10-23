@@ -110,6 +110,13 @@ which holds the full reasoning, numbers and evidence for each.
 - `benchmarks/run_benchmarks.py`: the parity benchmark read a `REF_forces` key the
   reference file does not store, and copied each frame before reading its
   calculator, so it skipped every frame. Fixed; it reproduces 41.0 / 58.3 meV/A.
+- `rebuild_producers.sh` now also runs `tools/aqua_entropy_check.py` and
+  `tools/aguichine2025_compare.py`, and the ledger's staleness guard checks
+  their outputs. Both run cooling tracks on the composite opacity, so they
+  depend on the FP spectra. They had been exempt as "independent of the FP
+  spectra", and their 26 Sep outputs were the v3, 48-point values. Regenerated
+  on v5; the old values are reproduced exactly by the 26 Sep code on the 26 Sep
+  inputs.
 - `subneptune` imported with its history (filtered; see
   [MIGRATION.md](MIGRATION.md)). Production pipeline in `production_campaign/`.
   v5 spectra and release tables in `data/`. Figures in `docs/figures/subneptune/`.

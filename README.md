@@ -199,7 +199,5 @@ Units, keys and the version marker are in [data/fp_opacity_v5/README.md](data/fp
   - Fresh clone: 231 passed, 35 skipped, 4 xfailed. The raw dipole series are
     absent, and so is `subneptune/outputs/`, which the ledger gates read.
   - With the raw dipole series in place (`ed_data/arc_dipoles/`,
-    `ed_data/arc_a78/T*/`), after `bash tools/rebuild_producers.sh` and after
-    `tools/aqua_entropy_check.py` and `tools/aguichine2025_compare.py` (which
-    `rebuild_producers.sh` does not run): 257 passed, 8 skipped, 5 xfailed.
-    Without those two outputs, four more gates skip.
+    `ed_data/arc_a78/T*/`) and after `bash tools/rebuild_producers.sh`:
+    257 passed, 8 skipped, 5 xfailed.

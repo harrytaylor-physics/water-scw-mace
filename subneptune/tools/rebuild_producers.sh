@@ -23,7 +23,10 @@ echo "--- 8 text checks";      $P tools/text_checks.py $C >/dev/null
 echo "--- 9 rho^2 scaling";    $P tools/rho_scaling.py $C >/dev/null
 echo "--- 10 wing cut-off";    $P tools/wing_cutoff.py $C --summarise-only >/dev/null
 echo "--- 11 release tables";  $P tools/release_tables.py $C >/dev/null
-echo "--- 12 figures"
+# independent of the FP spectra, but the ledger and three gates read them
+echo "--- 12 AQUA entropy check";      $P tools/aqua_entropy_check.py $C >/dev/null
+echo "--- 13 Aguichine 2025 tracks";   $P tools/aguichine2025_compare.py $C >/dev/null
+echo "--- 14 figures"
 for f in figures/plot_*.py figures/fig1.py figures/fig2.py figures/fig3.py figures/fig4.py; do
   case "$(basename $f)" in
     plot_s6_candidate_evolution.py) continue ;;          # done above, other config
@@ -39,7 +42,7 @@ done
 # were not, in either A86 pass: v5 inherited 341 ed.* entries from an earlier run
 # and v3 started empty, so the Extended Data group was never actually compared.
 $P figures/ed_items.py $C >/dev/null 2>&1 || echo "    FAIL ed_items"
-echo "--- 13 ED tables";  $P figures/ed_tables.py $C >/dev/null 2>&1 || echo "    FAIL ed_tables"
-echo "--- 14 ledger";     $P tools/manuscript_numbers.py $C >/dev/null
-echo "--- 15 ED merge";   $P figures/ed_index.py $C >/dev/null 2>&1 || echo "    FAIL ed_index"
+echo "--- 15 ED tables";  $P figures/ed_tables.py $C >/dev/null 2>&1 || echo "    FAIL ed_tables"
+echo "--- 16 ledger";     $P tools/manuscript_numbers.py $C >/dev/null
+echo "--- 17 ED merge";   $P figures/ed_index.py $C >/dev/null 2>&1 || echo "    FAIL ed_index"
 echo "--- rebuild complete"

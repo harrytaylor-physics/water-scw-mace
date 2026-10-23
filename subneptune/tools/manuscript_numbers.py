@@ -85,15 +85,14 @@ class Ledger:
 #
 # This is a mtime check, not a dependency graph: it catches exactly the failure
 # that bit us -- a spectra switch without a producer rerun -- and nothing subtler.
-# Four producers touch no first-principles spectrum at all and are exempt by
-# name, each for a stated reason.
+# The producers below touch no first-principles spectrum and are exempt by name,
+# each for a stated reason. aqua_entropy_check.json and aguichine2025_compare.json
+# were exempt until the migration review: both run cooling tracks on the
+# composite opacity, so they DO depend on the FP spectra (their 26 Sep files
+# were the v3, 48-point values), and they are checked like everything else.
 _STALE_EXEMPT = {
     # line-list broadening only; no FP reference in tools/broadening_sensitivity.py
     "broadening_sensitivity.json": "line-list broadening; independent of the FP spectra",
-    # AQUA EOS entropy; no FP reference
-    "aqua_entropy_check.json": "AQUA EOS only; independent of the FP spectra",
-    # published tracks; no FP reference
-    "aguichine2025_compare.json": "literature tracks; independent of the FP spectra",
     # HITEMP grid rows at 2250/2750 K; line list only
     "crossover_v3_before_a60.json": "HITEMP rows only; independent of the FP spectra",
     "crossover_v3_after_a60.json": "HITEMP rows only; independent of the FP spectra",
