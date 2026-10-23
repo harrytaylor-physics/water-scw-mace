@@ -1,4 +1,10 @@
 #!/bin/bash
+# HISTORICAL. Kept as the record of how A86-A89's v3 -> v5 comparison was built.
+# The v3 spectra it rebuilds against are superseded by v5 (A83) and are not in
+# this repository (they would be read from paths.data_root/fp_opacity). The
+# /tmp/scratch-501/ paths below are machine-specific scratch locations from the
+# machine it was run on; edit them before running it anywhere else.
+#
 # A85/A87: rebuild the SAME producers against the v3 spectra, fully isolated, so
 # the "v3" column of a v3->v5 comparison is a genuine v3 value.
 #
